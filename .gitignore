@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.dsgraph/
+coverage/
+.DS_Store
+*.log
