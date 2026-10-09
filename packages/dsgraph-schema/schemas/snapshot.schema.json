@@ -1,0 +1,542 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Snapshot",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "contexts",
+    "nodes",
+    "edges",
+    "diagnostics",
+    "hash"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dsgraph/snapshot@1",
+      "type": "string"
+    },
+    "source": {
+      "$id": "SourceMeta",
+      "additionalProperties": true,
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "contexts": {
+      "type": "object",
+      "required": [
+        "modifiers",
+        "permutations",
+        "partial"
+      ],
+      "properties": {
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "$id": "Modifier",
+            "type": "object",
+            "required": [
+              "name",
+              "contexts"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "contexts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "default": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "permutations": {
+          "type": "integer"
+        },
+        "partial": {
+          "type": "boolean"
+        }
+      }
+    },
+    "nodes": {
+      "type": "object",
+      "required": [
+        "groups",
+        "tokens"
+      ],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "$id": "Group",
+            "type": "object",
+            "required": [
+              "id",
+              "path",
+              "origin"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "deprecated": {
+                "$id": "Deprecated",
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "replacement": {
+                    "type": "string"
+                  }
+                }
+              },
+              "extends": {
+                "type": "string"
+              },
+              "extensions": {
+                "type": "object",
+                "patternProperties": {
+                  "^(.*)$": {}
+                }
+              },
+              "origin": {
+                "$id": "Origin",
+                "type": "object",
+                "required": [
+                  "file",
+                  "pointer"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "pointer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "$id": "Token",
+            "type": "object",
+            "required": [
+              "id",
+              "path",
+              "type",
+              "typeSource",
+              "layer",
+              "deprecated",
+              "values",
+              "origin",
+              "inheritedFrom",
+              "flags"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "typeSource": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "const": "explicit",
+                        "type": "string"
+                      },
+                      {
+                        "const": "inherited",
+                        "type": "string"
+                      },
+                      {
+                        "const": "alias",
+                        "type": "string"
+                      },
+                      {
+                        "const": "inferred",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "layer": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "deprecated": {
+                "anyOf": [
+                  {
+                    "$id": "Deprecated",
+                    "type": "object",
+                    "properties": {
+                      "reason": {
+                        "type": "string"
+                      },
+                      "replacement": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "$id": "TokenValue",
+                  "type": "object",
+                  "required": [
+                    "when",
+                    "raw",
+                    "value",
+                    "refs"
+                  ],
+                  "properties": {
+                    "when": {
+                      "$id": "When",
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "raw": {},
+                    "value": {},
+                    "refs": {
+                      "type": "array",
+                      "items": {
+                        "$id": "Ref",
+                        "type": "object",
+                        "required": [
+                          "to"
+                        ],
+                        "properties": {
+                          "to": {
+                            "type": "string"
+                          },
+                          "property": {
+                            "type": "string"
+                          },
+                          "targetPath": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "origin": {
+                "$id": "Origin",
+                "type": "object",
+                "required": [
+                  "file",
+                  "pointer"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "pointer": {
+                    "type": "string"
+                  }
+                }
+              },
+              "inheritedFrom": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extensions": {
+                "type": "object",
+                "patternProperties": {
+                  "^(.*)$": {}
+                }
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "array",
+            "items": [
+              {
+                "anyOf": [
+                  {
+                    "const": "aliases",
+                    "type": "string"
+                  },
+                  {
+                    "const": "extends",
+                    "type": "string"
+                  },
+                  {
+                    "const": "deprecated_by",
+                    "type": "string"
+                  },
+                  {
+                    "const": "uses_token",
+                    "type": "string"
+                  },
+                  {
+                    "const": "imports",
+                    "type": "string"
+                  },
+                  {
+                    "const": "renders",
+                    "type": "string"
+                  },
+                  {
+                    "const": "used_at",
+                    "type": "string"
+                  },
+                  {
+                    "const": "hardcodes",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "additionalItems": false,
+            "minItems": 3,
+            "maxItems": 3
+          },
+          {
+            "type": "array",
+            "items": [
+              {
+                "anyOf": [
+                  {
+                    "const": "aliases",
+                    "type": "string"
+                  },
+                  {
+                    "const": "extends",
+                    "type": "string"
+                  },
+                  {
+                    "const": "deprecated_by",
+                    "type": "string"
+                  },
+                  {
+                    "const": "uses_token",
+                    "type": "string"
+                  },
+                  {
+                    "const": "imports",
+                    "type": "string"
+                  },
+                  {
+                    "const": "renders",
+                    "type": "string"
+                  },
+                  {
+                    "const": "used_at",
+                    "type": "string"
+                  },
+                  {
+                    "const": "hardcodes",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object",
+                "properties": {
+                  "property": {
+                    "type": "string"
+                  },
+                  "targetPath": {
+                    "type": "string"
+                  },
+                  "when": {
+                    "$id": "When",
+                    "type": "object",
+                    "patternProperties": {
+                      "^(.*)$": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "additionalItems": false,
+            "minItems": 4,
+            "maxItems": 4
+          }
+        ]
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$id": "Diagnostic",
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "const": "error",
+                "type": "string"
+              },
+              {
+                "const": "warning",
+                "type": "string"
+              },
+              {
+                "const": "info",
+                "type": "string"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "loc": {
+            "$id": "Loc",
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              },
+              "column": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "hash": {
+      "type": "string"
+    },
+    "meta": {
+      "type": "object",
+      "patternProperties": {
+        "^(.*)$": {}
+      }
+    }
+  }
+}

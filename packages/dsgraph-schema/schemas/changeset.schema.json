@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Changeset",
+  "type": "object",
+  "required": [
+    "schema",
+    "base",
+    "head",
+    "contexts",
+    "summary",
+    "changes",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dsgraph/changeset@1",
+      "type": "string"
+    },
+    "base": {
+      "type": "object",
+      "required": [
+        "hash",
+        "source"
+      ],
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "source": {
+          "$id": "SourceMeta",
+          "additionalProperties": true,
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "package": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "commit": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "head": {
+      "type": "object",
+      "required": [
+        "hash",
+        "source"
+      ],
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "source": {
+          "$id": "SourceMeta",
+          "additionalProperties": true,
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "package": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "repo": {
+              "type": "string"
+            },
+            "ref": {
+              "type": "string"
+            },
+            "commit": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "contexts": {
+      "type": "object",
+      "required": [
+        "compared",
+        "partial"
+      ],
+      "properties": {
+        "compared": {
+          "type": "array",
+          "items": {
+            "$id": "When",
+            "type": "object",
+            "patternProperties": {
+              "^(.*)$": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "partial": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "counts",
+        "level",
+        "reasons"
+      ],
+      "properties": {
+        "counts": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "type": "integer"
+            }
+          }
+        },
+        "level": {
+          "anyOf": [
+            {
+              "const": "major",
+              "type": "string"
+            },
+            {
+              "const": "minor",
+              "type": "string"
+            },
+            {
+              "const": "patch",
+              "type": "string"
+            },
+            {
+              "const": "none",
+              "type": "string"
+            }
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "$id": "Change",
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "target",
+          "when",
+          "origin",
+          "cause",
+          "level",
+          "confidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "const": "token.added",
+                "type": "string"
+              },
+              {
+                "const": "token.removed",
+                "type": "string"
+              },
+              {
+                "const": "token.renamed",
+                "type": "string"
+              },
+              {
+                "const": "token.value-changed",
+                "type": "string"
+              },
+              {
+                "const": "token.notation-changed",
+                "type": "string"
+              },
+              {
+                "const": "token.alias-retargeted",
+                "type": "string"
+              },
+              {
+                "const": "token.type-changed",
+                "type": "string"
+              },
+              {
+                "const": "token.contexts-changed",
+                "type": "string"
+              },
+              {
+                "const": "token.missing-in-context",
+                "type": "string"
+              },
+              {
+                "const": "token.deprecated",
+                "type": "string"
+              },
+              {
+                "const": "token.undeprecated",
+                "type": "string"
+              },
+              {
+                "const": "token.description-changed",
+                "type": "string"
+              },
+              {
+                "const": "token.extensions-changed",
+                "type": "string"
+              },
+              {
+                "const": "group.extends-changed",
+                "type": "string"
+              },
+              {
+                "const": "context.added",
+                "type": "string"
+              },
+              {
+                "const": "context.removed",
+                "type": "string"
+              },
+              {
+                "const": "modifier.added",
+                "type": "string"
+              },
+              {
+                "const": "modifier.removed",
+                "type": "string"
+              }
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "$id": "When",
+                "type": "object",
+                "patternProperties": {
+                  "^(.*)$": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before": {},
+          "after": {},
+          "delta": {
+            "type": "object",
+            "patternProperties": {
+              "^(.*)$": {}
+            }
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "const": "direct",
+                "type": "string"
+              },
+              {
+                "const": "propagated",
+                "type": "string"
+              }
+            ]
+          },
+          "cause": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "level": {
+            "anyOf": [
+              {
+                "const": "major",
+                "type": "string"
+              },
+              {
+                "const": "minor",
+                "type": "string"
+              },
+              {
+                "const": "patch",
+                "type": "string"
+              },
+              {
+                "const": "none",
+                "type": "string"
+              }
+            ]
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "possibleRenames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$id": "Diagnostic",
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "const": "error",
+                "type": "string"
+              },
+              {
+                "const": "warning",
+                "type": "string"
+              },
+              {
+                "const": "info",
+                "type": "string"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "loc": {
+            "$id": "Loc",
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer"
+              },
+              "column": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@dsgraph/schema",
+  "version": "0.1.0-alpha.0",
+  "description": "Types, JSON Schemas and canonical serialization for dsgraph snapshots and changesets.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/specsure/specsure.git",
+    "directory": "packages/dsgraph-schema"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.52"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-schema#readme",
+  "bugs": {
+    "url": "https://github.com/specsure/specsure/issues"
+  }
+}
