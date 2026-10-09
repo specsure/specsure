@@ -1,0 +1,33 @@
+{
+  "name": "specsure-monorepo",
+  "private": true,
+  "type": "module",
+  "description": "Specsure and dsgraph: design-system graph, token diff and design QA. Open source, no server.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources",
+    "typecheck": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "schemas": "node packages/dsgraph-schema/scripts/emit-schemas.ts",
+    "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "^24.0.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/specsure/specsure.git"
+  }
+}
