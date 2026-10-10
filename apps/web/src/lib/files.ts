@@ -1,0 +1,58 @@
+import type { DroppedFile } from './types'
+
+const TOKEN_FILE = /\.(json|jsonc|tokens|css)$/i
+const SKIP = /(^|\/)(node_modules|\.git|dist)\//
+/** Files we refuse to read in full: a token file this big is almost certainly something else. */
+const MAX_BYTES = 5_000_000
+
+async function readEntry(entry: FileSystemEntry, out: DroppedFile[]): Promise<void> {
+  if (entry.isFile) {
+    const file = await new Promise<File>((res, rej) => (entry as FileSystemFileEntry).file(res, rej))
+    const path = entry.fullPath.replace(/^\//, '')
+    if (TOKEN_FILE.test(path) && !SKIP.test(path) && file.size <= MAX_BYTES)
+      out.push({ path, text: await file.text() })
+    return
+  }
+  if (entry.isDirectory) {
+    if (/^(node_modules|\.git)$/.test(entry.name)) return
+    const reader = (entry as FileSystemDirectoryEntry).createReader()
+    for (;;) {
+      const batch = await new Promise<FileSystemEntry[]>((res, rej) => reader.readEntries(res, rej))
+      if (batch.length === 0) break
+      for (const e of batch) await readEntry(e, out)
+    }
+  }
+}
+
+/** Files and folders from a drop; folders are walked, only JSON, .tokens and CSS files are kept. */
+export async function filesFromDrop(dt: DataTransfer): Promise<DroppedFile[]> {
+  const out: DroppedFile[] = []
+  const entries = [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter((e): e is FileSystemEntry => !!e)
+  if (entries.length) for (const e of entries) await readEntry(e, out)
+  else await addFiles([...dt.files], out)
+  return dropCommonRoot(out)
+}
+
+export async function filesFromInput(list: FileList | null): Promise<DroppedFile[]> {
+  const out: DroppedFile[] = []
+  await addFiles([...(list ?? [])], out)
+  return dropCommonRoot(out)
+}
+
+async function addFiles(files: File[], out: DroppedFile[]) {
+  for (const f of files) {
+    const path = f.webkitRelativePath || f.name
+    if (TOKEN_FILE.test(path) && !SKIP.test(path) && f.size <= MAX_BYTES)
+      out.push({ path, text: await f.text() })
+  }
+}
+
+/** `tokens/a.json`, `tokens/b.json` → `a.json`, `b.json`, so both versions of a folder line up. */
+function dropCommonRoot(files: DroppedFile[]): DroppedFile[] {
+  if (files.length < 1) return files
+  const first = files[0]!.path.split('/')
+  if (first.length < 2) return files
+  const root = `${first[0]}/`
+  if (!files.every((f) => f.path.startsWith(root))) return files
+  return files.map((f) => ({ ...f, path: f.path.slice(root.length) }))
+}
