@@ -1,0 +1,20 @@
+{
+  "name": "@dsgraph/adapters",
+  "version": "0.1.0-alpha.0",
+  "description": "Token adapters for dsgraph: CSS custom properties (themes by selectors and media queries).",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "repository": { "type": "git", "url": "git+https://github.com/specsure/specsure.git", "directory": "packages/dsgraph-adapters" },
+  "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-adapters#readme",
+  "bugs": { "url": "https://github.com/specsure/specsure/issues" },
+  "engines": { "node": ">=20.19" },
+  "dependencies": {
+    "@dsgraph/core": "0.1.0-alpha.0",
+    "postcss": "8.5.28"
+  }
+}
