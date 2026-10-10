@@ -92,7 +92,8 @@ export async function diff(base: DsGraph, head: DsGraph, opts: DiffOptions = {})
     ...[...baseIds].filter((id) => headIds.has(id)).map((id): [string, string] => [id, id]),
     ...renames.map((r): [string, string] => [r.from, r.to]),
   ]
-  const ignore = new Set(opts.ignoreExtensions ?? [])
+  // dsgraph's own metadata (`dev.dsgraph`) describes the source, not the token; never a change.
+  const ignore = new Set(['dev.dsgraph', ...(opts.ignoreExtensions ?? [])])
   for (const [bid, hid] of pairs.sort((a, b) => a[1].localeCompare(b[1]))) {
     const b = base.token(bid)!
     const h = head.token(hid)!
