@@ -19,6 +19,9 @@ export const STANDARD_TYPES = new Set([
   'typography',
 ])
 
+/** dsgraph-internal types that are not DTCG types but are expected from some sources (no diagnostic). */
+export const INTERNAL_TYPES = new Set(['css-expression'])
+
 const FONT_WEIGHTS: Record<string, number> = {
   thin: 100,
   hairline: 100,
@@ -80,6 +83,8 @@ export function canonicalValue(type: string, raw: unknown, ctx: ValueContext): u
       return gradient(raw, ctx)
     case 'typography':
       return typography(raw, ctx)
+    case 'css-expression':
+      return typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : raw
     default:
       return raw
   }
