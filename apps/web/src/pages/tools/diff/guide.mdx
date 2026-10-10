@@ -1,0 +1,125 @@
+---
+layout: ../../../layouts/Doc.astro
+title: Token Diff guide
+description: What Token Diff is for, what it shows and how to read it. Compare two versions of design tokens and get the semver bump, breaking changes and a changelog.
+path: /tools/diff/guide
+---
+
+import LiveFigure from '../../../components/LiveFigure'
+
+# Token Diff guide
+
+Token Diff compares two versions of a design system’s tokens and tells you what changed, what breaks for the people who use them, and which version number the release needs. [Open Token Diff](/tools/diff)
+
+## Why you need it
+
+A token release is usually reviewed as a JSON diff in a pull request. That diff hides the things that hurt consumers:
+
+- **Renames look like a removal plus an addition.** Nobody notices that `space-sm` became `space-small` until builds fail.
+- **Alias chains hide the blast radius.** Changing one base color silently changes every semantic token that points to it.
+- **Themes are easy to miss.** A value can change only in dark mode, in one file out of twenty.
+- **The version number is a guess.** A removal shipped as a minor release breaks everyone who upgrades.
+
+Token Diff reads both versions the way a consumer would: it resolves every alias in every theme, matches tokens across versions and judges each change by its effect.
+
+Every figure on this page is live: dsgraph runs in your browser on a small example design system, two versions of one CSS file with a light and a dark theme, and the figures show what Token Diff shows.
+
+## Who it is for
+
+| You | Use it to |
+|---|---|
+| Maintain a design system | Check a release before publishing: what breaks, which version, what to write in the changelog |
+| Use someone else’s design system | See what an upgrade changes before you take it |
+| Write about design systems | Turn a release into a readable summary and a card for a post |
+
+## How to use it
+
+1. **Pick the two versions.** For each side, choose one of:
+   - **npm:** a package name; the versions load by themselves, and the latest release is compared with the one before it.
+   - **GitHub:** `owner/repo/folder` and a branch, tag or commit. Public repositories only, 60 requests an hour.
+   - **Files:** drop token files or a whole folder onto the row, or choose them.
+2. **Press Compare** (<kbd>⌘</kbd> <kbd>↵</kbd>).
+3. **Read the result** and export what you need.
+
+<LiveFigure client:only="react" name="inputs" caption="Two versions of the example as files. Under each row: how many tokens were read, from which files, and the themes found." />
+
+Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets and themes), CSS custom properties with themes in `:root`, `[data-theme]`, `.dark` or `prefers-color-scheme`, and dsgraph snapshots. If a package ships many files, put the ones you mean in **Files**, for example `dist/tokens.css` or `tokens/**/*.json`.
+
+## What you get
+
+- **A verdict:** breaking, minor, patch or no impact, with the counts behind it.
+- **Breaking changes first:** removed tokens, renames with a confidence score, type changes, tokens missing from a theme.
+- **Value changes per theme:** colors as swatches with ΔE, sizes with the difference in pixels, the alias each value came from.
+- **The blast radius:** for each changed token, the tokens that changed through aliases because of it.
+- **Checks on the new version:** broken references, alias cycles, legacy syntax, naming collisions, grouped so that 300 identical warnings take one line.
+- **Exports:** Markdown for a changelog or a pull request, the full changeset as JSON, and a 1200×630 card for a post.
+
+<LiveFigure client:only="react" name="result" caption="The full result for the example. Click a change or use the arrow keys to see its details; filter by theme, impact or type." />
+
+## Reading the result
+
+The verdict above the list is the highest impact of all changes. In the example it is breaking, because one token was removed and one renamed.
+
+| Impact | Means | Typical changes |
+|---|---|---|
+| Breaking | Code that uses the tokens can stop working | Removed or renamed token, changed type, token or theme removed |
+| Minor | Something visibly new or different | Added token, visible value change, deprecation |
+| Patch | Nothing a user would notice | Color change under ΔE 1, size change under half a pixel, alias retargeted to the same value |
+| No impact | Only how a value is written | `#ff0000` became `rgb(255 0 0)` |
+
+**Breaking changes come first.** A removed token shows the value it had. A rename is detected from the same values in every theme and similar names; a confidence under 80% means “check this one”.
+
+<LiveFigure client:only="react" name="breaking" caption="color-danger was removed; space-sm became space-small, with the same value in every theme." />
+
+**Value changes** show both values. For colors, ΔE is the distance in OKLab, scaled so that 1 is about the smallest difference people notice; under 1 counts as a patch. **Through aliases** means a token was not edited itself, but something it points to was.
+
+<LiveFigure client:only="react" name="color" caption="color-blue-500 changed, and color-accent points to it, so it changed too without being edited." />
+
+**Themes.** Choose one in the filter bar to see only what changes there. Changes that apply everywhere stay visible.
+
+<LiveFigure client:only="react" name="themes" caption="Color changes per theme: color-accent changed only in dark mode, so it is missing on the left." />
+
+**Checks** run on the new version. Identical problems are grouped, so a file written the pre-2025 way gives a few lines, not hundreds.
+
+<LiveFigure client:only="react" name="checks" caption="Checks on a DTCG file with legacy string values and a reference to a token that does not exist." />
+
+## Sharing
+
+- **Copy Markdown** (<kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>C</kbd>) gives a changelog section grouped by impact. It is the same text the dsgraph CLI writes, so it fits a pull request comment as is.
+- **Copy link** shares the comparison. For npm and GitHub the link is just the address. Your own files go into the part of the link after `#`, which browsers never send to a server; large files cannot be shared this way, so share the Markdown or JSON instead.
+- **Card for a post** makes a PNG with the verdict, the counts and the changed colors.
+
+<LiveFigure client:only="react" name="markdown" caption="Copy Markdown for the example, as it goes into a changelog or a pull request." />
+
+<LiveFigure client:only="react" name="card" caption="The card for a post, 1200×630. Changed colors are shown before (top) and after (bottom)." />
+
+## Keyboard
+
+| Keys | Action |
+|---|---|
+| <kbd>⌘</kbd> <kbd>↵</kbd> | Compare |
+| <kbd>↑</kbd> <kbd>↓</kbd> | Move through changes |
+| <kbd>/</kbd> | Filter by token name |
+| <kbd>⌘</kbd> <kbd>K</kbd> | All actions |
+| <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>C</kbd> | Copy Markdown |
+
+On Windows and Linux, use <kbd>Ctrl</kbd> instead of <kbd>⌘</kbd>.
+
+## Privacy
+
+Everything runs in your browser tab. Dropped files are never uploaded. Packages are downloaded from jsDelivr and repositories from GitHub directly by your browser. There is no account and nothing is stored.
+
+## In CI
+
+The same engine runs in your terminal and in CI:
+
+```bash
+npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown
+```
+
+With `--fail-on major` it exits with an error when the release is breaking, so a breaking change cannot slip out as a minor version.
+
+## Coming next
+
+- **Figma plugin.** Check Figma variables and styles against your tokens, inside Figma. Soon.
+- Style Dictionary and Tailwind themes as inputs, private GitHub repositories, and checking your own app for what an upgrade breaks.
