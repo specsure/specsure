@@ -1,0 +1,20 @@
+---
+import TokenDiff from '../../components/TokenDiff'
+import Base from '../../layouts/Base.astro'
+---
+
+<Base
+  title="Token Diff · Specsure"
+  description="Compare two versions of design tokens: what changed, what breaks and which semver bump it needs. DTCG, CSS custom properties, npm packages and GitHub. Runs in your browser."
+  path="/tools/diff"
+>
+  <header class="page-head">
+    <h1>Token Diff</h1>
+    <p>
+      Compare two versions of design tokens: what was removed, renamed or changed in each theme, and
+      the semver bump it needs. Files are read in your browser and never uploaded.
+      <a class="inline-link" href="/tools/diff/guide">How it works</a>
+    </p>
+  </header>
+  <TokenDiff client:only="react" />
+</Base>
