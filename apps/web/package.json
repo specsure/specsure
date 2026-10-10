@@ -5,8 +5,8 @@
   "description": "specsure.app: Token Diff and other design-system tools. Static, everything runs in the browser.",
   "license": "MIT",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "npm --prefix ../.. run build && astro dev",
+    "build": "npm --prefix ../.. run build && astro build",
     "preview": "astro preview"
   },
   "dependencies": {
