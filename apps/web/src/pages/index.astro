@@ -1,0 +1,107 @@
+---
+import Base from '../layouts/Base.astro'
+
+const tools = [
+  {
+    href: '/tools/diff',
+    icon: 'diff',
+    title: 'Token Diff',
+    text: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
+    tag: 'Web',
+  },
+  {
+    href: null,
+    icon: 'figma',
+    title: 'Figma plugin',
+    text: 'Check Figma variables and styles against your tokens, inside Figma',
+    tag: 'Soon',
+  },
+  {
+    href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
+    icon: 'terminal',
+    title: 'dsgraph CLI',
+    text: 'The same diff and checks in your terminal and CI: npx dsgraph diff',
+    tag: 'npm',
+  },
+  {
+    href: 'https://github.com/specsure/specsure',
+    icon: 'graph',
+    title: 'dsgraph',
+    text: 'The open engine behind it: DTCG 2025.10, snapshots, diff, rules',
+    tag: 'MIT',
+  },
+]
+---
+
+<Base
+  title="Specsure · tools for design systems"
+  description="Open-source tools for design systems: Token Diff shows what a token release changes and breaks. No account, no server."
+  path="/"
+>
+  <header class="home-head">
+    <h1>Know what your design system release breaks</h1>
+    <p>
+      Open-source tools for design systems. No account and no server: they run in your browser, your CI
+      or your terminal.
+    </p>
+  </header>
+
+  <nav class="window launcher" aria-label="Tools">
+    <div class="launcher__head">
+      <span>Tools</span>
+      <span class="count">{tools.length}</span>
+    </div>
+    {
+      tools.map((t, i) => {
+        const Tag = t.href ? 'a' : 'div'
+        return (
+          <Tag class={`launcher__row${t.href ? '' : ' is-soon'}${i === 0 ? ' is-default' : ''}`} href={t.href ?? undefined}>
+            <span class="launcher__icon" aria-hidden="true">
+              {t.icon === 'diff' && (
+                <svg width="20" height="20" viewBox="0 0 32 32">
+                  <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" />
+                  <rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent-fill)" />
+                </svg>
+              )}
+              {t.icon === 'figma' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 7.5h11M4.5 12.5h11M7.5 4.5v11M12.5 4.5v11" />
+                </svg>
+              )}
+              {t.icon === 'terminal' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 6.5 3.5 3.5L5 13.5M10.5 14h4.5" />
+                </svg>
+              )}
+              {t.icon === 'graph' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                  <circle cx="5" cy="5.5" r="2" />
+                  <circle cx="15" cy="5.5" r="2" />
+                  <circle cx="10" cy="15" r="2" />
+                  <path d="M6.6 6.9 9 13.2M13.4 6.9 11 13.2M7 5.5h6" />
+                </svg>
+              )}
+            </span>
+            <span class="launcher__text">
+              <span class="launcher__title">{t.title}</span>
+              <span class="launcher__sub">{t.text}</span>
+            </span>
+            <span class={`tag${t.tag === 'Soon' ? ' tag--soon' : ''}`}>{t.tag}</span>
+            {t.href && <span class="launcher__go" aria-hidden="true">↵</span>}
+          </Tag>
+        )
+      })
+    }
+    <footer class="actionbar">
+      <span class="actionbar__status">Free · No sign-up · Nothing is uploaded</span>
+      <a class="launcher__primary" href="/tools/diff">Open Token Diff <kbd>↵</kbd></a>
+    </footer>
+  </nav>
+  <script>
+    // ↵ opens Token Diff, as the hint in the action bar says; focused links keep their own Enter.
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.target === document.body || e.target === document.documentElement))
+        location.href = '/tools/diff'
+    })
+  </script>
+</Base>
