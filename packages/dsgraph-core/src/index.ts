@@ -23,17 +23,26 @@ export {
   type TokenSystem,
   validateInput,
 } from './resolver/system.js'
-export { loadSystem, type ScanConfig, scan } from './scan.js'
+export {
+  DEFAULT_EXCLUDE,
+  loadSystem,
+  type ScanConfig,
+  type ScanOptions,
+  scan,
+  type TokenAdapter,
+} from './scan.js'
 export { type BuildOptions, buildSnapshot, type LayerConfig } from './snapshot.js'
 export type { Source } from './source.js'
-export { canonicalValue, STANDARD_TYPES } from './values/canonical.js'
+export { canonicalValue, INTERNAL_TYPES, STANDARD_TYPES } from './values/canonical.js'
 export {
   COLOR_SPACES,
   type ColorSpace,
   type ColorValue,
   colorToHex,
+  cssColorToDtcg,
   deltaEOK,
   isInSrgbGamut,
+  toCulori,
   toOklab,
 } from './values/color.js'
 export { type CompareOptions, type CompareResult, compareValues, DEFAULT_COMPARE } from './values/compare.js'
