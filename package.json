@@ -20,8 +20,8 @@
     "format": "biome format --write .",
     "schemas": "node packages/dsgraph-schema/scripts/emit-schemas.ts",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo apps/web/dist apps/web/.astro",
-    "web:dev": "npm run build && npm run dev -w @specsure/web",
-    "web:build": "npm run build && npm run build -w @specsure/web"
+    "web:dev": "npm run dev -w @specsure/web",
+    "web:build": "npm run build -w @specsure/web"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
