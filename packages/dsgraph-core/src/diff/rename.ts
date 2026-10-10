@@ -1,5 +1,6 @@
 import { canonicalize, type Token } from '@dsgraph/schema'
 import type { DsGraph } from '../graph.js'
+import { normalizeName } from '../path.js'
 import type { Input } from '../resolver/system.js'
 import { type CompareOptions, compareValues } from '../values/compare.js'
 
@@ -28,7 +29,10 @@ export function levenshtein(a: string, b: string): number {
 }
 
 /** Path similarity in [0, 1]: segment overlap, edit distance and same leaf. */
-export function pathSimilarity(a: string, b: string): number {
+export function pathSimilarity(rawA: string, rawB: string): number {
+  // Compare normalized names so that `space-sm`, `space.sm` and `spaceSm` segment the same way.
+  const a = normalizeName(rawA) || rawA
+  const b = normalizeName(rawB) || rawB
   const sa = new Set(a.split('.'))
   const sb = new Set(b.split('.'))
   const inter = [...sa].filter((s) => sb.has(s)).length
