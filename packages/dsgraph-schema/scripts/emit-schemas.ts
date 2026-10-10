@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { Changeset, Snapshot } from '../src/types.ts'
+import { Changeset, Config, Snapshot } from '../src/types.ts'
 
 const out = join(dirname(fileURLToPath(import.meta.url)), '..', 'schemas')
 mkdirSync(out, { recursive: true })
@@ -13,4 +13,5 @@ const emit = (name: string, schema: object) =>
   )
 emit('snapshot', Snapshot)
 emit('changeset', Changeset)
+emit('config', Config)
 console.log(`schemas written to ${out}`)
