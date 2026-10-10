@@ -1,0 +1,113 @@
+---
+import core from '../../../../packages/dsgraph-core/package.json'
+import '../styles/global.css'
+
+interface Props {
+  title: string
+  description: string
+  path: string
+}
+const { title, description, path } = Astro.props
+const nav = [
+  { href: '/tools/diff', label: 'Token Diff' },
+  { href: '/tools/diff/guide', label: 'Guide' },
+  { href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme', label: 'CLI' },
+  { href: 'https://github.com/specsure/specsure', label: 'GitHub' },
+]
+const points = [
+  'Compares two versions of design tokens: DTCG, resolver documents and CSS custom properties',
+  'Shows what breaks, theme by theme, and suggests the semver bump',
+  'Reads npm packages, GitHub repositories or your own files',
+  'Exports Markdown for changelogs and pull requests, and a card for posts',
+  'Runs entirely in your browser: no sign-up, nothing is uploaded',
+  'Open source under MIT; the engine is published as dsgraph',
+]
+const year = new Date().getFullYear()
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(path, Astro.site)} />
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f2f2f5" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="/">
+        <svg class="mark" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor"></rect>
+          <rect class="mark__after" x="10" y="16.5" width="20" height="10.5" rx="5.25"></rect>
+        </svg>
+        Specsure
+      </a>
+      <nav class="site-nav">
+        {nav.map((n) => (
+          <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>
+        ))}
+        <button type="button" class="nav-button" data-about-open>About</button>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <dialog class="about" id="about" aria-label="About Specsure">
+      <header class="about__head">
+        <svg class="mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor"></rect>
+          <rect class="mark__after" x="10" y="16.5" width="20" height="10.5" rx="5.25"></rect>
+        </svg>
+        <h2>Specsure</h2>
+        <form method="dialog">
+          <button class="ghost" aria-label="Close">✕</button>
+        </form>
+      </header>
+      <div class="about__body">
+        <p class="about__lead">
+          Tools for design systems. Token Diff shows what changed between two versions of your tokens,
+          what breaks and which version to release.
+        </p>
+        <ul class="about__list">
+          {points.map((p) => (
+            <li>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              {p}
+            </li>
+          ))}
+        </ul>
+        <p class="about__soon"><span class="tag tag--soon">Soon</span> Figma plugin: check variables and styles against your tokens, inside Figma.</p>
+        <p class="about__links">
+          <a href="/tools/diff/guide">Read the guide</a>
+          <a href="https://github.com/specsure/specsure">Source on GitHub</a>
+        </p>
+        <div class="about__foot">
+          <span>Made by <a href="https://adamreznik.com" target="_blank" rel="noopener noreferrer">Adam Reznik</a></span>
+          <span class="muted">© {year} Adam Reznik · dsgraph {core.version}</span>
+          <span class="muted">Package and design-system names belong to their owners. Specsure is not affiliated with them.</span>
+        </div>
+      </div>
+    </dialog>
+    <script>
+      const about = document.getElementById('about') as HTMLDialogElement | null
+      for (const b of document.querySelectorAll('[data-about-open]'))
+        b.addEventListener('click', () => about?.showModal())
+      about?.addEventListener('click', (e) => {
+        if (e.target === about) about.close()
+      })
+    </script>
+    <footer class="site-footer">
+      <span>Specsure, MIT license</span>
+      <a href="https://github.com/specsure/specsure">Source</a>
+    </footer>
+  </body>
+</html>
