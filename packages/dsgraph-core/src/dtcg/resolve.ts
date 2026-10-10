@@ -2,7 +2,7 @@ import type { Deprecated, Group, Origin, Ref, TypeSource } from '@dsgraph/schema
 import type { DiagnosticBag } from '../diagnostics.js'
 import { isPlainObject, tokenId } from '../path.js'
 import { getAt, parsePointer, toPointer } from '../pointer.js'
-import { canonicalValue, STANDARD_TYPES } from '../values/canonical.js'
+import { canonicalValue, INTERNAL_TYPES, STANDARD_TYPES } from '../values/canonical.js'
 import type { ValueContext } from '../values/context.js'
 import type { FlatDoc, RawToken } from './flatten.js'
 import { parseExtendsTarget } from './merge.js'
@@ -27,6 +27,7 @@ export interface ResolvedToken {
 
 export interface ResolveOptions {
   strict: boolean
+  allowNonstandardUnits?: boolean
 }
 
 export interface ResolvedDoc {
@@ -84,7 +85,10 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
     if (!t) return { type: null, source: null }
     let result: { type: string | null; source: TypeSource | null } = { type: null, source: null }
     if (typeof t.node.$type === 'string') {
-      result = { type: t.node.$type, source: 'explicit' }
+      const inferred = (t.node.$extensions as Record<string, { typeInferred?: boolean }> | undefined)?.[
+        'dev.dsgraph'
+      ]?.typeInferred
+      result = { type: t.node.$type, source: inferred ? 'inferred' : 'explicit' }
     } else {
       const ref = parseRef(t.node.$value, t)
       if (ref && !ref.path && doc.tokens.has(ref.id) && !stack.includes(ref.id)) {
@@ -205,7 +209,7 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
     const flags = new Set(t.flags)
     const { type, source } = typeOf(id)
     if (!type) diag.error('dtcg/untyped', `Token "${id}" has no $type and none can be inherited`, loc(t))
-    else if (!STANDARD_TYPES.has(type)) {
+    else if (!STANDARD_TYPES.has(type) && !INTERNAL_TYPES.has(type)) {
       if (opts.strict) diag.error('dtcg/unknown-type', `"${type}" is not a DTCG 2025.10 type`, loc(t))
       else diag.warn('dtcg/unknown-type', `"${type}" is not a DTCG 2025.10 type`, loc(t))
       flags.add('nonstandard-type')
@@ -231,12 +235,27 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
 
     let value: unknown = null
     if (type && resolved.ok) {
-      const ctx: ValueContext = { strict: opts.strict, diag, loc: loc(t), flags }
+      const ctx: ValueContext = {
+        strict: opts.strict,
+        allowNonstandardUnits: opts.allowNonstandardUnits ?? false,
+        diag,
+        loc: loc(t),
+        flags,
+      }
       const v = canonicalValue(type, resolved.value, ctx)
       value = v === undefined ? null : v
     } else if (!resolved.ok) {
       flags.add('unresolved')
     }
+
+    // CSS expressions keep their text; references inside them still count as edges.
+    if (type === 'css-expression' && typeof t.node.$value === 'string') {
+      for (const m of t.node.$value.matchAll(/var\(\s*--([\w-]+)/g)) {
+        const to = m[1]!
+        if (doc.tokens.has(to) && !resolved.refs.some((r) => r.to === to)) resolved.refs.push({ to })
+      }
+    }
+    if (source === 'inferred') flags.add('type-inferred')
 
     const token: ResolvedToken = {
       id,
