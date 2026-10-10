@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Config",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "extends": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolver": {
+          "type": "string"
+        },
+        "order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "strict": {
+          "type": "boolean"
+        }
+      }
+    },
+    "css": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "contexts": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "remBase": {
+          "type": "number"
+        }
+      }
+    },
+    "layers": {
+      "type": "object",
+      "patternProperties": {
+        "^(.*)$": {
+          "type": "object",
+          "required": [
+            "match"
+          ],
+          "properties": {
+            "match": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "public": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "contexts": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "type": "string"
+            }
+          }
+        },
+        "maxPermutations": {
+          "type": "integer"
+        }
+      }
+    },
+    "compare": {
+      "type": "object",
+      "properties": {
+        "equalDeltaE": {
+          "type": "number"
+        },
+        "ignoreExtensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "renames": {
+      "type": "object",
+      "patternProperties": {
+        "^(.*)$": {
+          "type": "string"
+        }
+      }
+    },
+    "semver": {
+      "type": "object",
+      "properties": {
+        "levels": {
+          "type": "object",
+          "patternProperties": {
+            "^(.*)$": {
+              "anyOf": [
+                {
+                  "const": "major",
+                  "type": "string"
+                },
+                {
+                  "const": "minor",
+                  "type": "string"
+                },
+                {
+                  "const": "patch",
+                  "type": "string"
+                },
+                {
+                  "const": "none",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        "imperceptible": {
+          "type": "object",
+          "properties": {
+            "deltaE": {
+              "type": "number"
+            },
+            "px": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "patternProperties": {
+        "^(.*)$": {
+          "anyOf": [
+            {
+              "const": "off",
+              "type": "string"
+            },
+            {
+              "anyOf": [
+                {
+                  "const": "error",
+                  "type": "string"
+                },
+                {
+                  "const": "warning",
+                  "type": "string"
+                },
+                {
+                  "const": "info",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "anyOf": [
+                    {
+                      "const": "off",
+                      "type": "string"
+                    },
+                    {
+                      "anyOf": [
+                        {
+                          "const": "error",
+                          "type": "string"
+                        },
+                        {
+                          "const": "warning",
+                          "type": "string"
+                        },
+                        {
+                          "const": "info",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                }
+              ],
+              "additionalItems": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        }
+      }
+    }
+  }
+}
