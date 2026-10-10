@@ -13,7 +13,12 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 - **Snapshots** — a canonical, hashed, schema-validated JSON of the resolved system. Values are stored only per modifier that actually influences a token.
 - **Diff** — added, removed, renamed (with confidence), value changes per context (direct vs propagated, with cause), notation-only changes, alias retargeting, deprecations, context and modifier changes.
 - **Semver** — a suggested bump from the consumer's point of view, configurable, with non-public layers.
-- **Sources** — in-memory, Node file system, and any npm package through jsDelivr.
+- **CSS custom properties** as a token source: themes from `[data-theme]`, `.dark` and `prefers-color-scheme`, other media queries as modifiers, inferred types.
+- **Rules** — deprecated references, naming collisions, hex mismatches, gamut, palette ramps, contrast matrix, layer rules; presets by architecture pattern.
+- **Reports** — text, Markdown (for PR comments) and JSON; repeated findings are collapsed into one line per kind.
+- **CLI** — `dsgraph scan | check | diff` over folders, files, npm packages, GitHub repositories and saved snapshots.
+- **Sources** — in-memory, Node file system, any npm package through jsDelivr, any GitHub repository at a ref.
+- **Token Diff** — the same engine on the web ([`apps/web`](apps/web)): drop files or pick an npm package, filter by theme, copy Markdown, export a card for a post.
 
 ## Packages
 
@@ -21,11 +26,22 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 |---|---|
 | [`@dsgraph/schema`](packages/dsgraph-schema) | Types, JSON Schemas, canonical JSON and hashing |
 | [`@dsgraph/core`](packages/dsgraph-core) | Parsing, resolution, values, snapshots, graph queries, diff, semver |
-| [`@dsgraph/sources`](packages/dsgraph-sources) | Virtual file systems: memory, npm (jsDelivr), Node |
+| [`@dsgraph/sources`](packages/dsgraph-sources) | Virtual file systems: memory, npm (jsDelivr), GitHub, Node |
+| [`@dsgraph/adapters`](packages/dsgraph-adapters) | CSS custom properties → tokens |
+| [`@dsgraph/rules`](packages/dsgraph-rules) | Rule engine, built-in rules, presets |
+| [`@dsgraph/report`](packages/dsgraph-report) | Text, Markdown and JSON formatters |
+| [`dsgraph`](packages/dsgraph-cli) | CLI |
 
-All packages are isomorphic except `@dsgraph/sources/node`.
+All packages are isomorphic except `@dsgraph/sources/node` and the CLI.
 
-## Example
+## CLI
+
+```bash
+npx dsgraph diff npm:@acme/tokens@1 npm:@acme/tokens@2 --format markdown
+npx dsgraph check ./tokens --strict
+```
+
+## Library
 
 ```ts
 import { DsGraph, diff, scan } from '@dsgraph/core'
@@ -55,6 +71,7 @@ npm install
 npm run build
 npm test
 npm run lint
+npm run web:dev     # the site with Token Diff at http://localhost:4321/tools/diff
 ```
 
 Network tests (jsDelivr) are opt-in: `DSGRAPH_NETWORK_TESTS=1 npm test`.
