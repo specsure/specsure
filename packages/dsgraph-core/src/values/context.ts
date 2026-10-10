@@ -4,6 +4,8 @@ import type { DiagnosticBag } from '../diagnostics.js'
 /** Context passed to value canonicalizers. */
 export interface ValueContext {
   strict: boolean
+  /** CSS sources: units beyond px/rem are native there, flag them without a diagnostic. */
+  allowNonstandardUnits?: boolean
   diag: DiagnosticBag
   loc?: Loc
   flags: Set<string>
