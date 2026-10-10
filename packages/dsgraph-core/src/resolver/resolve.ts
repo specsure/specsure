@@ -13,6 +13,7 @@ export interface SystemResolver {
 
 /** Caches flattened documents across inputs. */
 export function createResolver(system: TokenSystem, opts: { strict: boolean }): SystemResolver {
+  const resolveOpts = { strict: opts.strict, allowNonstandardUnits: system.kind === 'css' }
   const parseDiagnostics = new DiagnosticBag()
   const flat = new Map<TokenDocument, FlatDoc>()
   const flatten = (d: TokenDocument): FlatDoc => {
@@ -28,7 +29,7 @@ export function createResolver(system: TokenSystem, opts: { strict: boolean }): 
     resolve(input, diag) {
       const merged = mergeDocs(selectDocuments(system, input).map(flatten), diag)
       expandExtends(merged, diag)
-      return resolveDoc(merged, diag, opts)
+      return resolveDoc(merged, diag, resolveOpts)
     },
   }
 }
