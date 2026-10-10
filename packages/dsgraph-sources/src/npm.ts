@@ -69,3 +69,20 @@ export class NpmSource implements Source {
     return { kind: 'npm', package: this.pkg, version: await this.resolveVersion() }
   }
 }
+
+export interface NpmVersions {
+  /** Newest first, as jsDelivr lists them. */
+  versions: string[]
+  tags: Record<string, string>
+}
+
+/** Published versions and dist-tags of a package (jsDelivr; works in the browser). */
+export async function npmVersions(pkg: string, opts: NpmSourceOptions = {}): Promise<NpmVersions> {
+  const fetchImpl = opts.fetch ?? globalThis.fetch.bind(globalThis)
+  const url = `${opts.dataApi ?? 'https://data.jsdelivr.com/v1'}/packages/npm/${pkg}`
+  const res = await fetchImpl(url)
+  if (res.status === 404) throw new Error(`Package "${pkg}" not found`)
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`)
+  const data = (await res.json()) as { versions?: Array<{ version: string }>; tags?: Record<string, string> }
+  return { versions: (data.versions ?? []).map((v) => v.version), tags: data.tags ?? {} }
+}
