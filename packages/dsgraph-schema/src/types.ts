@@ -251,3 +251,79 @@ export const Changeset = T.Object(
   { $id: 'Changeset' },
 )
 export type Changeset = Static<typeof Changeset>
+
+/** A rule result (spec section 7.4). Diagnostics from parsing are reported as findings too. */
+export const Finding = T.Object(
+  {
+    id: T.String(),
+    rule: T.String(),
+    severity: Severity,
+    message: T.String(),
+    /** Ids of the nodes involved (tokens, groups). */
+    nodes: T.Array(T.String()),
+    /** What makes this a finding: values, paths in the graph. */
+    evidence: T.Optional(T.Record(T.String(), T.Unknown())),
+    when: T.Optional(When),
+    loc: T.Optional(Loc),
+  },
+  { $id: 'Finding' },
+)
+export type Finding = Static<typeof Finding>
+
+export const RuleSetting = T.Union([
+  T.Literal('off'),
+  Severity,
+  T.Tuple([T.Union([T.Literal('off'), Severity]), T.Record(T.String(), T.Unknown())]),
+])
+export type RuleSetting = Static<typeof RuleSetting>
+
+export const CONFIG_SCHEMA = 'dsgraph/config@1'
+
+/** `dsgraph.config.json` (spec section 7.3). Every section is optional; auto-detection fills the rest. */
+export const Config = T.Object(
+  {
+    $schema: T.Optional(T.String()),
+    extends: T.Optional(T.Array(T.String())),
+    tokens: T.Optional(
+      T.Object({
+        include: T.Optional(T.Array(T.String())),
+        exclude: T.Optional(T.Array(T.String())),
+        resolver: T.Optional(T.String()),
+        order: T.Optional(T.Array(T.String())),
+        strict: T.Optional(T.Boolean()),
+      }),
+    ),
+    css: T.Optional(
+      T.Object({
+        include: T.Optional(T.Array(T.String())),
+        exclude: T.Optional(T.Array(T.String())),
+        prefix: T.Optional(T.String()),
+        /** modifier → context → selectors (`:root`, `[data-theme=dark]`, `@media (prefers-color-scheme: dark)`). */
+        contexts: T.Optional(T.Record(T.String(), T.Record(T.String(), T.Array(T.String())))),
+        remBase: T.Optional(T.Number()),
+      }),
+    ),
+    layers: T.Optional(
+      T.Record(T.String(), T.Object({ match: T.Array(T.String()), public: T.Optional(T.Boolean()) })),
+    ),
+    contexts: T.Optional(
+      T.Object({
+        default: T.Optional(T.Record(T.String(), T.String())),
+        maxPermutations: T.Optional(T.Integer()),
+      }),
+    ),
+    compare: T.Optional(
+      T.Object({ equalDeltaE: T.Optional(T.Number()), ignoreExtensions: T.Optional(T.Array(T.String())) }),
+    ),
+    renames: T.Optional(T.Record(T.String(), T.String())),
+    semver: T.Optional(
+      T.Object({
+        levels: T.Optional(T.Record(T.String(), Level)),
+        imperceptible: T.Optional(T.Object({ deltaE: T.Optional(T.Number()), px: T.Optional(T.Number()) })),
+      }),
+    ),
+    rules: T.Optional(T.Record(T.String(), RuleSetting)),
+  },
+  { $id: 'Config' },
+)
+export type Config = Static<typeof Config>
