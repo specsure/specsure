@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DsGraph, scan } from '@dsgraph/core'
 import { afterAll, describe, expect, it } from 'vitest'
-import { MemorySource, NpmSource } from '../src/index.js'
+import { GitHubSource, MemorySource, NpmSource } from '../src/index.js'
 import { NodeFsSource } from '../src/node.js'
 
 describe('MemorySource', () => {
@@ -44,5 +44,17 @@ describe.runIf(process.env.DSGRAPH_NETWORK_TESTS === '1')('NpmSource (network)',
     expect(files.length).toBeGreaterThan(0)
     expect((await s.readText(files[0]!)).length).toBeGreaterThan(0)
     expect(await s.meta()).toEqual({ kind: 'npm', package: 'open-props', version })
+  }, 30000)
+})
+
+describe.runIf(process.env.DSGRAPH_NETWORK_TESTS === '1')('GitHubSource (network)', () => {
+  it('lists a public repository at a branch, pins the commit and reads files under a root', async () => {
+    const s = new GitHubSource('specsure/specsure', 'main', { root: 'packages' })
+    const files = await s.list('*/package.json')
+    expect(files).toContain('dsgraph-core/package.json')
+    expect(JSON.parse(await s.readText('dsgraph-core/package.json')).name).toBe('@dsgraph/core')
+    const meta = await s.meta()
+    expect(meta).toMatchObject({ kind: 'github', repo: 'specsure/specsure', ref: 'main', path: 'packages' })
+    expect(meta.commit).toMatch(/^[0-9a-f]{40}$/)
   }, 30000)
 })
