@@ -1,0 +1,176 @@
+/*
+ * Specsure tokens. The base comes from the Mockplate design system on purpose: same family,
+ * same neutrals, type scale, radii and spacing. The accent is red, as in Raycast, and stays on
+ * interaction and brand (focus, selection, loading, the mark); content color is semantic only. Dark is the primary theme on bare :root;
+ * light applies under prefers-color-scheme: light (unless data-theme="dark") and data-theme="light".
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --chrome: #0c0c0e;
+  --dot: #ffffff0f;
+  --panel: #111113;
+  --raised: #18181b;
+  --field: #1e1e22;
+  --hover: #26262b;
+  --active: #2e2e34;
+  --line: #222227;
+  --line-strong: #36363d;
+  --hairline: #ffffff17;
+  --highlight: #ffffff0d;
+  --glass: #111113c2;
+
+  /* Text and accent */
+  --ink: #ededf0;
+  --ink-2: #a8a8b0;
+  --ink-3: #8b8b94;
+  --accent: #ff6363;
+  --accent-fill: #ff6363;
+  --on-accent: #ffffff;
+  --accent-soft: #ff63631f;
+  --primary: #ededf0;
+  --on-primary: #0c0c0e;
+
+  /* Semantics */
+  --danger: #ff6369;
+  --warning: #f5a524;
+  --success: #3dd68c;
+  --danger-soft: #ff636924;
+  --warning-soft: #f5a52424;
+  --success-soft: #3dd68c1f;
+
+  /* Domain: impact of a change (semver level) */
+  --level-major: var(--danger);
+  --level-minor: var(--warning);
+  --level-patch: var(--ink-2);
+  --level-none: var(--ink-3);
+
+  /* Elevation */
+  --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -12px #00000099;
+  --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #000000b3;
+
+  /* Type */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --text-caption: 500 11px / 14px var(--font-ui);
+  --text-label: 400 12px / 16px var(--font-ui);
+  --text-body: 400 13px / 18px var(--font-ui);
+  --text-body-strong: 500 13px / 18px var(--font-ui);
+  --text-title-s: 600 15px / 20px var(--font-ui);
+  --text-title-m: 600 20px / 26px var(--font-ui);
+  --text-title-l: 600 28px / 34px var(--font-ui);
+  --text-display: 600 40px / 44px var(--font-ui);
+  --text-code: 500 12px / 16px var(--font-mono);
+  --tracking-caption: 0.02em;
+  --tracking-title-m: -0.01em;
+  --tracking-title-l: -0.02em;
+  --tracking-display: -0.025em;
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Control sizes */
+  --size-xs: 20px;
+  --size-sm: 24px;
+  --size-md: 28px;
+  --size-lg: 32px;
+  --size-xl: 40px;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --dur-instant: 80ms;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --page-w: 1120px;
+  --header-h: 52px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --chrome: #f2f2f5;
+    --dot: #00000012;
+    --panel: #ffffff;
+    --raised: #ffffff;
+    --field: #f1f1f4;
+    --hover: #eaeaee;
+    --active: #e2e2e8;
+    --line: #e4e4e9;
+    --line-strong: #cfcfd6;
+    --hairline: #00000014;
+    --highlight: #ffffff;
+    --glass: #ffffffc7;
+    --ink: #18181b;
+    --ink-2: #52525b;
+    --ink-3: #6a6a74;
+    --accent: #d93a3f;
+    --accent-fill: #e5484d;
+    --accent-soft: #e5484d14;
+    --primary: #18181b;
+    --on-primary: #ffffff;
+    --danger: #cc2d33;
+    --warning: #a35f00;
+    --success: #16803f;
+    --danger-soft: #cc2d3314;
+    --warning-soft: #a35f0014;
+    --success-soft: #16803f14;
+    --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -16px #00000029;
+    --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #00000038;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --chrome: #f2f2f5;
+  --dot: #00000012;
+  --panel: #ffffff;
+  --raised: #ffffff;
+  --field: #f1f1f4;
+  --hover: #eaeaee;
+  --active: #e2e2e8;
+  --line: #e4e4e9;
+  --line-strong: #cfcfd6;
+  --hairline: #00000014;
+  --highlight: #ffffff;
+  --glass: #ffffffc7;
+  --ink: #18181b;
+  --ink-2: #52525b;
+  --ink-3: #6a6a74;
+  --accent: #d93a3f;
+  --accent-fill: #e5484d;
+  --accent-soft: #e5484d14;
+  --primary: #18181b;
+  --on-primary: #ffffff;
+  --danger: #cc2d33;
+  --warning: #a35f00;
+  --success: #16803f;
+  --danger-soft: #cc2d3314;
+  --warning-soft: #a35f0014;
+  --success-soft: #16803f14;
+  --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -16px #00000029;
+  --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #00000038;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-base: 120ms;
+  }
+}
