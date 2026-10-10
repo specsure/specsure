@@ -1,0 +1,24 @@
+{
+  "name": "dsgraph",
+  "version": "0.1.0-alpha.0",
+  "description": "dsgraph CLI: scan, check and diff design tokens (DTCG 2025.10, CSS custom properties) from folders, npm and GitHub.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "dsgraph": "./dist/cli.js" },
+  "exports": {
+    ".": { "types": "./dist/main.d.ts", "default": "./dist/main.js" }
+  },
+  "files": ["dist"],
+  "repository": { "type": "git", "url": "git+https://github.com/specsure/specsure.git", "directory": "packages/dsgraph-cli" },
+  "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme",
+  "bugs": { "url": "https://github.com/specsure/specsure/issues" },
+  "keywords": ["design-tokens", "dtcg", "design-system", "cli", "diff", "semver"],
+  "engines": { "node": ">=20.19" },
+  "dependencies": {
+    "@dsgraph/adapters": "0.1.0-alpha.0",
+    "@dsgraph/core": "0.1.0-alpha.0",
+    "@dsgraph/report": "0.1.0-alpha.0",
+    "@dsgraph/rules": "0.1.0-alpha.0",
+    "@dsgraph/sources": "0.1.0-alpha.0"
+  }
+}
