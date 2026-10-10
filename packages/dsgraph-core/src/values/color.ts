@@ -103,6 +103,20 @@ export function deltaEOK(a: ColorValue, b: ColorValue): number {
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2) * 100
 }
 
+/** Parses any CSS Color 4 string into a DTCG 2025.10 color object; undefined if not a color. */
+export function cssColorToDtcg(css: string): Record<string, unknown> | undefined {
+  const parsed = parse(css.trim())
+  if (!parsed) return undefined
+  const c = fromCulori(parsed)
+  const out: Record<string, unknown> = {
+    colorSpace: c.space,
+    components: c.components.map((v) => (v === null ? 'none' : v)),
+  }
+  if (c.alpha !== 1) out.alpha = c.alpha
+  if (c.hex) out.hex = c.hex
+  return out
+}
+
 export function canonicalColor(raw: unknown, ctx: ValueContext): ColorValue | undefined {
   if (typeof raw === 'string') {
     const parsed = parse(raw)
