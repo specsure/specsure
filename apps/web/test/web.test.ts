@@ -1,0 +1,141 @@
+import { groupFindings } from '@dsgraph/report'
+import { describe, expect, it } from 'vitest'
+import { defaultVersions } from '../src/components/SidePicker'
+import { compare, configFor } from '../src/lib/compare'
+import { EXAMPLE, LEGACY_EXAMPLE } from '../src/lib/example'
+import { packFiles, readUrl, unpackFiles, writeUrl } from '../src/lib/url'
+import { colorPairs, contextAxes, inContext, view } from '../src/lib/view'
+
+describe('compare', () => {
+  it('diffs the example: removal, rename, theme-only change, checks on the head', async () => {
+    const r = await compare({
+      id: 1,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+    })
+    if (!r.ok) throw new Error(r.error)
+    expect(r.changeset.summary.level).toBe('major')
+    const kinds = r.changeset.changes.map((c) => `${c.kind} ${c.target}`)
+    expect(kinds).toContain('token.removed color-danger')
+    expect(kinds).toContain('token.renamed space-small')
+    expect(r.base.files).toEqual(['tokens.css'])
+    expect(r.head.modifiers).toEqual([{ name: 'theme', contexts: ['default', 'dark'] }])
+    expect(contextAxes(r.changeset)).toEqual([{ name: 'theme', values: ['default', 'dark'] }])
+    expect(colorPairs(r.changeset).map((p) => p.target)).toContain('color-blue-500')
+
+    const types = new Map(r.types)
+    const filter = { levels: ['major', 'minor', 'patch', 'none'] as const, types: [], query: '' }
+    const dark = view(r.changeset, types, {
+      ...filter,
+      levels: [...filter.levels],
+      context: { theme: 'dark' },
+    })
+    const light = view(r.changeset, types, {
+      ...filter,
+      levels: [...filter.levels],
+      context: { theme: 'default' },
+    })
+    expect(dark.shown.map((c) => c.target)).toContain('color-accent')
+    expect(light.shown.map((c) => c.target)).not.toContain('color-accent')
+  })
+
+  it('names the side that failed', async () => {
+    const r = await compare({
+      id: 2,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: [] },
+      include: '',
+    })
+    expect(r).toMatchObject({ ok: false, side: 'head' })
+  })
+
+  it('splits file globs between DTCG and CSS', () => {
+    expect(configFor('dist/tokens.css, tokens/**/*.json')).toEqual({
+      tokens: { include: ['tokens/**/*.json'] },
+      css: { include: ['dist/tokens.css'] },
+    })
+    expect(configFor('')).toEqual({})
+  })
+})
+
+describe('guide figures', () => {
+  // The captions in guide.mdx describe these results; keep them true.
+  it('finds legacy strings and a broken reference in the checks example, grouped', async () => {
+    const side = { kind: 'files' as const, files: LEGACY_EXAMPLE }
+    const r = await compare({ id: 3, base: side, head: side, include: '' })
+    if (!r.ok) throw new Error(r.error)
+    const groups = groupFindings(r.findings).map((g) => [g.rule, g.findings.length])
+    expect(groups).toContainEqual(['dtcg/unknown-reference', 1])
+    expect(groups).toContainEqual(['dtcg/legacy-syntax', 5])
+    expect(groups).toContainEqual(['dtcg/legacy-syntax', 3])
+  })
+
+  it('the example has color-accent changed only in dark and through color-blue-500 elsewhere', async () => {
+    const r = await compare({
+      id: 4,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+    })
+    if (!r.ok) throw new Error(r.error)
+    const direct = r.changeset.changes.filter((c) => c.target === 'color-accent' && c.origin === 'direct')
+    expect(direct.map((c) => c.when)).toEqual([{ theme: 'dark' }])
+    const blue = r.changeset.changes.find((c) => c.target === 'color-blue-500')!
+    expect(r.changeset.changes.some((c) => c.target === 'color-accent' && c.cause.includes(blue.id))).toBe(
+      true,
+    )
+  })
+})
+
+describe('view', () => {
+  it('keeps changes that apply to every context or to the selected one', () => {
+    expect(inContext(null, { theme: 'dark' })).toBe(true)
+    expect(inContext({ theme: 'dark' }, { theme: 'dark' })).toBe(true)
+    expect(inContext({ theme: 'light' }, { theme: 'dark' })).toBe(false)
+    expect(inContext({ theme: 'light' }, {})).toBe(true)
+  })
+})
+
+describe('url', () => {
+  it('uses pkg/from/to for two versions of one package', () => {
+    const url = writeUrl(
+      '/tools/diff',
+      {
+        base: { kind: 'npm', pkg: '@acme/tokens', version: '1.0.0' },
+        head: { kind: 'npm', pkg: '@acme/tokens', version: '2.0.0' },
+        include: '',
+        context: { theme: 'dark' },
+      },
+      '',
+    )
+    expect(url).toBe('/tools/diff?pkg=@acme/tokens&from=1.0.0&to=2.0.0&ctx=theme:dark')
+    const back = readUrl(new URL(url, 'https://specsure.app'))
+    expect(back.base).toEqual({ kind: 'npm', pkg: '@acme/tokens', version: '1.0.0' })
+    expect(back.context).toEqual({ theme: 'dark' })
+  })
+
+  it('writes base/head specs for mixed sources and round-trips files through the fragment', async () => {
+    const url = writeUrl('/d', {
+      base: { kind: 'github', repo: 'acme/ds', root: 'tokens', ref: 'v1' },
+      head: { kind: 'npm', pkg: 'acme-tokens', version: '2.0.0' },
+      include: 'dist/*.css',
+      context: {},
+    })
+    expect(url).toBe('/d?base=github:acme/ds/tokens@v1&head=npm:acme-tokens@2.0.0&files=dist/*.css')
+    const frag = await packFiles({ base: EXAMPLE.base })
+    expect(await unpackFiles(`#${frag}`)).toEqual({ base: EXAMPLE.base })
+  })
+})
+
+describe('versions', () => {
+  it('defaults to the latest release and the stable one before it', () => {
+    expect(
+      defaultVersions({ versions: ['3.0.0-beta.1', '2.1.0', '2.0.1', '2.0.0'], tags: { latest: '2.1.0' } }),
+    ).toEqual({ base: '2.0.1', head: '2.1.0' })
+    expect(defaultVersions({ versions: ['1.0.0'], tags: { latest: '1.0.0' } })).toEqual({
+      base: '1.0.0',
+      head: '1.0.0',
+    })
+  })
+})
