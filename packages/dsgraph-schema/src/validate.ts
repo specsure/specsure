@@ -1,6 +1,6 @@
 import type { TSchema } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
-import { Changeset, Snapshot } from './types.js'
+import { Changeset, Config, Snapshot } from './types.js'
 
 export interface ValidationResult {
   ok: boolean
@@ -18,3 +18,4 @@ function validate(schema: TSchema, value: unknown): ValidationResult {
 
 export const validateSnapshot = (value: unknown) => validate(Snapshot, value)
 export const validateChangeset = (value: unknown) => validate(Changeset, value)
+export const validateConfig = (value: unknown) => validate(Config, value)
