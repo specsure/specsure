@@ -1,39 +1,46 @@
-import type { Snapshot } from '@dsgraph/schema'
+import type { Config, Snapshot } from '@dsgraph/schema'
 import { DiagnosticBag } from './diagnostics.js'
 import { parseJsonLenient } from './json.js'
 import { matchGlob } from './path.js'
 import {
-  type Input,
   systemFromDocuments,
   systemFromResolver,
   type TokenDocument,
   type TokenSystem,
 } from './resolver/system.js'
-import { buildSnapshot, type LayerConfig } from './snapshot.js'
+import { buildSnapshot } from './snapshot.js'
 import type { Source } from './source.js'
 
-export interface ScanConfig {
-  tokens?: {
-    include?: string[]
-    exclude?: string[]
-    /** Path to a `*.resolver.json`; auto-detected when omitted. */
-    resolver?: string
-    /** Glob order for plain token files (later wins on conflicts). */
-    order?: string[]
-    strict?: boolean
-  }
-  layers?: Record<string, LayerConfig>
-  contexts?: { default?: Input; maxPermutations?: number }
+/** The scan part of `dsgraph.config.json`. */
+export type ScanConfig = Config
+
+/**
+ * An adapter that turns non-DTCG token sources (CSS custom properties, Tokens Studio…) into a
+ * token system. Adapters never resolve references; the core does (spec section 4.2).
+ */
+export interface TokenAdapter {
+  readonly name: string
+  /** Files this adapter would read; empty when it does not apply. */
+  detect(source: Source, config: ScanConfig): Promise<string[]>
+  load(source: Source, files: string[], config: ScanConfig, diag: DiagnosticBag): Promise<TokenSystem>
+}
+
+export interface ScanOptions {
+  adapters?: readonly TokenAdapter[]
 }
 
 const DEFAULT_INCLUDE = ['**/*.tokens.json', '**/*.tokens']
-const DEFAULT_EXCLUDE = ['**/node_modules/**', '**/dist/**', '**/.git/**']
+export const DEFAULT_EXCLUDE = ['**/node_modules/**', '**/dist/**', '**/.git/**']
 
-/** Loads a token system from a source: a resolver document if present, otherwise token files. */
+/**
+ * Loads a token system. Precedence: a resolver document, then DTCG token files, then adapters.
+ * When only `css` is configured, adapters come before DTCG files.
+ */
 export async function loadSystem(
   source: Source,
   config: ScanConfig,
   diag: DiagnosticBag,
+  opts: ScanOptions = {},
 ): Promise<TokenSystem> {
   const exclude = [...DEFAULT_EXCLUDE, ...(config.tokens?.exclude ?? [])]
   const notExcluded = (p: string) => !matchGlob(p, exclude)
@@ -42,6 +49,13 @@ export async function loadSystem(
     if (lenient)
       diag.info('tokens/non-json', 'File uses JSONC syntax (comments or trailing commas)', { file: path })
     return value
+  }
+  const fromAdapters = async (): Promise<TokenSystem | undefined> => {
+    for (const adapter of opts.adapters ?? []) {
+      const files = await adapter.detect(source, config)
+      if (files.length > 0) return adapter.load(source, files, config, diag)
+    }
+    return undefined
   }
 
   let resolverPath = config.tokens?.resolver
@@ -62,14 +76,23 @@ export async function loadSystem(
     return systemFromResolver(tree, resolverPath, readJson, diag)
   }
 
+  if (config.css && !config.tokens) {
+    const sys = await fromAdapters()
+    if (sys) return sys
+  }
+
   const files = (await source.list(config.tokens?.include ?? DEFAULT_INCLUDE)).filter(notExcluded)
+  if (files.length === 0) {
+    const sys = await fromAdapters()
+    if (sys) return sys
+    diag.warn('tokens/no-files', 'No token files found')
+  }
   const order = config.tokens?.order ?? []
   const rank = (p: string) => {
     const i = order.findIndex((g) => matchGlob(p, g))
     return i < 0 ? order.length : i
   }
   files.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
-  if (files.length === 0) diag.warn('tokens/no-files', 'No token files found')
   const docs: TokenDocument[] = []
   for (const file of files) {
     try {
@@ -82,16 +105,20 @@ export async function loadSystem(
 }
 
 /** Scans a source into a snapshot. */
-export async function scan(source: Source, config: ScanConfig = {}): Promise<Snapshot> {
+export async function scan(
+  source: Source,
+  config: ScanConfig = {},
+  opts: ScanOptions = {},
+): Promise<Snapshot> {
   const diagnostics = new DiagnosticBag()
-  const system = await loadSystem(source, config, diagnostics)
-  const opts: Parameters<typeof buildSnapshot>[1] = {
+  const system = await loadSystem(source, config, diagnostics, opts)
+  const build: Parameters<typeof buildSnapshot>[1] = {
     source: await source.meta(),
     strict: config.tokens?.strict ?? false,
     diagnostics,
   }
-  if (config.layers) opts.layers = config.layers
-  if (config.contexts?.default) opts.defaultInput = config.contexts.default
-  if (config.contexts?.maxPermutations) opts.maxPermutations = config.contexts.maxPermutations
-  return buildSnapshot(system, opts)
+  if (config.layers) build.layers = config.layers
+  if (config.contexts?.default) build.defaultInput = config.contexts.default
+  if (config.contexts?.maxPermutations) build.maxPermutations = config.contexts.maxPermutations
+  return buildSnapshot(system, build)
 }
