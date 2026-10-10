@@ -34,6 +34,10 @@ export function canonicalDimension(raw: unknown, ctx: ValueContext): DimensionVa
     return invalid(ctx, 'dtcg/invalid-dimension', 'Dimension must be an object')
   }
   if (!STANDARD_UNITS.has(value.unit)) {
+    if (ctx.allowNonstandardUnits) {
+      ctx.flags.add('nonstandard-unit')
+      return value
+    }
     if (
       !lenient(
         ctx,
