@@ -22,6 +22,8 @@ export interface TokenSystem {
   order: Array<{ kind: 'set' | 'modifier'; name: string }>
   synthetic: boolean
   file?: string
+  /** Where the tokens come from; CSS allows units beyond px/rem without diagnostics. */
+  kind?: 'dtcg' | 'css'
 }
 
 export type Input = Record<string, string>
