@@ -12,7 +12,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources packages/dsgraph-adapters packages/dsgraph-rules packages/dsgraph-report packages/dsgraph-cli packages/dsgraph-action",
+    "build": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources packages/dsgraph-adapters packages/dsgraph-rules packages/dsgraph-report packages/dsgraph-cli packages/dsgraph-mcp packages/dsgraph-action",
     "typecheck": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources packages/dsgraph-adapters packages/dsgraph-rules packages/dsgraph-report packages/dsgraph-cli --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

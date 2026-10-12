@@ -32,6 +32,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 | [`@dsgraph/rules`](packages/dsgraph-rules) | Rule engine, built-in rules, presets |
 | [`@dsgraph/report`](packages/dsgraph-report) | Text, Markdown and JSON formatters |
 | [`dsgraph`](packages/dsgraph-cli) | CLI |
+| [`@dsgraph/mcp`](packages/dsgraph-mcp) | MCP server: find the token for a value, read tokens, compare versions |
 | [`@dsgraph/action`](packages/dsgraph-action) | GitHub Action, published to [specsure/dsgraph-action](https://github.com/specsure/dsgraph-action) |
 
 All packages are isomorphic except `@dsgraph/sources/node` and the CLI.

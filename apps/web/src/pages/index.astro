@@ -25,6 +25,13 @@ const tools = [
     tag: 'Action',
   },
   {
+    href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-mcp#readme',
+    icon: 'mcp',
+    title: 'MCP server',
+    text: 'Coding agents find the token for a color or size instead of hard-coding it',
+    tag: 'MCP',
+  },
+  {
     href: 'https://github.com/specsure/specsure',
     icon: 'graph',
     title: 'dsgraph',
@@ -140,6 +147,11 @@ const highlight = (code: string) =>
               {t.icon === 'figma' && (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4.5 7.5h11M4.5 12.5h11M7.5 4.5v11M12.5 4.5v11" />
+                </svg>
+              )}
+              {t.icon === 'mcp' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 10h3l2-4 2 8 2-4h3" />
                 </svg>
               )}
               {t.icon === 'action' && (

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "types": ["node"] },
+  "include": ["src"],
+  "references": [
+    { "path": "../dsgraph-core" },
+    { "path": "../dsgraph-adapters" },
+    { "path": "../dsgraph-report" },
+    { "path": "../dsgraph-rules" },
+    { "path": "../dsgraph-cli" }
+  ]
+}
