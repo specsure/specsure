@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/adapters",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Token adapters for dsgraph: Tokens Studio and Style Dictionary JSON, CSS custom properties (themes by selectors and media queries).",
   "license": "MIT",
   "type": "module",
@@ -14,7 +14,7 @@
   "bugs": { "url": "https://github.com/specsure/specsure/issues" },
   "engines": { "node": ">=20.19" },
   "dependencies": {
-    "@dsgraph/core": "0.1.0-alpha.0",
+    "@dsgraph/core": "0.1.0",
     "postcss": "8.5.28"
   }
 }

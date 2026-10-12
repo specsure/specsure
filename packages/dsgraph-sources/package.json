@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/sources",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Virtual file systems for dsgraph: in-memory, npm (jsDelivr) and Node file system.",
   "license": "MIT",
   "type": "module",
@@ -24,7 +24,7 @@
     "directory": "packages/dsgraph-sources"
   },
   "dependencies": {
-    "@dsgraph/core": "0.1.0-alpha.0"
+    "@dsgraph/core": "0.1.0"
   },
   "engines": {
     "node": ">=20.19"

@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/report",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "description": "Formatters for dsgraph changesets and findings: text, Markdown, JSON.",
   "license": "MIT",
   "type": "module",
@@ -14,6 +14,6 @@
   "bugs": { "url": "https://github.com/specsure/specsure/issues" },
   "engines": { "node": ">=20.19" },
   "dependencies": {
-    "@dsgraph/core": "0.1.0-alpha.0"
+    "@dsgraph/core": "0.1.0"
   }
 }
