@@ -1350,11 +1350,8 @@ button.graph__node:hover {
   max-width: 760px;
   margin-bottom: var(--space-12);
 }
-.launcher__head {
-  padding: var(--space-3) var(--space-4) var(--space-1);
-  color: var(--ink-3);
-  font: var(--text-label);
-  font-weight: 500;
+.launcher__row:first-child {
+  margin-top: var(--space-2);
 }
 .launcher__row {
   display: flex;

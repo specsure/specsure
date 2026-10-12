@@ -128,10 +128,6 @@ const highlight = (code: string) =>
   </header>
 
   <nav class="window launcher" aria-label="Tools">
-    <div class="launcher__head">
-      <span>Tools</span>
-      <span class="count">{tools.length}</span>
-    </div>
     {
       tools.map((t, i) => {
         const Tag = t.href ? 'a' : 'div'
