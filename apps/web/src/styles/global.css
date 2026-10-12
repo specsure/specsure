@@ -1349,9 +1349,8 @@ button.graph__node:hover {
 .launcher {
   max-width: 760px;
   margin-bottom: var(--space-12);
-}
-.launcher__row:first-child {
-  margin-top: var(--space-2);
+  /* Padding, not a margin on the first row: a margin would collapse through the window's edge. */
+  padding-top: var(--space-2);
 }
 .launcher__row {
   display: flex;
