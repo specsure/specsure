@@ -36,7 +36,7 @@ function asSnapshot(text: string): Snapshot | undefined {
   }
 }
 
-export async function load(side: SideInput, include: string): Promise<DsGraph> {
+export async function load(side: SideInput, include: string, githubToken?: string): Promise<DsGraph> {
   let source: Source
   let config = configFor(include)
   if (side.kind === 'files') {
@@ -59,7 +59,7 @@ export async function load(side: SideInput, include: string): Promise<DsGraph> {
       if (json.length) config.tokens = { include: json.map((f) => f.path) }
       if (css.length) config.css = { include: css.map((f) => f.path) }
     }
-  } else source = remoteSource(side)
+  } else source = remoteSource(side, side.kind === 'github' && githubToken ? { token: githubToken } : {})
   return DsGraph.from(await scan(source, config, { adapters: [jsonTokens, cssTokens] }))
 }
 
@@ -118,13 +118,16 @@ export async function compare(
   req: RunRequest,
   progress: (stage: string) => void = () => {},
 ): Promise<RunResponse> {
-  const { id, base, head, include } = req
+  const { id, base, head, include, githubToken } = req
   const started = performance.now()
   const loadSide = async (which: 'base' | 'head', side: SideInput) => {
     try {
-      return await load(side, include)
+      return await load(side, include, githubToken)
     } catch (err) {
-      throw Object.assign(new Error((err as Error).message), { side: which })
+      let message = (err as Error).message
+      if (side.kind === 'github' && !githubToken && /\b(401|403|404)\b/.test(message))
+        message += '. If the repository is private, add a GitHub token.'
+      throw Object.assign(new Error(message), { side: which })
     }
   }
   try {

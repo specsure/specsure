@@ -204,6 +204,27 @@ describe('tokens-json: real-world shapes', () => {
   })
 })
 
+describe('modes in separate files', () => {
+  it('reads files with the same tokens side by side as modes of one collection', async () => {
+    const mode = (bg: string, gap: number) =>
+      json({
+        Colors: { bg: { $type: 'color', $value: bg } },
+        Size: { gap: { $type: 'dimension', $value: { value: gap, unit: 'px' } } },
+      })
+    const { snapshot, graph, errors } = await scanFiles({
+      'Theme/Light.tokens.json': mode('#ffffff', 8),
+      'Theme/Dark.tokens.json': mode('#000000', 8),
+      'Primitives.tokens.json': json({ ink: { $type: 'color', $value: '#111111' } }),
+    })
+    expect(errors).toEqual([])
+    expect(snapshot.contexts.modifiers).toEqual([
+      { name: 'theme', contexts: ['Dark', 'Light'], default: 'Light' },
+    ])
+    expect(graph.value('Colors.bg', { theme: 'Dark' })).toMatchObject({ hex: '#000000' })
+    expect(graph.token('ink')).toBeDefined()
+  })
+})
+
 describe('tokens-json: Style Dictionary', () => {
   const sd = {
     'tokens/color/base.json': json({

@@ -36,7 +36,7 @@ Every figure on this page is live: dsgraph runs in your browser on a small examp
 
 1. **Pick the two versions.** For each side, choose one of:
    - **npm:** a package name; the versions load by themselves, and the latest release is compared with the one before it.
-   - **GitHub:** `owner/repo/folder` and a branch, tag or commit. Public repositories only, 60 requests an hour.
+   - **GitHub:** `owner/repo/folder` and a branch, tag or commit. Without a token GitHub allows 60 requests an hour; for a private repository, open **Token** and paste a token with read access. It stays in the tab and never goes into a link.
    - **Files:** drop token files or a whole folder onto the row, or choose them.
 2. **Press Compare** (<kbd>⌘</kbd> <kbd>↵</kbd>).
 3. **Read the result** and export what you need.
@@ -138,4 +138,4 @@ npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on ma
 ## Coming next
 
 - **Figma plugin.** Check Figma variables and styles against your tokens, inside Figma. Soon.
-- Tailwind themes as inputs, private GitHub repositories, and checking your own app for what an upgrade breaks.
+- Tailwind themes as inputs, and checking your own app for what an upgrade breaks.

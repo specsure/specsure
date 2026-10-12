@@ -17,6 +17,7 @@ export default function TokenDiff() {
   const [base, setBase] = useState<SideInput>(emptyNpm)
   const [head, setHead] = useState<SideInput>(emptyNpm)
   const [include, setInclude] = useState('')
+  const [githubToken, setGithubToken] = useState('')
   const [context, setContext] = useState<Record<string, string>>({})
   const [running, setRunning] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -95,12 +96,13 @@ export default function TokenDiff() {
     (b = base, h = head) => {
       if (!worker.current || !ready(b) || !ready(h)) return
       const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include }
+      if (githubToken) req.githubToken = githubToken
       pending.current = req
       setRunning('Starting…')
       setError(null)
       worker.current.postMessage(req)
     },
-    [base, head, include],
+    [base, head, include, githubToken],
   )
 
   // ⌘↵ compares from anywhere on the page.
@@ -193,6 +195,8 @@ export default function TokenDiff() {
           onChange={onBase}
           error={error?.side === 'base' ? error.message : undefined}
           info={result?.base}
+          githubToken={githubToken}
+          onGithubToken={setGithubToken}
         />
         <SidePicker
           side="head"
@@ -200,6 +204,8 @@ export default function TokenDiff() {
           onChange={setHead}
           error={error?.side === 'head' ? error.message : undefined}
           info={result?.head}
+          githubToken={githubToken}
+          onGithubToken={setGithubToken}
         />
         <div className="source source--glob">
           <div className="source__row">

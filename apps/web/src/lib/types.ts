@@ -40,6 +40,8 @@ export interface RunRequest {
   head: SideInput
   /** Glob(s) that pick token files, comma-separated; empty = auto-detect. */
   include: string
+  /** For private GitHub repositories; kept in the tab, never put into links. */
+  githubToken?: string
 }
 
 export type RunResponse =

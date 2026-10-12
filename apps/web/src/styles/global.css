@@ -440,6 +440,16 @@ input.source__input:focus {
 input.accessory {
   width: 120px;
 }
+.source__token {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: 0 0 var(--space-2) calc(52px + var(--space-3));
+}
+.source__token .source__input {
+  flex: 1 1 280px;
+}
 .source__meta {
   padding: 0 0 var(--space-1) calc(52px + var(--space-3));
   overflow: hidden;
@@ -829,6 +839,15 @@ input.accessory {
   padding: var(--space-2) var(--space-4) 0 44px;
   color: var(--ink-2);
   font: var(--text-body);
+}
+.preview__sample {
+  display: flex;
+  align-items: center;
+  min-height: 96px;
+  padding: var(--space-3) var(--space-4);
+  overflow: hidden;
+  color: var(--ink);
+  white-space: nowrap;
 }
 .graph-hint {
   margin: calc(-1 * var(--space-1)) 0 var(--space-2);

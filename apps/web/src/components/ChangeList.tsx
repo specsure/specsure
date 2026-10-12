@@ -167,19 +167,47 @@ export function ChangeRow({ change: c, type, affected, selected, onSelect }: Row
   )
 }
 
+const dim = (d: unknown) =>
+  isObj(d) && typeof d.value === 'number' && typeof d.unit === 'string' ? `${d.value}${d.unit}` : undefined
+const family = (f: unknown) =>
+  Array.isArray(f) ? f.map((x) => (/\s/.test(String(x)) ? `"${x}"` : String(x))).join(', ') : undefined
+
+/** How text in this style looks: typography, a font family or a font weight. */
+function textStyle(type: string | null, v: unknown): React.CSSProperties | undefined {
+  if (type === 'fontFamily') return { fontFamily: family(v) }
+  if (type === 'fontWeight' && typeof v === 'number') return { fontWeight: v }
+  if (type !== 'typography' || !isObj(v)) return undefined
+  const style: React.CSSProperties = {}
+  const ff = family(v.fontFamily)
+  if (ff) style.fontFamily = ff
+  if (typeof v.fontWeight === 'number') style.fontWeight = v.fontWeight
+  const fs = dim(v.fontSize)
+  // Big sizes are capped so that the sample fits the pane; the value is in the caption.
+  if (fs) style.fontSize = `min(${fs}, 40px)`
+  if (typeof v.lineHeight === 'number') style.lineHeight = v.lineHeight
+  const ls = dim(v.letterSpacing)
+  if (ls) style.letterSpacing = ls
+  return style
+}
+
 function Big({ type, side, label }: { type: string | null; side: unknown; label: string }) {
   const v = sideValue(side)
   const alias = aliasOf(side)
+  const text = v === undefined ? undefined : textStyle(type, v)
   return (
     <figure className="preview">
       {isColor(v) ? (
         <span className="preview__swatch" style={{ background: cssColor(v) }} />
+      ) : text ? (
+        <span className="preview__sample" style={text}>
+          Handgloves 0123
+        </span>
       ) : (
         <span className="preview__text">{v === undefined ? (alias ?? '—') : formatValue(type, v)}</span>
       )}
       <figcaption>
         <span className="muted">{label}</span>
-        {isColor(v) && <code>{formatValue(type, v)}</code>}
+        {(isColor(v) || text) && <code>{formatValue(type, v)}</code>}
         {alias && v !== undefined && <code className="muted">{alias}</code>}
       </figcaption>
     </figure>

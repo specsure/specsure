@@ -61,11 +61,15 @@ interface Props {
   onChange: (v: SideInput) => void
   error?: string | undefined
   info?: SideInfo | undefined
+  /** Token for private GitHub repositories, shared by both sides. */
+  githubToken?: string
+  onGithubToken?: (token: string) => void
 }
 
 /** One source row of the input window. Dropping files anywhere on it switches it to files. */
-export function SidePicker({ side, value, onChange, error, info }: Props) {
+export function SidePicker({ side, value, onChange, error, info, githubToken = '', onGithubToken }: Props) {
   const [over, setOver] = useState(false)
+  const [tokenOpen, setTokenOpen] = useState(false)
   const setKind = (kind: Kind) => {
     if (kind === value.kind) return
     if (kind === 'npm') onChange({ kind: 'npm', pkg: '', version: '' })
@@ -122,8 +126,34 @@ export function SidePicker({ side, value, onChange, error, info }: Props) {
           <NpmFields side={side} value={value} onChange={onChange} versions={versions} />
         )}
         {value.kind === 'github' && <GitHubFields value={value} onChange={onChange} />}
+        {value.kind === 'github' && onGithubToken && (
+          <button
+            type="button"
+            className="ghost"
+            aria-expanded={tokenOpen}
+            title="Token for private repositories"
+            onClick={() => setTokenOpen((o) => !o)}
+          >
+            {githubToken ? 'Token ✓' : 'Token'}
+          </button>
+        )}
         {value.kind === 'files' && <FilesField files={value.files} onChange={onChange} />}
       </div>
+      {value.kind === 'github' && onGithubToken && (tokenOpen || (!!error && !githubToken)) && (
+        <div className="source__token">
+          <input
+            className="source__input"
+            type="password"
+            aria-label="GitHub token"
+            value={githubToken}
+            placeholder="GitHub token with read access, for private repositories"
+            spellCheck={false}
+            autoComplete="off"
+            onChange={(e) => onGithubToken(e.target.value.trim())}
+          />
+          <span className="muted small">Kept in this tab only: never saved, never put into links.</span>
+        </div>
+      )}
       {meta && <div className="source__meta">{meta}</div>}
     </div>
   )

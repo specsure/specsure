@@ -122,3 +122,61 @@ export function expandModes(system: TokenSystem, diag: DiagnosticBag): TokenSyst
   }
   return out
 }
+
+const stem = (file: string) =>
+  file.slice(file.lastIndexOf('/') + 1).replace(/\.(tokens\.json|tokens|json5?)$/i, '')
+const dirOf = (file: string) => (file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '')
+
+function tokenIds(tree: unknown, path: string[] = [], out = new Set<string>()): Set<string> {
+  if (!isPlainObject(tree)) return out
+  if (Object.hasOwn(tree, '$value')) out.add(path.join('.'))
+  else for (const [k, v] of Object.entries(tree)) if (!k.startsWith('$')) tokenIds(v, [...path, k], out)
+  return out
+}
+
+/**
+ * Files side by side that define the same tokens are modes of one collection, as Figma exports
+ * write them (`Colors/Light.tokens.json`, `Colors/Dark.tokens.json`): one modifier per folder,
+ * a context per file. Undefined when no folder looks like that.
+ */
+export function systemFromModeFiles(docs: TokenDocument[], diag: DiagnosticBag): TokenSystem | undefined {
+  const byDir = new Map<string, TokenDocument[]>()
+  for (const d of docs) byDir.set(dirOf(d.file), [...(byDir.get(dirOf(d.file)) ?? []), d])
+  const groups: Array<{ dir: string; docs: TokenDocument[] }> = []
+  for (const [dir, list] of byDir) {
+    if (list.length < 2) continue
+    const ids = list.map((d) => tokenIds(d.tree))
+    const first = ids[0]!
+    if (first.size === 0) continue
+    const same = ids.every((s) => {
+      let common = 0
+      for (const id of s) if (first.has(id)) common++
+      return common / (s.size + first.size - common) >= 0.8
+    })
+    if (same) groups.push({ dir, docs: list })
+  }
+  if (!groups.length) return undefined
+  const inGroup = new Set(groups.flatMap((g) => g.docs))
+  const system: TokenSystem = {
+    sets: new Map([['base', docs.filter((d) => !inGroup.has(d))]]),
+    modifiers: new Map(),
+    order: [{ kind: 'set', name: 'base' }],
+    synthetic: true,
+  }
+  for (const g of groups) {
+    const contexts = g.docs.map((d) => stem(d.file))
+    let name = contexts.some((c) => THEME_WORDS.has(c.toLowerCase())) ? 'theme' : stem(g.dir) || 'mode'
+    for (let i = 2; system.modifiers.has(name); i++) name = `${name.replace(/-\d+$/, '')}-${i}`
+    const light = contexts.find((c) => c.toLowerCase() === 'light')
+    system.modifiers.set(name, {
+      contexts: new Map(g.docs.map((d) => [stem(d.file), [d]])),
+      default: light ?? contexts[0]!,
+    })
+    system.order.push({ kind: 'modifier', name })
+    diag.info(
+      'tokens/mode-files',
+      `Files in ${g.dir || 'the root'} are modes of one collection: ${name} (${contexts.join(', ')})`,
+    )
+  }
+  return system
+}

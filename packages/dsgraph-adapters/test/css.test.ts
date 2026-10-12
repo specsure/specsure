@@ -1,7 +1,7 @@
 import { DsGraph, diff, scan } from '@dsgraph/core'
 import { MemorySource } from '@dsgraph/sources'
 import { describe, expect, it } from 'vitest'
-import { cssTokens, cssValueToToken } from '../src/index.js'
+import { conditionName, cssTokens, cssValueToToken } from '../src/index.js'
 
 const css = `
 :root {
@@ -36,6 +36,32 @@ async function scanCss(text: string, config = {}) {
   return { snapshot, graph: DsGraph.from(snapshot), codes: snapshot.diagnostics.map((d) => d.code) }
 }
 
+describe('tokens-css: condition names', () => {
+  it('names media and supports conditions briefly', () => {
+    expect(conditionName('@media (min-width: 768px)')).toBe('min-width: 768px')
+    expect(conditionName('@supports (color: color(display-p3 1 1 1))')).toBe('display-p3')
+    expect(conditionName('@media (prefers-reduced-motion: reduce)')).toBe('reduced-motion')
+    expect(conditionName('@supports (display: grid)')).toBe('supports display: grid')
+  })
+})
+
+describe('tokens-css: compound theme selectors', () => {
+  it('reads a theme from several attributes, with the auto mode under prefers-color-scheme', async () => {
+    const text = `
+[data-color-mode="light"][data-light-theme="light"],
+[data-color-mode="light"][data-light-theme="light"] ::backdrop { --bg: #ffffff; }
+[data-color-mode="dark"][data-dark-theme="dark_dimmed"] { --bg: #22272e; }
+@media (prefers-color-scheme: dark) {
+  [data-color-mode][data-color-mode="auto"][data-dark-theme="dark_dimmed"] { --bg: #22272e; }
+}`
+    const { snapshot, graph } = await scanCss(text)
+    expect(snapshot.contexts.modifiers).toEqual([
+      { name: 'theme', contexts: ['light', 'dark_dimmed'], default: 'light' },
+    ])
+    expect(graph.value('bg', { theme: 'dark_dimmed' })).toMatchObject({ hex: '#22272e' })
+  })
+})
+
 describe('tokens-css: types', () => {
   it('infers types from values and names', () => {
     expect(cssValueToToken('--a', '#fff').$type).toBe('color')
@@ -68,10 +94,10 @@ describe('tokens-css: scan', () => {
     const { graph, snapshot } = await scanCss(css)
     expect(snapshot.contexts.modifiers).toEqual([
       { name: 'theme', contexts: ['default', 'dark'], default: 'default' },
-      { name: '@media (min-width: 768px)', contexts: ['off', 'on'], default: 'off' },
+      { name: 'min-width: 768px', contexts: ['off', 'on'], default: 'off' },
     ])
     expect(graph.token('color-ink')?.typeSource).toBe('inferred')
-    expect(graph.value('space-4', { '@media (min-width: 768px)': 'on' })).toEqual({
+    expect(graph.value('space-4', { 'min-width: 768px': 'on' })).toEqual({
       value: 1.25,
       unit: 'rem',
     })

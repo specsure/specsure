@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources packages/dsgraph-adapters packages/dsgraph-rules packages/dsgraph-report packages/dsgraph-cli packages/dsgraph-mcp packages/dsgraph-action",
-    "typecheck": "tsc -b packages/dsgraph-schema packages/dsgraph-core packages/dsgraph-sources packages/dsgraph-adapters packages/dsgraph-rules packages/dsgraph-report packages/dsgraph-cli --noEmit",
+    "typecheck": "npm run build && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check .",

@@ -21,6 +21,9 @@ const ROOT_LIKE = /^(:root|html|:host|body|\*)(:not\([^)]*\))*$/
 const ATTR_THEME = /^(?::root|html|body|:host)?\[(data-[\w-]+)(?:=["']?([\w-]+)["']?)?\](:not\([^)]*\))*$/
 const CLASS_THEME = /^(?::root|html|body|:host)?\.(dark|light|theme-([\w-]+)|([\w-]+)-theme)(:not\([^)]*\))*$/
 const COLOR_SCHEME = /prefers-color-scheme\s*:\s*(dark|light)/i
+/** Several attributes at once: `[data-color-mode="dark"][data-dark-theme="dark_dimmed"]`. */
+const COMPOUND_ATTR =
+  /^(?::root|html|body|:host)?((?:\[data-[\w-]+(?:=["']?[\w-]+["']?)?\]){2,})(:not\([^)]*\))*$/
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').replace(/["']/g, '').trim().toLowerCase()
 
@@ -38,13 +41,39 @@ function atRulesOf(decl: Declaration): string[] {
   return out
 }
 
+/** Well-known conditions under the names people use for them. */
+const KNOWN_CONDITIONS: Array<[RegExp, string]> = [
+  [/display-p3|color-gamut\s*:\s*p3/, 'display-p3'],
+  [/color-gamut\s*:\s*rec2020/, 'rec2020'],
+  [/prefers-reduced-motion\s*:\s*reduce/, 'reduced-motion'],
+  [/prefers-contrast\s*:\s*more/, 'high-contrast'],
+  [/prefers-contrast\s*:\s*less/, 'low-contrast'],
+  [/forced-colors\s*:\s*active/, 'forced-colors'],
+]
+
+/**
+ * A short modifier name for an at-rule: `@media (min-width: 768px)` → `min-width: 768px`,
+ * `@supports (color: color(display-p3 1 1 1))` → `display-p3`.
+ */
+export function conditionName(atRule: string): string {
+  for (const [re, name] of KNOWN_CONDITIONS) if (re.test(atRule)) return name
+  const m = /^@(\w+)\s*(.*)$/.exec(atRule.trim())
+  if (!m) return atRule
+  const params = m[2]!
+    .replace(/^\((.*)\)$/, '$1')
+    .replace(/\(([^()]*)\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return m[1] === 'media' ? params : `${m[1]} ${params}`
+}
+
 function autoPlacement(selectors: string[], atRules: string[]): Placement {
   const media = atRules.find((a) => !COLOR_SCHEME.test(a))
   const scheme = atRules.map((a) => COLOR_SCHEME.exec(a)?.[1]?.toLowerCase()).find(Boolean)
   for (const raw of selectors) {
     const sel = raw.replace(/\s+/g, '')
     if (ROOT_LIKE.test(sel)) {
-      if (media) return { kind: 'context', modifier: media, context: 'on', boolean: true }
+      if (media) return { kind: 'context', modifier: conditionName(media), context: 'on', boolean: true }
       if (scheme) return { kind: 'context', modifier: 'theme', context: scheme }
       return { kind: 'base' }
     }
@@ -53,6 +82,12 @@ function autoPlacement(selectors: string[], atRules: string[]): Placement {
       return { kind: 'context', modifier: attr[1]!.replace(/^data-/, ''), context: attr[2] ?? 'on' }
     const cls = CLASS_THEME.exec(sel)
     if (cls && !media) return { kind: 'context', modifier: 'theme', context: cls[2] ?? cls[3] ?? cls[1]! }
+    // The most specific attribute names the theme: `…[data-dark-theme="dark_dimmed"]` → dark_dimmed.
+    const compound = COMPOUND_ATTR.exec(sel)
+    if (compound && !media) {
+      const values = [...compound[1]!.matchAll(/=["']?([\w-]+)["']?\]/g)].map((m) => m[1]!)
+      if (values.length) return { kind: 'context', modifier: 'theme', context: values[values.length - 1]! }
+    }
   }
   return { kind: 'skip' }
 }

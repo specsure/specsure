@@ -2,7 +2,7 @@ import type { Config, Snapshot } from '@dsgraph/schema'
 import { DiagnosticBag } from './diagnostics.js'
 import { parseJsonLenient } from './json.js'
 import { matchGlob } from './path.js'
-import { expandModes } from './resolver/modes.js'
+import { expandModes, systemFromModeFiles } from './resolver/modes.js'
 import {
   systemFromDocuments,
   systemFromResolver,
@@ -139,7 +139,7 @@ export async function loadSystem(
       diag.error('tokens/invalid-json', (e as Error).message, { file })
     }
   }
-  return expandModes(systemFromDocuments(docs), diag)
+  return expandModes(systemFromModeFiles(docs, diag) ?? systemFromDocuments(docs), diag)
 }
 
 const isEmpty = (s: TokenSystem): boolean =>
