@@ -40,6 +40,37 @@ describe('compare', () => {
     expect(light.shown.map((c) => c.target)).not.toContain('color-accent')
   })
 
+  it('reads dropped Tokens Studio files with their themes', async () => {
+    const files = (accent: string) => [
+      {
+        path: '$themes.json',
+        text: JSON.stringify([
+          { name: 'Light', group: 'Mode', selectedTokenSets: { core: 'source', light: 'enabled' } },
+          { name: 'Dark', group: 'Mode', selectedTokenSets: { core: 'source', dark: 'enabled' } },
+        ]),
+      },
+      {
+        path: 'core.json',
+        text: JSON.stringify({
+          blue: { value: accent, type: 'color' },
+          ink: { value: '#111111', type: 'color' },
+        }),
+      },
+      { path: 'light.json', text: JSON.stringify({ accent: { value: '{blue}', type: 'color' } }) },
+      { path: 'dark.json', text: JSON.stringify({ accent: { value: '{ink}', type: 'color' } }) },
+    ]
+    const r = await compare({
+      id: 3,
+      base: { kind: 'files', files: files('#3366ff') },
+      head: { kind: 'files', files: files('#2255ee') },
+      include: '',
+    })
+    if (!r.ok) throw new Error(r.error)
+    expect(r.head.modifiers).toEqual([{ name: 'Mode', contexts: ['Light', 'Dark'] }])
+    const accent = r.changeset.changes.filter((c) => c.target === 'accent')
+    expect(accent.map((c) => c.when)).toEqual([{ Mode: 'Light' }])
+  })
+
   it('names the side that failed', async () => {
     const r = await compare({
       id: 2,
@@ -69,6 +100,19 @@ describe('guide figures', () => {
     expect(groups).toContainEqual(['dtcg/unknown-reference', 1])
     expect(groups).toContainEqual(['dtcg/legacy-syntax', 5])
     expect(groups).toContainEqual(['dtcg/legacy-syntax', 3])
+  })
+
+  it('the graph figure: color-blue-500 holds its own value and color-accent uses it', async () => {
+    const r = await compare({
+      id: 4,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+    })
+    if (!r.ok) throw new Error(r.error)
+    const refs = r.graph.head.refs
+    expect(refs.some(([from]) => from === 'color-blue-500')).toBe(false)
+    expect(refs.some(([from, to]) => from === 'color-accent' && to === 'color-blue-500')).toBe(true)
   })
 
   it('the example has color-accent changed only in dark and through color-blue-500 elsewhere', async () => {

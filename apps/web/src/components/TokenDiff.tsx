@@ -46,6 +46,7 @@ export default function TokenDiff() {
           base: r.base,
           head: r.head,
           findings: r.findings,
+          graph: r.graph,
           ms: r.ms,
         })
       } else {
@@ -61,7 +62,7 @@ export default function TokenDiff() {
     return () => w.terminate()
   }, [])
 
-  // State from the address: `?pkg=…&from=…&to=…`, `?base=…&head=…`, files in `#d=…`.
+  // State from the address: `?pkg=…&from=…&to=…`, `?base=…&head=…`, files in `#d=…`, `?example`.
   useEffect(() => {
     const url = new URL(location.href)
     const s = readUrl(url)
@@ -69,6 +70,14 @@ export default function TokenDiff() {
     setContext(s.context)
     if (s.base) setBase(s.base)
     if (s.head) setHead(s.head)
+    // `?example`: the built-in example, as linked from the home page.
+    if (url.searchParams.has('example')) {
+      setBase({ kind: 'files', files: EXAMPLE.base })
+      setHead({ kind: 'files', files: EXAMPLE.head })
+      autoRun.current = true
+      setTick((t) => t + 1)
+      return
+    }
     unpackFiles(url.hash)
       .then((packed) => {
         if (packed?.base) setBase({ kind: 'files', files: packed.base })
@@ -199,7 +208,7 @@ export default function TokenDiff() {
               className="source__input source__input--small"
               aria-label="Token files"
               value={include}
-              placeholder="Auto: *.tokens.json, a resolver, or CSS with custom properties"
+              placeholder="Auto: DTCG, token JSON or CSS"
               spellCheck={false}
               onChange={(e) => setInclude(e.target.value)}
               title="Globs, comma-separated, e.g. dist/tokens.css or tokens/**/*.json"

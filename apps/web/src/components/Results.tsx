@@ -2,8 +2,9 @@ import type { Changeset, Finding, Level } from '@dsgraph/core'
 import { formatChangeset, formatSource, groupFindings } from '@dsgraph/report'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CardData } from '../lib/card'
-import type { SideInfo } from '../lib/types'
-import { colorPairs, contextAxes, LEVEL_TITLE, LEVELS, typeOfChange, view } from '../lib/view'
+import { CHECK_HELP, publishedNote, verdictReason } from '../lib/explain'
+import type { SideInfo, TokenGraph } from '../lib/types'
+import { colorPairs, contextAxes, inContext, LEVEL_TITLE, LEVELS, typeOfChange, view } from '../lib/view'
 import { CardDialog } from './CardDialog'
 import { ChangeDetail, ChangeRow } from './ChangeList'
 
@@ -13,6 +14,8 @@ export interface Result {
   base: SideInfo
   head: SideInfo
   findings: Finding[]
+  /** References of each side, for the graph in the detail pane. */
+  graph?: { base: TokenGraph; head: TokenGraph }
   ms: number
 }
 
@@ -26,6 +29,8 @@ interface Props {
   /** Page-wide shortcuts (⌘K, ⌘⇧C, /). Off where the results are an illustration. */
   shortcuts?: boolean
 }
+
+const QUIET_LIMIT = 20
 
 const COUNT_LABELS: Array<[key: string, label: string]> = [
   ['removed', 'removed'],
@@ -64,6 +69,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   const [status, setStatus] = useState<string | null>(null)
   const [actions, setActions] = useState(false)
   const [card, setCard] = useState(false)
+  const [quiet, setQuiet] = useState(false)
   const search = useRef<HTMLInputElement>(null)
 
   const axes = useMemo(() => contextAxes(cs), [cs])
@@ -77,10 +83,28 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
       }),
     [cs, result.types, context, level, type, query],
   )
+  // Many changes nobody sees (metadata, notation) hide the ones that matter: folded until asked.
+  const folded = !level && !query && !quiet && v.byLevel.none.length > QUIET_LIMIT
   // Rows in display order: by impact, breaking first.
-  const rows = useMemo(() => LEVELS.flatMap((l) => v.byLevel[l]), [v])
+  const rows = useMemo(() => LEVELS.flatMap((l) => (l === 'none' && folded ? [] : v.byLevel[l])), [v, folded])
   const current = rows.find((c) => c.id === selected) ?? rows[0]
   const affectedOf = (id: string) => [...new Set((v.propagatedBy.get(id) ?? []).map((p) => p.target))]
+  // Impact per token in the selected context, to mark changed tokens in the graph.
+  const changed = useMemo(() => {
+    const m = new Map<string, Level>()
+    for (const c of cs.changes) {
+      if (!inContext(c.when, context)) continue
+      const prev = m.get(c.target)
+      if (!prev || LEVELS.indexOf(c.level) < LEVELS.indexOf(prev)) m.set(c.target, c.level)
+    }
+    return m
+  }, [cs, context])
+  const pick = (target: string) => {
+    const c =
+      rows.find((r) => r.target === target) ??
+      cs.changes.find((r) => r.target === target && r.origin === 'direct' && inContext(r.when, context))
+    if (c) setSelected(c.id)
+  }
 
   const flash = (s: string) => {
     setStatus(s)
@@ -257,7 +281,12 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
                       {LEVEL_TITLE[l]}
                       <span className="count">{v.byLevel[l].length}</span>
                     </div>
-                    {v.byLevel[l].map((c) => (
+                    {l === 'none' && folded ? (
+                      <button type="button" className="list__more" onClick={() => setQuiet(true)}>
+                        Show {v.byLevel.none.length} changes nobody sees: metadata, notation
+                      </button>
+                    ) : null}
+                    {(l === 'none' && folded ? [] : v.byLevel[l]).map((c) => (
                       <ChangeRow
                         key={c.id}
                         change={c}
@@ -277,6 +306,11 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
                   change={current}
                   type={typeOfChange(current, result.types)}
                   affected={affectedOf(current.id)}
+                  graph={result.graph}
+                  axes={axes.map((a) => a.name)}
+                  context={context}
+                  changed={changed}
+                  onPick={pick}
                 />
               )}
             </aside>
@@ -339,6 +373,18 @@ export function Verdict({ result }: { result: Result }) {
   const cs = result.changeset
   const counts = cs.summary.counts
   const empty = cs.changes.length === 0
+  const note = publishedNote(cs)
+  // Direct changes the counts above leave out: retargeted references, metadata, notation.
+  const counted = new Set([
+    'token.added',
+    'token.removed',
+    'token.renamed',
+    'token.value-changed',
+    'token.deprecated',
+  ])
+  const rest = cs.changes.filter((c) => c.origin === 'direct' && !counted.has(c.kind))
+  const unseen = rest.filter((c) => c.level === 'none').length
+  const other = rest.length - unseen
   return (
     <header className="verdict">
       <p className="verdict__sources">
@@ -362,11 +408,23 @@ export function Verdict({ result }: { result: Result }) {
           ))}
           {counts.propagated ? (
             <span className="muted">
-              <strong>{counts.propagated}</strong> through aliases
+              <strong>{counts.propagated}</strong> more through references
+            </span>
+          ) : null}
+          {other ? (
+            <span className="muted">
+              <strong>{other}</strong> other
+            </span>
+          ) : null}
+          {unseen ? (
+            <span className="muted">
+              <strong>{unseen}</strong> nobody sees
             </span>
           ) : null}
         </p>
       )}
+      {!empty && <p className="verdict__reason">{verdictReason(cs)}</p>}
+      {note && <p className={`verdict__note verdict__note--${note.tone}`}>{note.text}</p>}
     </header>
   )
 }
@@ -404,6 +462,7 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
                 <span className="tag">{g.findings.length}</span>
               </span>
             </summary>
+            {CHECK_HELP[g.rule] && <p className="finding__hint">{CHECK_HELP[g.rule]}</p>}
             <ul className="finding__items">
               {g.findings.slice(0, 200).map((f) => (
                 <li key={f.id}>

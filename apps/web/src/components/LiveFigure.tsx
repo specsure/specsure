@@ -1,3 +1,4 @@
+import type { Level } from '@dsgraph/core'
 import { formatChangeset } from '@dsgraph/report'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { drawCard } from '../lib/card'
@@ -6,6 +7,7 @@ import { EXAMPLE, LEGACY_EXAMPLE } from '../lib/example'
 import type { RunRequest } from '../lib/types'
 import { colorPairs, LEVELS, typeOfChange, view } from '../lib/view'
 import { ChangeDetail, ChangeRow } from './ChangeList'
+import { GraphView } from './GraphView'
 import { Findings, type Result, Results } from './Results'
 import { SidePicker } from './SidePicker'
 
@@ -15,6 +17,7 @@ import { SidePicker } from './SidePicker'
  * pictures cannot drift from the product.
  */
 export type FigureName =
+  | 'graph'
   | 'inputs'
   | 'result'
   | 'breaking'
@@ -107,6 +110,15 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
       )
     case 'result':
       return <LiveResult result={result} />
+    case 'graph': {
+      if (!result.graph) return null
+      const changed = new Map<string, Level>()
+      for (const c of cs.changes) {
+        const prev = changed.get(c.target)
+        if (!prev || LEVELS.indexOf(c.level) < LEVELS.indexOf(prev)) changed.set(c.target, c.level)
+      }
+      return <GraphView id="color-blue-500" graph={result.graph.head} context={{}} changed={changed} />
+    }
     case 'breaking': {
       const v = view(cs, result.types, { context: {}, levels: ['major'], types: [], query: '' })
       return (

@@ -1,4 +1,5 @@
 ---
+import LiveFigure from '../components/LiveFigure'
 import Base from '../layouts/Base.astro'
 
 const tools = [
@@ -31,6 +32,72 @@ const tools = [
     tag: 'Soon',
   },
 ]
+
+/**
+ * What dsgraph does with tokens, whatever wrote them. Titles are our capabilities; the formats
+ * they come from are only labels. Examples are neutral.
+ */
+const formats = [
+  {
+    name: 'Themes and modes found on their own',
+    what: 'Every theme is compared separately: dark can break while light stays the same',
+    code: `"$extensions": { "mode": {
+  "light": "{color.white}",
+  "dark": "{color.black}"
+} }`,
+    from: 'Resolver sets · theme files · $extensions.mode',
+  },
+  {
+    name: 'Math and color modifiers calculated',
+    what: 'Change the base value and every token built on it shows up',
+    code: `"lg": {
+  "value": "{space.base} * 2",
+  "type": "spacing"
+}`,
+    from: 'Token JSON with expressions',
+  },
+  {
+    name: 'References followed to the end',
+    what: 'A change deep in an alias chain is reported with its cause',
+    code: `"primary": {
+  "value": "{color.base.ink.value}"
+}`,
+    from: 'Token JSON with value and type',
+  },
+  {
+    name: 'Colors compared by how they look',
+    what: 'ΔE in OKLab, any color space; changes no one can see are a patch',
+    code: `"$value": {
+  "colorSpace": "oklch",
+  "components": [0.62, 0.19, 259]
+}`,
+    from: 'DTCG 2025.10',
+  },
+  {
+    name: 'CSS read as tokens',
+    what: 'Custom properties become tokens; selectors become themes',
+    code: `:root { --bg: #ffffff; }
+[data-theme="dark"] { --bg: #0c0c0e; }
+.dark { --bg: #0c0c0e; }`,
+    from: 'CSS custom properties',
+  },
+  {
+    name: 'Any version, nothing uploaded',
+    what: 'Published packages and branches are fetched by your browser',
+    code: `npm:@scope/tokens@2.1.0
+github:owner/repo/tokens@main
+./tokens  (dropped files)`,
+    from: 'npm · GitHub · files',
+  },
+]
+
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+/** Quiet highlighting: keys are dimmed, references stand out. */
+const highlight = (code: string) =>
+  escapeHtml(code)
+    .replace(/("[\w$.-]+")(\s*:)/g, '<span class="tok-key">$1</span>$2')
+    .replace(/(\{[\w.-]+\})/g, '<span class="tok-ref">$1</span>')
+    .replace(/(--[\w-]+)(?=:)/g, '<span class="tok-key">$1</span>')
 ---
 
 <Base
@@ -97,6 +164,44 @@ const tools = [
       <a class="launcher__primary" href="/tools/diff">Open Token Diff <kbd>↵</kbd></a>
     </footer>
   </nav>
+  <section class="home-section" aria-labelledby="formats">
+    <header class="home-section__head">
+      <h2 id="formats">Reads your tokens as they are</h2>
+      <p>
+        Whatever wrote them, tokens become one graph, so the comparison and the checks work the same
+        for every source. No conversion step and no config for the usual layouts.
+      </p>
+    </header>
+    <ul class="formats">
+      {
+        formats.map((f) => (
+          <li class="format">
+            <div class="format__name">{f.name}</div>
+            <div class="format__what">{f.what}</div>
+            <pre class="format__code"><code set:html={highlight(f.code)} /></pre>
+            <div class="format__from">{f.from}</div>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="formats__note">
+      Reads DTCG 2025.10, older token JSON with <code>value</code> and <code>type</code>, Figma
+      variables exported to JSON and CSS custom properties.
+    </p>
+  </section>
+
+  <section class="home-section" aria-labelledby="live">
+    <header class="home-section__head">
+      <h2 id="live">A release, compared right here</h2>
+      <p>
+        Not a screenshot: two versions of a small token file, compared by dsgraph in your browser as
+        this page loaded.
+      </p>
+      <a class="home-section__link" href="/tools/diff?example">Open it in Token Diff →</a>
+    </header>
+    <LiveFigure client:only="react" name="result" />
+  </section>
+
   <script>
     // ↵ opens Token Diff, as the hint in the action bar says; focused links keep their own Enter.
     window.addEventListener('keydown', (e) => {

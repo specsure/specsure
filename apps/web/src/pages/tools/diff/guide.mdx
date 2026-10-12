@@ -43,18 +43,26 @@ Every figure on this page is live: dsgraph runs in your browser on a small examp
 
 <LiveFigure client:only="react" name="inputs" caption="Two versions of the example as files. Under each row: how many tokens were read, from which files, and the themes found." />
 
-Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets and themes), CSS custom properties with themes in `:root`, `[data-theme]`, `.dark` or `prefers-color-scheme`, and dsgraph snapshots. If a package ships many files, put the ones you mean in **Files**, for example `dist/tokens.css` or `tokens/**/*.json`.
+Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets and themes, and modes in `$extensions.mode` from Figma variable exports), older token JSON with `value` and `type` (token sets, theme files and `.value` references included), CSS custom properties with themes in `:root`, `[data-theme]`, `.dark` or `prefers-color-scheme`, and dsgraph snapshots. Math such as `{space.base} * 2` and color modifiers are calculated, so a change to a base value shows up in everything built on it. If a package ships many files, put the ones you mean in **Files**, for example `dist/tokens.css` or `tokens/**/*.json`.
 
 ## What you get
 
 - **A verdict:** breaking, minor, patch or no impact, with the counts behind it.
 - **Breaking changes first:** removed tokens, renames with a confidence score, type changes, tokens missing from a theme.
 - **Value changes per theme:** colors as swatches with ΔE, sizes with the difference in pixels, the alias each value came from.
-- **The blast radius:** for each changed token, the tokens that changed through aliases because of it.
+- **The blast radius:** for each changed token, the tokens that changed through references because of it, drawn as a graph.
 - **Checks on the new version:** broken references, alias cycles, legacy syntax, naming collisions, grouped so that 300 identical warnings take one line.
 - **Exports:** Markdown for a changelog or a pull request, the full changeset as JSON, and a 1200×630 card for a post.
 
 <LiveFigure client:only="react" name="result" caption="The full result for the example. Click a change or use the arrow keys to see its details; filter by theme, impact or type." />
+
+## The graph
+
+Tokens point to each other. In JSON, `"value": "{color.blue.500}"` means the token takes its value from `color.blue.500`; in CSS the same is `var(--color-blue-500)`. dsgraph reads every token as a point and every such reference as a line between two points, separately for each theme, because a theme can replace a reference with a value of its own.
+
+That is what lets Token Diff tell a change from its consequences. When `color-blue-500` changes, `color-accent` changes with it, although nobody edited it. Token Diff shows `color-accent` under the change that caused it, not as a separate change, and draws the chain: above, where the token takes its value from; below, which tokens use it. Changed tokens are outlined in the color of their impact; click one to open its change.
+
+<LiveFigure client:only="react" name="graph" caption="color-blue-500 in its graph: a value of its own, used by color-accent, which changed with it." />
 
 ## Reading the result
 
@@ -122,4 +130,4 @@ With `--fail-on major` it exits with an error when the release is breaking, so a
 ## Coming next
 
 - **Figma plugin.** Check Figma variables and styles against your tokens, inside Figma. Soon.
-- Style Dictionary and Tailwind themes as inputs, private GitHub repositories, and checking your own app for what an upgrade breaks.
+- Tailwind themes as inputs, private GitHub repositories, and checking your own app for what an upgrade breaks.

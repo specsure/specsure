@@ -71,7 +71,8 @@ export function view(cs: Changeset, types: Map<string, string | null>, f: Filter
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object'
 
 /** The canonical value of a changeset side (`{ raw, value }`) or the value itself. */
-export const sideValue = (side: unknown): unknown => (isObj(side) && 'value' in side ? side.value : side)
+export const sideValue = (side: unknown): unknown =>
+  isObj(side) && 'value' in side ? side.value : isObj(side) && 'raw' in side ? undefined : side
 
 export const isColor = (v: unknown): v is ColorValue =>
   isObj(v) && typeof v.space === 'string' && Array.isArray(v.components)

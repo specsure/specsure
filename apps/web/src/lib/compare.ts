@@ -1,8 +1,10 @@
-import { cssTokens } from '@dsgraph/adapters'
+import { cssTokens, jsonTokens } from '@dsgraph/adapters'
 import { type Config, DsGraph, diff, type Snapshot, type Source, scan, validateSnapshot } from '@dsgraph/core'
+import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
-import type { RunRequest, RunResponse, SideInfo, SideInput } from './types'
+import type { GraphNode, RunRequest, RunResponse, SideInfo, SideInput, TokenGraph } from './types'
+import { cssColor, isColor } from './view'
 
 const CSS = /\.css$/i
 
@@ -58,7 +60,7 @@ export async function load(side: SideInput, include: string): Promise<DsGraph> {
       if (css.length) config.css = { include: css.map((f) => f.path) }
     }
   } else source = remoteSource(side)
-  return DsGraph.from(await scan(source, config, { adapters: [cssTokens] }))
+  return DsGraph.from(await scan(source, config, { adapters: [jsonTokens, cssTokens] }))
 }
 
 function info(g: DsGraph, label: string): SideInfo {
@@ -69,6 +71,35 @@ function info(g: DsGraph, label: string): SideInfo {
     tokens: tokens.length,
     modifiers: g.snapshot.contexts.modifiers.map((m) => ({ name: m.name, contexts: m.contexts })),
   }
+}
+
+/** References of one side and the values of the tokens in them, for the graph view. */
+export function graphOf(g: DsGraph): TokenGraph {
+  const refs: TokenGraph['refs'] = []
+  const ids = new Set<string>()
+  const seen = new Set<string>()
+  for (const [, from, to, attrs] of g.edges('aliases')) {
+    const when = attrs?.when
+    const key = `${from}\u0000${to}\u0000${when ? JSON.stringify(when) : ''}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    refs.push(when && Object.keys(when).length ? [from, to, when] : [from, to])
+    ids.add(from)
+    ids.add(to)
+  }
+  const nodes: Record<string, GraphNode> = {}
+  for (const id of ids) {
+    const t = g.token(id)
+    if (!t) continue
+    nodes[id] = {
+      type: t.type,
+      values: t.values.map((v) => {
+        const text = formatValue(t.type, v.value)
+        return isColor(v.value) ? { when: v.when, swatch: cssColor(v.value), text } : { when: v.when, text }
+      }),
+    }
+  }
+  return { refs, nodes }
 }
 
 const labelOf = (side: SideInput, g: DsGraph): string => {
@@ -112,6 +143,7 @@ export async function compare(
       base: info(b, labelOf(base, b)),
       head: info(h, labelOf(head, h)),
       findings,
+      graph: { base: graphOf(b), head: graphOf(h) },
       ms: Math.round(performance.now() - started),
     }
   } catch (err) {

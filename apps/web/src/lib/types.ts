@@ -19,6 +19,21 @@ export interface SideInfo {
   modifiers: Array<{ name: string; contexts: string[] }>
 }
 
+/** A token as drawn in the graph: its value per context, as a swatch or short text. */
+export interface GraphNode {
+  type: string | null
+  values: Array<{ when: Record<string, string>; swatch?: string; text: string }>
+}
+
+/**
+ * The references between tokens of one side: `[from, to]` means `from` uses `to`'s value.
+ * Only tokens that take part in a reference are listed.
+ */
+export interface TokenGraph {
+  refs: Array<[from: string, to: string, when?: Record<string, string>]>
+  nodes: Record<string, GraphNode>
+}
+
 export interface RunRequest {
   id: number
   base: SideInput
@@ -36,6 +51,7 @@ export type RunResponse =
       base: SideInfo
       head: SideInfo
       findings: Finding[]
+      graph: { base: TokenGraph; head: TokenGraph }
       ms: number
     }
   | { id: number; ok: false; side?: 'base' | 'head'; error: string }

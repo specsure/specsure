@@ -11,7 +11,7 @@ npm run web:build   # static output in apps/web/dist
 
 ## Token Diff
 
-- **Inputs:** npm package and version, GitHub `owner/repo/folder` at a ref, or dropped files and folders (DTCG JSON, a resolver, CSS custom properties, a dsgraph snapshot).
+- **Inputs:** npm package and version, GitHub `owner/repo/folder` at a ref, or dropped files and folders (DTCG JSON, a resolver, Tokens Studio, Style Dictionary, CSS custom properties, a dsgraph snapshot).
 - **Results:** suggested semver bump, breaking changes first, values per context with color swatches and ΔE, propagated changes under their cause, checks on the new version with repeated findings collapsed.
 - **Layout:** an input window with one row per side, then a list of changes with a detail pane, in the manner of a command launcher. Keys: `⌘↵` compare, `↑ ↓` move, `/` filter, `⌘K` actions, `⌘⇧C` copy Markdown.
 - **Filters:** context (theme and other modifiers), impact, token type, name.

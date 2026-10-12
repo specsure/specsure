@@ -1,6 +1,9 @@
-import type { Change } from '@dsgraph/core'
+import type { Change, Level } from '@dsgraph/core'
 import { formatDelta, formatValue } from '@dsgraph/report'
+import { appliesIn, deltaWords, meaningOf } from '../lib/explain'
+import type { TokenGraph } from '../lib/types'
 import { cssColor, isColor, LEVEL_TITLE, sideValue } from '../lib/view'
+import { GraphView } from './GraphView'
 
 export const KIND_LABEL: Record<Change['kind'], string> = {
   'token.added': 'Added',
@@ -89,6 +92,8 @@ function Icon({ c }: { c: Change }) {
 /** Short text on the right of a row: the new value, or the old one for removals. */
 function subtitle(c: Change, type: string | null): string {
   const show = (side: unknown) => {
+    // An alias that now points elsewhere has only its reference text on each side.
+    if (isObj(side) && !('value' in side) && typeof side.raw === 'string') return side.raw
     const v = sideValue(side)
     return v === undefined ? '' : formatValue(type, v)
   }
@@ -103,7 +108,7 @@ function subtitle(c: Change, type: string | null): string {
     case 'token.type-changed':
       return `${String(c.before)} → ${String(c.after)}`
     case 'token.renamed':
-      return c.confidence < 1 ? `${Math.round(c.confidence * 100)}% match` : 'declared'
+      return c.confidence < 1 ? `renamed, ${Math.round(c.confidence * 100)}% sure` : 'renamed'
     default:
       return KIND_LABEL[c.kind]
   }
@@ -148,7 +153,14 @@ export function ChangeRow({ change: c, type, affected, selected, onSelect }: Row
               {v}
             </span>
           ))}
-        {affected > 0 && <span className="tag">+{affected}</span>}
+        {affected > 0 && (
+          <span
+            className="tag"
+            title={`Also changes ${affected} token${affected === 1 ? '' : 's'} that use it`}
+          >
+            +{affected}
+          </span>
+        )}
         {delta && <span className="acc-text">{delta}</span>}
       </span>
     </div>
@@ -163,12 +175,12 @@ function Big({ type, side, label }: { type: string | null; side: unknown; label:
       {isColor(v) ? (
         <span className="preview__swatch" style={{ background: cssColor(v) }} />
       ) : (
-        <span className="preview__text">{v === undefined ? '—' : formatValue(type, v)}</span>
+        <span className="preview__text">{v === undefined ? (alias ?? '—') : formatValue(type, v)}</span>
       )}
       <figcaption>
         <span className="muted">{label}</span>
         {isColor(v) && <code>{formatValue(type, v)}</code>}
-        {alias && <code className="muted">{alias}</code>}
+        {alias && v !== undefined && <code className="muted">{alias}</code>}
       </figcaption>
     </figure>
   )
@@ -178,29 +190,45 @@ interface DetailProps {
   change: Change
   type: string | null
   affected: string[]
+  /** Both sides' references; the graph is drawn when given. */
+  graph?: { base: TokenGraph; head: TokenGraph } | undefined
+  /** Names of the modifiers being compared (`theme`), to say where a change applies. */
+  axes?: string[]
+  context?: Record<string, string>
+  changed?: Map<string, Level>
+  onPick?: ((id: string) => void) | undefined
 }
 
-export function ChangeDetail({ change: c, type, affected }: DetailProps) {
+export function ChangeDetail({
+  change: c,
+  type,
+  affected,
+  graph,
+  axes = [],
+  context = {},
+  changed = new Map(),
+  onPick,
+}: DetailProps) {
   const before = beforeOf(c)
   const after = afterOf(c)
   const hasValues = before !== undefined || after !== undefined
+  const sideGraph = graph && (c.kind === 'token.removed' ? graph.base : graph.head)
+  const linked = sideGraph?.refs.some(([from, to]) => from === c.target || to === c.target)
   const delta = formatDelta(c.delta)
   const meta: Array<[string, React.ReactNode]> = [
     ['Change', KIND_LABEL[c.kind]],
     ['Impact', LEVEL_TITLE[c.level]],
   ]
   if (type) meta.push(['Type', type])
-  meta.push([
-    'Context',
-    c.when && Object.keys(c.when).length
-      ? Object.entries(c.when)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')
-      : 'all',
-  ])
+  meta.push(['Applies in', appliesIn(c.when, axes)])
   if (c.kind === 'token.renamed') {
     meta.push(['Old name', <code key="from">{c.from}</code>])
-    meta.push(['Confidence', `${Math.round(c.confidence * 100)}%`])
+    meta.push([
+      'How we know',
+      c.confidence < 1
+        ? `Same value, similar name (${Math.round(c.confidence * 100)}% sure)`
+        : 'Declared or the same token id',
+    ])
   }
   if (c.possibleRenames?.length)
     meta.push([
@@ -211,7 +239,11 @@ export function ChangeDetail({ change: c, type, affected }: DetailProps) {
         </code>
       )),
     ])
-  if (delta) meta.push(['Difference', delta])
+  if (delta)
+    meta.push([
+      'Difference',
+      typeof c.delta?.deltaEOK === 'number' ? `${delta} · ${deltaWords(c.delta.deltaEOK)}` : delta,
+    ])
   if (c.kind === 'token.deprecated') {
     const d = c.after as { replacement?: string; reason?: string } | undefined
     if (d?.replacement) meta.push(['Use instead', <code key="r">{d.replacement}</code>])
@@ -222,6 +254,7 @@ export function ChangeDetail({ change: c, type, affected }: DetailProps) {
   return (
     <div className="detail__body">
       <h3 className="detail__title">{c.target}</h3>
+      {meaningOf(c) && <p className="detail__lead">{meaningOf(c)}</p>}
       {hasValues && (
         <div className="previews">
           {c.kind !== 'token.added' && <Big type={type} side={before} label="Before" />}
@@ -236,10 +269,17 @@ export function ChangeDetail({ change: c, type, affected }: DetailProps) {
           </div>
         ))}
       </dl>
+      {sideGraph && linked && (
+        <section className="affected">
+          <h4>In the graph</h4>
+          <p className="graph-hint">Lines lead from a token to the tokens that take their value from it.</p>
+          <GraphView id={c.target} graph={sideGraph} context={context} changed={changed} onPick={onPick} />
+        </section>
+      )}
       {affected.length > 0 && (
         <section className="affected">
           <h4>
-            Changes {affected.length} token{affected.length === 1 ? '' : 's'} through aliases
+            Changes {affected.length} token{affected.length === 1 ? '' : 's'} through references
           </h4>
           <ul>
             {affected.map((t) => (
