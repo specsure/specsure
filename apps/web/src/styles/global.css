@@ -735,6 +735,52 @@ input.accessory {
   color: var(--ink-2);
 }
 
+/* MCP setup */
+.mcp-setup {
+  margin: var(--space-6) 0;
+}
+.prose .mcp-setup {
+  width: 100%;
+}
+.seg--wrap {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+}
+/* Explanations here are sentences: they wrap instead of being cut. */
+.mcp-setup .source__meta,
+.mcp-setup .actionbar__status {
+  white-space: normal;
+}
+.mcp-setup__out {
+  padding: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.prose .mcp-setup__where,
+.mcp-setup__where {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-2);
+  font: var(--text-body);
+}
+.prose .mcp-setup__code,
+.mcp-setup__code {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  color: var(--ink);
+  font: var(--text-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.prose .mcp-setup__note,
+.mcp-setup__note {
+  margin: var(--space-3) 0 0;
+  color: var(--warning);
+  font: var(--text-body);
+}
+
 /* Plain-language lines in the report */
 .verdict__reason {
   max-width: 640px;

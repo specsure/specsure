@@ -6,6 +6,8 @@ It reads DTCG 2025.10 (with resolver documents and themes), token JSON with `val
 
 ## Install
 
+Step-by-step setup for Claude Code, Claude Desktop, Cursor, VS Code, Windsurf and Codex, with the exact snippet for your tokens: [specsure.app/tools/mcp](https://specsure.app/tools/mcp).
+
 Claude Code, with the project's tokens in `./tokens`:
 
 ```bash

@@ -1,0 +1,54 @@
+---
+layout: ../../layouts/Doc.astro
+title: MCP server for design tokens
+description: Connect your design tokens to Claude Code, Cursor, VS Code and other coding agents, so they use tokens instead of hard-coded colors and sizes. Set up in a minute.
+path: /tools/mcp
+---
+
+import McpSetup from '../../components/McpSetup'
+
+# MCP server
+
+Coding agents write `#3366ff` and `12px` straight into components, because they do not know your design tokens. The dsgraph MCP server gives them the tokens: before writing a value, the agent asks which token holds it and uses the token instead. It can also read any token, list them, and compare two versions of a token package before an upgrade.
+
+It runs on your computer, next to the agent, and only reads. It understands DTCG files (with themes), token JSON with `value` and `type`, and CSS custom properties, from a folder in your project, an npm package or a GitHub repository.
+
+## Set it up
+
+Pick where your tokens are and which agent you use, then paste what appears below into the place it names.
+
+<McpSetup client:load />
+
+Then start a new chat: the agent sees six new tools, all named after what they do. If your tokens are in several places, add the server once per place under different names, for example `dsgraph-brand` and `dsgraph-product`.
+
+## Ask your agent
+
+You do not need to call the tools by name. Ask the way you would ask a colleague:
+
+- “Build the settings card. Use our design tokens, no hard-coded colors or spacing.”
+- “Which token is `#3366ff`? And what is closest to 14px?”
+- “Replace the hard-coded colors in `Button.tsx` with tokens.”
+- “What does `color.text.muted` look like in the dark theme, and what uses it?”
+- “We are upgrading `@scope/tokens` from 2.4 to 3.0. What breaks?”
+- “Check our tokens for broken references.”
+
+## Tools
+
+| Tool | What it answers |
+|---|---|
+| `find_token` | Which token holds this color, size, duration or font weight. Exact matches first; otherwise the closest values, colors by how different they look and sizes in pixels |
+| `get_token` | One token: its value in every theme, the tokens it takes its value from and the ones that use it |
+| `search_tokens` | Tokens by part of the name or by type, with their values |
+| `describe_tokens` | An overview: how many tokens of each type, the themes, the main groups |
+| `compare_versions` | What changed between two versions, what breaks and which version the release needs, the same report as [Token Diff](/tools/diff) |
+| `check_tokens` | Broken references, loops, old syntax, names that collide |
+
+## Good to know
+
+- **Node.js 20 or newer** has to be installed; `npx` downloads the server the first time.
+- **Your files stay on your computer.** The server reads them where they are. npm packages and GitHub repositories are downloaded the way a browser would.
+- **Edits are picked up at once:** local files are read again on every call.
+- **A `dsgraph.config.json`** in the folder the agent starts in is used too, for example to name layers or declare renames.
+- **Private GitHub repositories** need a `GITHUB_TOKEN` in the server's environment; your agent's MCP settings have a place for environment variables.
+
+Source and details: [packages/dsgraph-mcp](https://github.com/specsure/specsure/tree/main/packages/dsgraph-mcp).
