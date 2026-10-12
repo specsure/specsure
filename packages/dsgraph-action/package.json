@@ -1,0 +1,21 @@
+{
+  "name": "@dsgraph/action",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "GitHub Action: compare design tokens in pull requests. Built into one file and published to github.com/specsure/dsgraph-action.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "rolldown -c rolldown.config.mjs",
+    "sync": "node scripts/sync.mjs"
+  },
+  "dependencies": {
+    "@dsgraph/core": "0.1.0-alpha.0",
+    "@dsgraph/report": "0.1.0-alpha.0",
+    "@dsgraph/rules": "0.1.0-alpha.0",
+    "dsgraph": "0.1.0-alpha.0"
+  },
+  "devDependencies": {
+    "rolldown": "1.2.13"
+  }
+}

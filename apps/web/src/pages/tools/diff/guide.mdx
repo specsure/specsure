@@ -119,13 +119,21 @@ Everything runs in your browser tab. Dropped files are never uploaded. Packages 
 
 ## In CI
 
-The same engine runs in your terminal and in CI:
+On GitHub, the action compares every pull request with its base branch and keeps one comment up to date with the same report:
 
-```bash
-npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown
+```yaml
+- uses: actions/checkout@v4
+- uses: specsure/dsgraph-action@v1
+  with:
+    path: tokens
+    fail-on: major
 ```
 
-With `--fail-on major` it exits with an error when the release is breaking, so a breaking change cannot slip out as a minor version.
+With `fail-on: major` the check fails when the change is breaking, so a breaking change cannot slip out as a minor version. Elsewhere, the CLI does the same:
+
+```bash
+npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
+```
 
 ## Coming next
 

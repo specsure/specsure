@@ -1,0 +1,47 @@
+name: release action
+# Builds packages/dsgraph-action into one file and publishes it to github.com/specsure/dsgraph-action,
+# moving the major tag (v1) so that `uses: specsure/dsgraph-action@v1` gets the release.
+# Needs the secret ACTION_REPO_TOKEN: a fine-grained token with contents: write on specsure/dsgraph-action.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag, for example v1.0.0
+        required: true
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Check the tag
+        run: echo "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::Use vMAJOR.MINOR.PATCH"; exit 1; }
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build -w @dsgraph/action
+      - run: npx vitest run packages/dsgraph-action
+      - uses: actions/checkout@v4
+        with:
+          repository: specsure/dsgraph-action
+          token: ${{ secrets.ACTION_REPO_TOKEN }}
+          path: out
+      - run: node packages/dsgraph-action/scripts/sync.mjs out
+      - name: Commit and tag
+        working-directory: out
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Release $VERSION" || echo "Nothing changed"
+          major="${VERSION%%.*}"
+          git tag -f "$VERSION"
+          git tag -f "$major"
+          git push origin HEAD
+          git push -f origin "$VERSION" "$major"

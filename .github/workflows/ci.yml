@@ -19,6 +19,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run build -w @dsgraph/action
       - run: npm run build -w @specsure/web
         env:
           ASTRO_TELEMETRY_DISABLED: 1

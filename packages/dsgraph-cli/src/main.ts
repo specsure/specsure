@@ -42,7 +42,10 @@ export interface Io {
 
 const RANK: Record<Level, number> = { none: 0, patch: 1, minor: 2, major: 3 }
 
-async function loadConfig(path: string | undefined, cwd: string): Promise<Config> {
+export { loadGraph } from './sources.js'
+
+/** Reads `dsgraph.config.json` (or the given file) from `cwd`; no file means an empty config. */
+export async function loadConfig(path: string | undefined, cwd: string): Promise<Config> {
   const file = resolve(cwd, path ?? 'dsgraph.config.json')
   let text: string
   try {
@@ -56,6 +59,17 @@ async function loadConfig(path: string | undefined, cwd: string): Promise<Config
   if (!v.ok)
     throw new Error(`Invalid config ${file}: ${v.errors.map((e) => `${e.path} ${e.message}`).join('; ')}`)
   return config as Config
+}
+
+/** Diff options from the config: explicit renames, comparison thresholds, semver policy, layers. */
+export function diffOptions(config: Config): NonNullable<Parameters<typeof diff>[2]> {
+  const opts: NonNullable<Parameters<typeof diff>[2]> = {}
+  if (config.renames) opts.renames = config.renames
+  if (config.compare?.ignoreExtensions) opts.ignoreExtensions = config.compare.ignoreExtensions
+  if (config.compare?.equalDeltaE !== undefined) opts.compare = { equalDeltaE: config.compare.equalDeltaE }
+  if (config.semver) opts.semver = config.semver as never
+  if (config.layers) opts.layers = config.layers
+  return opts
 }
 
 /** Runs the CLI and returns the exit code (0 ok, 1 failed check, 2 usage or runtime error). */
@@ -139,14 +153,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         loadGraph(rest[0]!, config, io.cwd),
         loadGraph(rest[1]!, config, io.cwd),
       ])
-      const opts: Parameters<typeof diff>[2] = {}
-      if (config.renames) opts.renames = config.renames
-      if (config.compare?.ignoreExtensions) opts.ignoreExtensions = config.compare.ignoreExtensions
-      if (config.compare?.equalDeltaE !== undefined)
-        opts.compare = { equalDeltaE: config.compare.equalDeltaE }
-      if (config.semver) opts.semver = config.semver as never
-      if (config.layers) opts.layers = config.layers
-      const cs = await diff(base, head, opts)
+      const cs = await diff(base, head, diffOptions(config))
       const types = new Map([...base.tokens(), ...head.tokens()].map((t) => [t.id, t.type]))
       await emit(formatChangeset(cs, { format, types }))
       const failOn = values['fail-on'] as Level | undefined

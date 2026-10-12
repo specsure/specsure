@@ -1,0 +1,38 @@
+name: dsgraph diff
+description: Compare the design tokens of a pull request with its base and report what breaks and which version it needs.
+author: Specsure
+branding:
+  icon: git-pull-request
+  color: red
+inputs:
+  path:
+    description: Token folder or file in the repository (DTCG, a resolver, token JSON or CSS).
+    default: .
+  base:
+    description: What to compare with. Default is the same path at the pull request's base commit. Any dsgraph source works, for example npm:@scope/tokens@latest.
+    default: ''
+  config:
+    description: Path to dsgraph.config.json. Default is the one in the repository root, if any.
+    default: ''
+  fail-on:
+    description: Fail the job when the change is at least this level (major, minor or patch).
+    default: ''
+  comment:
+    description: Post the report as a pull request comment, updated on every push.
+    default: 'true'
+  checks:
+    description: Add checks on the new version (broken references, legacy syntax and others).
+    default: 'true'
+  github-token:
+    description: Token for the comment and for reading the base commit.
+    default: ${{ github.token }}
+outputs:
+  level:
+    description: major, minor, patch or none.
+  changes:
+    description: Number of direct changes.
+  breaking:
+    description: Number of breaking changes.
+runs:
+  using: node24
+  main: dist/index.mjs
