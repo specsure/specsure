@@ -1,4 +1,9 @@
-/** Parses JSON, falling back to JSONC (comments, trailing commas) when strict parsing fails. */
+import JSON5 from 'json5'
+
+/**
+ * Parses JSON, falling back to JSONC (comments, trailing commas) and then JSON5 (unquoted keys,
+ * single quotes), which token sources such as `*.json5` files use.
+ */
 export function parseJsonLenient(text: string): { value: unknown; lenient: boolean } {
   const clean = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
   try {
@@ -7,7 +12,11 @@ export function parseJsonLenient(text: string): { value: unknown; lenient: boole
     try {
       return { value: JSON.parse(stripJsonc(clean)), lenient: true }
     } catch {
-      throw strictError
+      try {
+        return { value: JSON5.parse(clean), lenient: true }
+      } catch {
+        throw strictError
+      }
     }
   }
 }

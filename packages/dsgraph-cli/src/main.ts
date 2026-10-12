@@ -16,7 +16,7 @@ Usage
   dsgraph diff  <base> <head>     Compare two versions; suggest a semver bump
 
 Sources
-  ./tokens                        folder (DTCG files, a *.resolver.json, or CSS custom properties)
+  ./tokens                        folder (DTCG, a *.resolver.json, Tokens Studio, Style Dictionary or CSS)
   ./tokens.json  ./theme.css      a single file
   npm:@acme/tokens@^2             an npm package (via jsDelivr)
   github:owner/repo/tokens@main   a GitHub repository path at a ref (GITHUB_TOKEN for private repos)

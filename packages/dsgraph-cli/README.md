@@ -6,6 +6,8 @@ npx dsgraph check ./tokens
 npx dsgraph scan github:owner/repo/tokens@main --out snapshot.json
 ```
 
+Formats: DTCG 2025.10 (with resolver documents and `$extensions.mode`), Tokens Studio (sets and themes), Style Dictionary, CSS custom properties.
+
 Sources: folders, single files (`.json`, `.tokens`, `.css`, `.resolver.json`), `npm:pkg@range`, `github:owner/repo/path@ref` (`GITHUB_TOKEN` for private repos), saved snapshots.
 
 Repeated findings are collapsed (`247× Color "…" is a string`, with the first tokens listed); `--expand` lists every one.

@@ -48,9 +48,27 @@ function leafSimilarity(a: string, b: string): number {
   return Math.max(prefix, 1 - levenshtein(a, b) / Math.max(a.length, b.length, 1))
 }
 
+const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object'
+
 /**
- * Detects renames among removed × added tokens (spec section 5.3): explicit hints first,
- * then same type + equal values in all compared contexts + similar paths, assigned greedily.
+ * An identifier that survives renames: `dev.dsgraph.stableId` (set by adapters, e.g. from a
+ * token's `uuid`) or a Figma variable id in the token's extensions.
+ */
+export function stableIdOf(t: Token): string | undefined {
+  const e = t.extensions
+  if (!e) return undefined
+  const dev = e['dev.dsgraph']
+  if (isObj(dev) && typeof dev.stableId === 'string') return dev.stableId
+  const figma = e['com.figma'] ?? e.figma
+  if (isObj(figma) && typeof figma.variableId === 'string') return figma.variableId
+  const flat = e['com.figma.variableId']
+  return typeof flat === 'string' ? flat : undefined
+}
+
+/**
+ * Detects renames among removed × added tokens (spec section 5.3): explicit hints first, then
+ * the same stable identifier, then same type + equal values in all compared contexts + similar
+ * paths, assigned greedily.
  */
 export function detectRenames(
   base: DsGraph,
@@ -77,6 +95,17 @@ export function detectRenames(
     const hint = (head.token(to)?.extensions?.['dev.dsgraph'] as { renamedFrom?: unknown } | undefined)
       ?.renamedFrom
     if (typeof hint === 'string') explicit(hint, to)
+  }
+  // The same stable id under a new name is a rename, whatever happened to the value.
+  const removedById = new Map<string, string>()
+  for (const from of removed) {
+    const id = stableIdOf(base.token(from)!)
+    if (id) removedById.set(id, from)
+  }
+  for (const to of added) {
+    const id = stableIdOf(head.token(to)!)
+    const from = id && removedById.get(id)
+    if (from) explicit(from, to)
   }
 
   // How common each value is in head (shared values like white or 0 need closer paths).

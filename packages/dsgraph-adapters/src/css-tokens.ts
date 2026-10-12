@@ -1,7 +1,8 @@
 import {
-  DEFAULT_EXCLUDE,
   type DiagnosticBag,
+  excludeFor,
   matchGlob,
+  prefetch,
   type ScanConfig,
   type Source,
   type TokenAdapter,
@@ -89,15 +90,20 @@ export const cssTokens: TokenAdapter = {
   name: 'tokens-css',
 
   async detect(source: Source, config: ScanConfig): Promise<string[]> {
-    const exclude = [...DEFAULT_EXCLUDE, ...(config.css?.exclude ?? [])]
+    const exclude = excludeFor(config, 'css')
     const files = (await source.list(config.css?.include ?? ['**/*.css'])).filter(
       (p) => !matchGlob(p, exclude),
     )
     if (config.css?.include) return files
+    await prefetch(source, files)
     const out: string[] = []
     for (const f of files) {
       const text = await source.readText(f)
-      if (/--[\w-]+\s*:/.test(text) && /(:root|html|:host|\[data-|prefers-color-scheme)/.test(text))
+      // Theme files may hold only a class rule (`.dark, .dark-theme { … }`).
+      if (
+        /--[\w-]+\s*:/.test(text) &&
+        /(:root|html|:host|\[data-|prefers-color-scheme|\.(dark|light)\b|\.theme-|-theme\b)/.test(text)
+      )
         out.push(f)
     }
     return out
@@ -108,6 +114,7 @@ export const cssTokens: TokenAdapter = {
     const base: TokenDocument[] = []
     const modifiers = new Map<string, { contexts: Map<string, TokenDocument[]>; boolean: boolean }>()
     const orderOfModifiers: string[] = []
+    await prefetch(source, files)
 
     for (const file of [...files].sort()) {
       let root: postcss.Root

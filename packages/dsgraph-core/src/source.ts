@@ -7,3 +7,18 @@ export interface Source {
   readText(path: string): Promise<string>
   meta(): Promise<SourceMeta>
 }
+
+/**
+ * Starts reading files several at a time, so the sequential reads that follow hit a source's
+ * cache instead of waiting on the network one file after another. Errors surface on the later read.
+ */
+export async function prefetch(source: Source, paths: readonly string[], concurrency = 16): Promise<void> {
+  let next = 0
+  const worker = async () => {
+    while (next < paths.length) {
+      const path = paths[next++]!
+      await source.readText(path).catch(() => undefined)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, paths.length) }, worker))
+}

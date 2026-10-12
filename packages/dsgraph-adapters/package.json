@@ -1,7 +1,7 @@
 {
   "name": "@dsgraph/adapters",
   "version": "0.1.0-alpha.0",
-  "description": "Token adapters for dsgraph: CSS custom properties (themes by selectors and media queries).",
+  "description": "Token adapters for dsgraph: Tokens Studio and Style Dictionary JSON, CSS custom properties (themes by selectors and media queries).",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

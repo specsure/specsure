@@ -28,7 +28,8 @@
   ],
   "dependencies": {
     "@dsgraph/schema": "0.1.0-alpha.0",
-    "culori": "4.0.2"
+    "culori": "4.0.2",
+    "json5": "2.2.3"
   },
   "devDependencies": {
     "@types/culori": "4.0.1"

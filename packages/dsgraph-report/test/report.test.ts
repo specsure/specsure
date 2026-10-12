@@ -49,7 +49,7 @@ describe('changeset', () => {
     expect(md).toMatch(/- `color\.brand`: #2e5cff → #3366ff \(ΔE \d+(\.\d+)?\)/)
     expect(md).toContain('  - affects `action.bg`, `action.border`')
     expect(md).not.toMatch(/^- `action\.bg`/m)
-    expect(formatChangeset(cs)).toContain('1 removed · 1 changed (+2 via aliases)')
+    expect(formatChangeset(cs)).toContain('1 removed · 1 changed (+2 through references)')
   })
 
   it('says when there are no changes', async () => {

@@ -13,7 +13,13 @@ export interface SystemResolver {
 
 /** Caches flattened documents across inputs. */
 export function createResolver(system: TokenSystem, opts: { strict: boolean }): SystemResolver {
-  const resolveOpts = { strict: opts.strict, allowNonstandardUnits: system.kind === 'css' }
+  // Units and types beyond DTCG are native to CSS, Tokens Studio and Style Dictionary sources.
+  const native = system.kind !== undefined && system.kind !== 'dtcg'
+  const resolveOpts = {
+    strict: opts.strict,
+    allowNonstandardUnits: native,
+    allowNonstandardTypes: native && system.kind !== 'css',
+  }
   const parseDiagnostics = new DiagnosticBag()
   const flat = new Map<TokenDocument, FlatDoc>()
   const flatten = (d: TokenDocument): FlatDoc => {

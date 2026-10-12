@@ -22,8 +22,11 @@ export interface TokenSystem {
   order: Array<{ kind: 'set' | 'modifier'; name: string }>
   synthetic: boolean
   file?: string
-  /** Where the tokens come from; CSS allows units beyond px/rem without diagnostics. */
-  kind?: 'dtcg' | 'css'
+  /**
+   * Where the tokens come from. CSS, Tokens Studio and Style Dictionary sources allow units
+   * beyond px/rem without diagnostics; the latter two also keep their own token types.
+   */
+  kind?: 'dtcg' | 'css' | 'tokens-studio' | 'style-dictionary'
 }
 
 export type Input = Record<string, string>

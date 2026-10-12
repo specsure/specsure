@@ -1,4 +1,4 @@
-import { converter, formatHex, parse } from 'culori'
+import { converter, formatCss, formatHex, parse as parseCss } from 'culori'
 import { isPlainObject } from '../path.js'
 import { invalid, lenient, type ValueContext } from './context.js'
 
@@ -63,7 +63,7 @@ export function toCulori(c: ColorValue): CuloriColor {
   return out
 }
 
-function fromCulori(obj: CuloriColor): ColorValue {
+export function fromCulori(obj: CuloriColor): ColorValue {
   let space = SPACE_BY_MODE.get(obj.mode)
   let src = obj
   if (!space) {
@@ -75,6 +75,15 @@ function fromCulori(obj: CuloriColor): ColorValue {
   const value: ColorValue = { space, components, alpha: typeof src.alpha === 'number' ? src.alpha : 1 }
   if (space === 'srgb') value.hex = formatHex(src)
   return value
+}
+
+/** culori's parser, which throws on some non-color input (e.g. `clamp(…)`): undefined instead. */
+function parse(css: string): CuloriColor {
+  try {
+    return parseCss(css)
+  } catch {
+    return undefined
+  }
 }
 
 const toOklabConv = converter('oklab')
@@ -107,7 +116,11 @@ export function deltaEOK(a: ColorValue, b: ColorValue): number {
 export function cssColorToDtcg(css: string): Record<string, unknown> | undefined {
   const parsed = parse(css.trim())
   if (!parsed) return undefined
-  const c = fromCulori(parsed)
+  return colorToDtcg(fromCulori(parsed))
+}
+
+/** A color as a DTCG 2025.10 color object. */
+export function colorToDtcg(c: ColorValue): Record<string, unknown> {
   const out: Record<string, unknown> = {
     colorSpace: c.space,
     components: c.components.map((v) => (v === null ? 'none' : v)),
@@ -115,6 +128,50 @@ export function cssColorToDtcg(css: string): Record<string, unknown> | undefined
   if (c.alpha !== 1) out.alpha = c.alpha
   if (c.hex) out.hex = c.hex
   return out
+}
+
+/** A CSS string or a DTCG color object as a color, without diagnostics; undefined if neither. */
+export function looseColor(raw: unknown): ColorValue | undefined {
+  if (typeof raw === 'string') {
+    const parsed = parse(raw.trim())
+    return parsed ? fromCulori(parsed) : undefined
+  }
+  if (!isPlainObject(raw) || !Array.isArray(raw.components) || raw.components.length !== 3) return undefined
+  if (!(COLOR_SPACES as readonly string[]).includes(raw.colorSpace as string)) return undefined
+  const components = raw.components.map((c) => (typeof c === 'number' ? c : null))
+  const alpha = typeof raw.alpha === 'number' ? raw.alpha : 1
+  return { space: raw.colorSpace as ColorSpace, components, alpha }
+}
+
+/** CSS text for a color: hex for opaque sRGB, CSS Color 4 otherwise. */
+export function colorToCss(c: ColorValue): string {
+  if (c.space === 'srgb' && c.alpha === 1) return colorToHex(c)
+  return formatCss(toCulori(c)) ?? colorToHex(c)
+}
+
+/**
+ * A color that references another color and applies its own opacity:
+ * `{ "components": "{color.brand}", "alpha": 0.5 }`, as Figma variables export it.
+ * Not DTCG 2025.10: an error in strict mode, a flag otherwise.
+ */
+function composedColor(raw: Record<string, unknown>, ctx: ValueContext): ColorValue | undefined {
+  const base = looseColor(raw.components)
+  if (!base) return invalid(ctx, 'dtcg/invalid-color', 'components must be an array of 3 values')
+  let alpha = raw.alpha ?? 1
+  if (typeof alpha === 'string' && /^\s*\d*\.?\d+%\s*$/.test(alpha)) alpha = Number.parseFloat(alpha) / 100
+  if (typeof alpha !== 'number' || alpha < 0 || alpha > 1)
+    return invalid(ctx, 'dtcg/invalid-color', 'alpha must be a number between 0 and 1')
+  if (ctx.strict) {
+    ctx.diag.error(
+      'dtcg/composed-color',
+      'A color with a referenced base and its own alpha is not DTCG 2025.10',
+      ctx.loc,
+    )
+    return undefined
+  }
+  ctx.flags.add('composed-color')
+  const { hex: _hex, ...rest } = base
+  return { ...rest, alpha: base.alpha * alpha }
 }
 
 export function canonicalColor(raw: unknown, ctx: ValueContext): ColorValue | undefined {
@@ -126,6 +183,8 @@ export function canonicalColor(raw: unknown, ctx: ValueContext): ColorValue | un
     return fromCulori(parsed)
   }
   if (!isPlainObject(raw)) return invalid(ctx, 'dtcg/invalid-color', 'Color value must be an object')
+  if (raw.colorSpace === undefined && raw.components !== undefined && !Array.isArray(raw.components))
+    return composedColor(raw, ctx)
   const space = raw.colorSpace
   if (typeof space !== 'string' || !(COLOR_SPACES as readonly string[]).includes(space))
     return invalid(ctx, 'dtcg/invalid-color-space', `Unsupported colorSpace "${String(space)}"`)

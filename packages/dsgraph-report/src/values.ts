@@ -3,12 +3,27 @@ import { type ColorValue, colorToHex, type SourceMeta } from '@dsgraph/core'
 const isObj = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v)
 
-/** Short human-readable form of a canonical value. */
+const plain = (value: unknown): string =>
+  typeof value === 'string' || typeof value === 'number' ? String(value) : JSON.stringify(value)
+
+/**
+ * Short human-readable form of a canonical value. Never throws: a value that does not have the
+ * shape of its type (a source error) is shown as it is.
+ */
 export function formatValue(type: string | null, value: unknown): string {
+  try {
+    return formatTyped(type, value)
+  } catch {
+    return plain(value)
+  }
+}
+
+function formatTyped(type: string | null, value: unknown): string {
   if (value === null || value === undefined) return '—'
   switch (type) {
     case 'color': {
-      const c = value as ColorValue
+      if (!isObj(value) || !Array.isArray(value.components)) return plain(value)
+      const c = value as unknown as ColorValue
       const hex = colorToHex(c)
       const alpha = c.alpha < 1 ? ` ${Math.round(c.alpha * 100)}%` : ''
       return c.space === 'srgb' ? `${hex}${alpha}` : `${hex}${alpha} (${c.space})`
@@ -43,8 +58,7 @@ export function formatValue(type: string | null, value: unknown): string {
       return `${formatValue('fontWeight', t.fontWeight)} ${formatValue('dimension', t.fontSize)}/${t.lineHeight ?? '—'} ${formatValue('fontFamily', t.fontFamily)}`
     }
     default:
-      if (typeof value === 'string' || typeof value === 'number') return String(value)
-      return JSON.stringify(value)
+      return plain(value)
   }
 }
 

@@ -16,12 +16,15 @@ export interface FindingGroup {
 }
 
 const QUOTED = /"[^"]*"/g
+/** What differs between repeated messages: quoted values and numbers (`steps 0 and 1`). */
+const VARIABLE = /"[^"]*"|\b\d+(?:\.\d+)?\b/g
+const mask = (part: string) => (part.startsWith('"') ? '"…"' : '…')
 
-/** Groups repeated findings: same rule, same severity, same message up to quoted values. Order is kept. */
+/** Groups repeated findings: same rule, same severity, same message up to quoted values and numbers. Order is kept. */
 export function groupFindings(findings: readonly Finding[]): FindingGroup[] {
   const groups = new Map<string, FindingGroup>()
   for (const f of findings) {
-    const pattern = f.message.replace(QUOTED, '"…"')
+    const pattern = f.message.replace(VARIABLE, mask)
     const key = `${f.severity}\u0000${f.rule}\u0000${pattern}`
     const g = groups.get(key)
     if (g) g.findings.push(f)
@@ -36,13 +39,13 @@ export function groupFindings(findings: readonly Finding[]): FindingGroup[] {
   return [...groups.values()]
 }
 
-/** Masks only the quoted values that differ between messages; a shared value stays (`use "px"`). */
+/** Masks only the values that differ between messages; a shared one stays (`use "px"`, `2025.10`). */
 function restoreShared(messages: string[]): string {
-  const quoted = messages.map((m) => m.match(QUOTED) ?? [])
+  const parts = messages.map((m) => m.match(VARIABLE) ?? [])
   let i = 0
-  return messages[0]!.replace(QUOTED, (q) => {
+  return messages[0]!.replace(VARIABLE, (q) => {
     const k = i++
-    return quoted.every((qs) => qs[k] === q) ? q : '"…"'
+    return parts.every((ps) => ps[k] === q) ? q : mask(q)
   })
 }
 

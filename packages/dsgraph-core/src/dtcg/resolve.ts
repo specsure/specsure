@@ -3,7 +3,15 @@ import type { DiagnosticBag } from '../diagnostics.js'
 import { isPlainObject, tokenId } from '../path.js'
 import { getAt, parsePointer, toPointer } from '../pointer.js'
 import { canonicalValue, INTERNAL_TYPES, STANDARD_TYPES } from '../values/canonical.js'
+import { looseColor } from '../values/color.js'
 import type { ValueContext } from '../values/context.js'
+import {
+  type ColorModifier,
+  type ExpressionHint,
+  evaluateExpression,
+  modifyColor,
+  serializeForExpression,
+} from '../values/expression.js'
 import type { FlatDoc, RawToken } from './flatten.js'
 import { parseExtendsTarget } from './merge.js'
 
@@ -28,6 +36,8 @@ export interface ResolvedToken {
 export interface ResolveOptions {
   strict: boolean
   allowNonstandardUnits?: boolean
+  /** Sources with their own type vocabulary (Tokens Studio): unknown types are flagged, not reported. */
+  allowNonstandardTypes?: boolean
 }
 
 export interface ResolvedDoc {
@@ -36,6 +46,37 @@ export interface ResolvedDoc {
 }
 
 const CURLY = /^\{([^{}]+)\}$/
+const EMBEDDED = /\{([^{}]+)\}/g
+
+/** `$extensions["dev.dsgraph"]` as adapters write it. */
+interface DevExtension {
+  expression?: boolean | { unit?: string }
+  colorModifier?: { type: string; value: unknown; space?: string; color?: unknown }
+}
+const devExtension = (node: Record<string, unknown>): DevExtension | undefined => {
+  const ext = node.$extensions
+  return isPlainObject(ext) && isPlainObject(ext['dev.dsgraph'])
+    ? (ext['dev.dsgraph'] as DevExtension)
+    : undefined
+}
+const HINT_BY_KEY: Record<string, ExpressionHint> = {
+  color: 'color',
+  fontSize: 'dimension',
+  letterSpacing: 'dimension',
+  offsetX: 'dimension',
+  offsetY: 'dimension',
+  blur: 'dimension',
+  spread: 'dimension',
+  width: 'dimension',
+  lineHeight: 'number',
+  alpha: 'number',
+}
+const HINT_BY_TYPE: Record<string, ExpressionHint> = {
+  color: 'color',
+  dimension: 'dimension',
+  number: 'number',
+  fontWeight: 'number',
+}
 
 interface Target {
   id: string
@@ -115,6 +156,9 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
     const t = doc.tokens.get(id)!
     const refs: Ref[] = []
     let ok = true
+    const dev = devExtension(t.node)
+    const expression = dev?.expression
+    const defaultUnit = typeof expression === 'object' ? expression.unit : undefined
 
     const follow = (target: Target, at: string[]): unknown => {
       const property = at.length > 0 ? toPointer(at) : undefined
@@ -158,6 +202,27 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
       return found.value
     }
 
+    /** Text with references inside (`{a} * 2`, `rgba({ink}, 0.5)`), evaluated after substitution. */
+    const evaluate = (text: string, at: string[], hint: ExpressionHint): unknown => {
+      let failed = false
+      const substituted = text.replace(EMBEDDED, (whole, target: string) => {
+        const v = follow({ id: target.trim() }, at)
+        const s = v === undefined ? undefined : serializeForExpression(v)
+        if (s === undefined) failed = true
+        return s ?? whole
+      })
+      if (failed) {
+        ok = false
+        return undefined
+      }
+      const value = evaluateExpression(substituted, hint, defaultUnit)
+      if (value === undefined) {
+        diag.error('dtcg/invalid-expression', `Cannot evaluate "${text}"`, loc(t))
+        ok = false
+      }
+      return value
+    }
+
     const substitute = (v: unknown, at: string[]): unknown => {
       const ref = parseRef(v, t)
       if (ref === null) {
@@ -165,6 +230,11 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
         return undefined
       }
       if (ref) return follow(ref, at)
+      if (expression && typeof v === 'string' && v.includes('{')) {
+        const type = typeOf(id).type
+        const hint = at.length === 0 ? HINT_BY_TYPE[type ?? ''] : HINT_BY_KEY[at[at.length - 1]!]
+        return evaluate(v, at, hint)
+      }
       if (Array.isArray(v)) return v.map((item, i) => substitute(item, [...at, String(i)]))
       if (isPlainObject(v)) {
         const out: Record<string, unknown> = {}
@@ -176,10 +246,39 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
 
     // Seed the memo to stop infinite recursion on cycles discovered deeper in the chain.
     rawMemo.set(id, { value: undefined, refs, ok: false })
-    const value = substitute(t.node.$value, [])
+    let value = substitute(t.node.$value, [])
+    const mod = dev?.colorModifier
+    if (mod && ok) value = applyModifier(value, mod)
     const result = { value, refs, ok: ok && !cyclic.has(id) }
     rawMemo.set(id, result)
     return result
+
+    function applyModifier(base: unknown, mod: NonNullable<DevExtension['colorModifier']>): unknown {
+      const color = looseColor(base)
+      let amount = mod.value
+      if (typeof amount === 'string') {
+        const whole = parseRef(amount, t)
+        amount = whole ? follow(whole, []) : amount.includes('{') ? evaluate(amount, [], 'number') : amount
+        if (typeof amount === 'string') amount = evaluateExpression(amount, 'number')
+      }
+      let withColor: unknown = mod.color
+      if (typeof withColor === 'string' && CURLY.test(withColor))
+        withColor = follow(parseRef(withColor, t)!, [])
+      const m: ColorModifier = {
+        type: mod.type as ColorModifier['type'],
+        amount: typeof amount === 'number' ? amount : Number.NaN,
+        space: mod.space ?? 'srgb',
+      }
+      const w = looseColor(withColor)
+      if (w) m.with = w
+      const out = color ? modifyColor(color, m) : undefined
+      if (out === undefined) {
+        if (ok)
+          diag.error('dtcg/invalid-color-modifier', `Cannot apply the "${mod.type}" color modifier`, loc(t))
+        ok = false
+      }
+      return out
+    }
   }
 
   const deprecationOf = (t: RawToken): Deprecated | null => {
@@ -210,7 +309,9 @@ export function resolveDoc(doc: FlatDoc, diag: DiagnosticBag, opts: ResolveOptio
     const { type, source } = typeOf(id)
     if (!type) diag.error('dtcg/untyped', `Token "${id}" has no $type and none can be inherited`, loc(t))
     else if (!STANDARD_TYPES.has(type) && !INTERNAL_TYPES.has(type)) {
-      if (opts.strict) diag.error('dtcg/unknown-type', `"${type}" is not a DTCG 2025.10 type`, loc(t))
+      if (opts.allowNonstandardTypes && !opts.strict) {
+        /* the source's own type: flagged below */
+      } else if (opts.strict) diag.error('dtcg/unknown-type', `"${type}" is not a DTCG 2025.10 type`, loc(t))
       else diag.warn('dtcg/unknown-type', `"${type}" is not a DTCG 2025.10 type`, loc(t))
       flags.add('nonstandard-type')
     }

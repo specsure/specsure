@@ -23,6 +23,7 @@ export class GitHubSource implements Source {
   private readonly api: string
   private readonly raw: string
   private readonly fetchImpl: typeof fetch
+  private readonly texts = new Map<string, Promise<string>>()
 
   constructor(
     readonly repo: string,
@@ -74,7 +75,18 @@ export class GitHubSource implements Source {
     return this.files.filter((p) => matchGlob(p, patterns))
   }
 
-  async readText(path: string): Promise<string> {
+  /** Cached: adapters detect and then load the same files. */
+  readText(path: string): Promise<string> {
+    let p = this.texts.get(path)
+    if (!p) {
+      p = this.fetchText(path)
+      p.catch(() => this.texts.delete(path))
+      this.texts.set(path, p)
+    }
+    return p
+  }
+
+  private async fetchText(path: string): Promise<string> {
     const sha = await this.commit()
     const full = (this.root ? `${this.root}/` : '') + path.replace(/^\//, '')
     const encoded = full.split('/').map(encodeURIComponent).join('/')

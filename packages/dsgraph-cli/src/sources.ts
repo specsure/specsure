@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
-import { cssTokens } from '@dsgraph/adapters'
+import { cssTokens, jsonTokens } from '@dsgraph/adapters'
 import { type Config, DsGraph, type Snapshot, type Source, scan, validateSnapshot } from '@dsgraph/core'
 import { MemorySource, parseRemoteSpec, remoteSource } from '@dsgraph/sources'
 import { NodeFsSource } from '@dsgraph/sources/node'
@@ -13,7 +13,7 @@ import { NodeFsSource } from '@dsgraph/sources/node'
 export async function loadGraph(spec: string, config: Config, cwd: string): Promise<DsGraph> {
   const { source, config: cfg, snapshot } = await toSource(spec, config, cwd)
   if (snapshot) return DsGraph.from(snapshot)
-  return DsGraph.from(await scan(source!, cfg, { adapters: [cssTokens] }))
+  return DsGraph.from(await scan(source!, cfg, { adapters: [jsonTokens, cssTokens] }))
 }
 
 export async function toSource(

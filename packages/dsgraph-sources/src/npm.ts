@@ -18,6 +18,7 @@ export class NpmSource implements Source {
   private readonly dataApi: string
   private readonly cdn: string
   private readonly fetchImpl: typeof fetch
+  private readonly texts = new Map<string, Promise<string>>()
 
   constructor(
     readonly pkg: string,
@@ -58,7 +59,18 @@ export class NpmSource implements Source {
     return this.fileList.filter((p) => matchGlob(p, patterns))
   }
 
-  async readText(path: string): Promise<string> {
+  /** Cached: adapters detect and then load the same files. */
+  readText(path: string): Promise<string> {
+    let p = this.texts.get(path)
+    if (!p) {
+      p = this.fetchText(path)
+      p.catch(() => this.texts.delete(path))
+      this.texts.set(path, p)
+    }
+    return p
+  }
+
+  private async fetchText(path: string): Promise<string> {
     const v = await this.resolveVersion()
     const res = await this.fetchImpl(`${this.cdn}/${this.pkg}@${v}/${path.replace(/^\//, '')}`)
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${path}`)

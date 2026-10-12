@@ -30,7 +30,7 @@ function describe(c: Change, types: Map<string, string | null>, code: (s: string
       return `removed ${code(c.target)}${maybe}`
     }
     case 'token.renamed':
-      return `renamed ${code(c.from ?? '?')} → ${code(c.target)}${c.confidence < 0.8 ? ` (likely, ${c.confidence})` : ''}`
+      return `renamed ${code(c.from ?? '?')} → ${code(c.target)}${c.confidence < 0.8 ? ` (likely, ${Math.round(c.confidence * 100)}%)` : ''}`
     case 'token.value-changed': {
       const delta = formatDelta(c.delta)
       return `${code(c.target)}${where}: ${formatSide(t, c.before)} → ${formatSide(t, c.after)}${delta ? ` (${delta})` : ''}`
@@ -95,7 +95,7 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     counts.removed ? `${counts.removed} removed` : '',
     counts.renamed ? `${counts.renamed} renamed` : '',
     counts.changed
-      ? `${counts.changed} changed${counts.propagated ? ` (+${counts.propagated} via aliases)` : ''}`
+      ? `${counts.changed} changed${counts.propagated ? ` (+${counts.propagated} through references)` : ''}`
       : '',
     counts.added ? `${counts.added} added` : '',
     counts.deprecated ? `${counts.deprecated} deprecated` : '',

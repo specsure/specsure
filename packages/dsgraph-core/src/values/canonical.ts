@@ -210,6 +210,12 @@ function shadow(raw: unknown, ctx: ValueContext): unknown[] | undefined {
   for (const layer of layers) {
     if (!isPlainObject(layer)) return invalid(ctx, 'dtcg/invalid-shadow', 'Each shadow must be an object')
     const { inset, ...rest } = layer
+    // A missing spread is common in the wild (Style Dictionary examples) and means 0.
+    if (rest.spread === undefined && rest.blur !== undefined) {
+      if (!lenient(ctx, 'dtcg/shadow-missing-spread', 'shadow is missing "spread"; read as 0'))
+        return undefined
+      rest.spread = { value: 0, unit: 'px' }
+    }
     const v = composite(rest, ctx, 'shadow', {
       color: 'color',
       offsetX: 'dimension',
