@@ -60,7 +60,7 @@ const core = {
   },
 }
 
-const studio = {
+const sets = {
   'tokens/$metadata.json': json({ tokenSetOrder: ['core', 'theme/light', 'theme/dark'] }),
   'tokens/$themes.json': json([
     {
@@ -83,9 +83,9 @@ const studio = {
   'package.json': json({ name: 'tokens', version: '1.0.0' }),
 }
 
-describe('tokens-json: Tokens Studio', () => {
+describe('tokens-json: token sets and themes', () => {
   it('reads sets in order and turns theme groups into modifiers', async () => {
-    const { snapshot, graph, errors } = await scanFiles(studio)
+    const { snapshot, graph, errors } = await scanFiles(sets)
     expect(errors).toEqual([])
     expect(snapshot.contexts.modifiers).toEqual([
       { name: 'Mode', contexts: ['Light', 'Dark'], default: 'Light' },
@@ -96,7 +96,7 @@ describe('tokens-json: Tokens Studio', () => {
   })
 
   it('converts values to DTCG and evaluates math and color modifiers', async () => {
-    const { graph } = await scanFiles(studio)
+    const { graph } = await scanFiles(sets)
     const v = (id: string) => graph.value(id)
     expect(v('spacing.base')).toEqual({ value: 8, unit: 'px' })
     expect(v('spacing.lg')).toEqual({ value: 16, unit: 'px' })
@@ -124,11 +124,11 @@ describe('tokens-json: Tokens Studio', () => {
   })
 
   it('reports what a change in a base value moves', async () => {
-    const before = await scanFiles(studio)
+    const before = await scanFiles(sets)
     const changed = structuredClone(core)
     changed.spacing.base.value = '10'
     changed.colors.blue[500].value = '#2255ee'
-    const after = await scanFiles({ ...studio, 'tokens/core.json': json(changed) })
+    const after = await scanFiles({ ...sets, 'tokens/core.json': json(changed) })
     const cs = await diff(before.graph, after.graph)
     const targets = cs.changes.map((c) => `${c.origin}:${c.target}`)
     expect(targets).toContain('direct:spacing.base')
@@ -181,10 +181,10 @@ describe('tokens-json: real-world shapes', () => {
   it('reads one of several exports of the same tokens', async () => {
     const names = Array.from({ length: 12 }, (_, i) => i)
     const hex = (i: number) => `#${(i * 20 + 16).toString(16).padStart(2, '0')}0000`
-    const studioFile = Object.fromEntries(names.map((i) => [`red-${i}`, { value: hex(i), type: 'color' }]))
+    const typedFile = Object.fromEntries(names.map((i) => [`red-${i}`, { value: hex(i), type: 'color' }]))
     const untyped = Object.fromEntries(names.map((i) => [`--red-${i}`, { $value: hex(i) }]))
     const { snapshot, graph } = await scanFiles({
-      'pkg.figma-tokens.json': json({ color: studioFile }),
+      'pkg.sets.json': json({ color: typedFile }),
       'pkg.tokens.json': json(untyped),
     })
     expect(graph.tokens()).toHaveLength(12)
@@ -225,7 +225,7 @@ describe('modes in separate files', () => {
   })
 })
 
-describe('tokens-json: Style Dictionary', () => {
+describe('tokens-json: value/type JSON', () => {
   const sd = {
     'tokens/color/base.json': json({
       color: { base: { red: { value: '#ff0000' }, ink: { value: '#1c1c1a' } } },

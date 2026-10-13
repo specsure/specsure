@@ -6,7 +6,7 @@ npx dsgraph check ./tokens
 npx dsgraph scan github:owner/repo/tokens@main --out snapshot.json
 ```
 
-Formats: DTCG 2025.10 (with resolver documents and `$extensions.mode`), Tokens Studio (sets and themes), Style Dictionary, CSS custom properties.
+Formats: DTCG 2025.10 (with resolver documents and `$extensions.mode`), token JSON with sets and themes (`$themes.json`, `$metadata.json`), older token JSON with `value` and `type`, CSS custom properties.
 
 Sources: folders, single files (`.json`, `.tokens`, `.css`, `.resolver.json`), `npm:pkg@range`, `github:owner/repo/path@ref` (`GITHUB_TOKEN` for private repos), saved snapshots.
 

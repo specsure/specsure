@@ -13,7 +13,7 @@ export interface SystemResolver {
 
 /** Caches flattened documents across inputs. */
 export function createResolver(system: TokenSystem, opts: { strict: boolean }): SystemResolver {
-  // Units and types beyond DTCG are native to CSS, Tokens Studio and Style Dictionary sources.
+  // Units and types beyond DTCG are native to CSS, token-set and value/type JSON sources.
   const native = system.kind !== undefined && system.kind !== 'dtcg'
   const resolveOpts = {
     strict: opts.strict,

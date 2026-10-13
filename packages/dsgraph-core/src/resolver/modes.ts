@@ -43,7 +43,7 @@ function strip(tree: unknown, found: ModeToken[], path: string[] = []): unknown 
 
 /**
  * Modes written per token in `$extensions.mode` (`{ "light": …, "dark": … }`), as Figma variable
- * exports and Terrazzo write them, become modifiers. Tokens that share the same mode names share a
+ * exports and some build tools write them, become modifiers. Tokens that share the same mode names share a
  * modifier; it is called `theme` for light and dark, otherwise after the top-level group (a Figma
  * collection) its tokens live in. Systems that already have modifiers are left as they are.
  */

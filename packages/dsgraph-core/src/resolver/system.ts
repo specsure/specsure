@@ -23,10 +23,10 @@ export interface TokenSystem {
   synthetic: boolean
   file?: string
   /**
-   * Where the tokens come from. CSS, Tokens Studio and Style Dictionary sources allow units
+   * Where the tokens come from. CSS, token-set and value/type JSON sources allow units
    * beyond px/rem without diagnostics; the latter two also keep their own token types.
    */
-  kind?: 'dtcg' | 'css' | 'tokens-studio' | 'style-dictionary'
+  kind?: 'dtcg' | 'css' | 'token-sets' | 'legacy-json'
 }
 
 export type Input = Record<string, string>

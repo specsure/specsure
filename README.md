@@ -13,7 +13,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 - **Snapshots** — a canonical, hashed, schema-validated JSON of the resolved system. Values are stored only per modifier that actually influences a token.
 - **Diff** — added, removed, renamed (with confidence), value changes per context (direct vs propagated, with cause), notation-only changes, alias retargeting, deprecations, context and modifier changes.
 - **Semver** — a suggested bump from the consumer's point of view, configurable, with non-public layers.
-- **Tokens Studio and Style Dictionary** JSON as a token source: sets and themes, math, color modifiers, `.value` references; modes from `$extensions.mode` (Figma variable exports).
+- **Token JSON beyond DTCG** as a token source: token sets with `$themes.json` and `$metadata.json`, older JSON with `value` and `type`, math, color modifiers, `.value` references; modes from `$extensions.mode` and mode files (Figma variable exports).
 - **CSS custom properties** as a token source: themes from `[data-theme]`, `.dark` and `prefers-color-scheme`, other media queries as modifiers, inferred types.
 - **Rules** — deprecated references, naming collisions, hex mismatches, gamut, palette ramps, contrast matrix, layer rules; presets by architecture pattern.
 - **Reports** — text, Markdown (for PR comments) and JSON; repeated findings are collapsed into one line per kind.
@@ -28,7 +28,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 | [`@dsgraph/schema`](packages/dsgraph-schema) | Types, JSON Schemas, canonical JSON and hashing |
 | [`@dsgraph/core`](packages/dsgraph-core) | Parsing, resolution, values, snapshots, graph queries, diff, semver |
 | [`@dsgraph/sources`](packages/dsgraph-sources) | Virtual file systems: memory, npm (jsDelivr), GitHub, Node |
-| [`@dsgraph/adapters`](packages/dsgraph-adapters) | Tokens Studio, Style Dictionary, CSS custom properties → tokens |
+| [`@dsgraph/adapters`](packages/dsgraph-adapters) | Token-set and value/type JSON, CSS custom properties → tokens |
 | [`@dsgraph/rules`](packages/dsgraph-rules) | Rule engine, built-in rules, presets |
 | [`@dsgraph/report`](packages/dsgraph-report) | Text, Markdown and JSON formatters |
 | [`dsgraph`](packages/dsgraph-cli) | CLI |

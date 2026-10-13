@@ -36,7 +36,7 @@ export interface ResolvedToken {
 export interface ResolveOptions {
   strict: boolean
   allowNonstandardUnits?: boolean
-  /** Sources with their own type vocabulary (Tokens Studio): unknown types are flagged, not reported. */
+  /** Sources with their own type vocabulary (token sets): unknown types are flagged, not reported. */
   allowNonstandardTypes?: boolean
 }
 

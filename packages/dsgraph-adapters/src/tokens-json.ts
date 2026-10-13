@@ -17,8 +17,11 @@ import {
   type Dialect,
   groupType,
   normalizeRefs,
-  STUDIO_ONLY_TYPES,
+  SET_FORMAT_TYPES,
 } from './json-values.js'
+
+/** The `$extensions` key under which token-set files keep color modifiers (`modify`). */
+const MODIFIER_EXTENSION = 'studio.tokens'
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -27,7 +30,7 @@ const base = (p: string) => p.slice(p.lastIndexOf('/') + 1)
 const dir = (p: string) => (p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '')
 const META = /(^|\/)\$(themes|metadata)\.json$/
 
-/** `{ value }` without `$`: a token as Tokens Studio and Style Dictionary write it. */
+/** `{ value }` without `$`: a token in value/type JSON, the older token notation. */
 function isLegacyToken(o: Record<string, unknown>): boolean {
   if (!Object.hasOwn(o, 'value') || Object.hasOwn(o, '$value')) return false
   const v = o.value
@@ -76,7 +79,7 @@ function fromSets(o: Record<string, unknown>): Record<string, unknown> {
 interface Survey {
   legacy: number
   dtcg: number
-  studioTypes: number
+  setTypes: number
   /** Tokens with a type of their own or from a group. */
   typed: number
   /** Literal values (no references), to tell alternative exports of the same tokens. */
@@ -89,7 +92,7 @@ const newSurvey = (): Survey => ({
   legacy: 0,
   dtcg: 0,
   typed: 0,
-  studioTypes: 0,
+  setTypes: 0,
   values: new Set(),
   ids: new Set(),
 })
@@ -101,10 +104,10 @@ function survey(node: unknown, s: Survey, inheritsType = false, path: string[] =
     const dollar = Object.hasOwn(tree, '$value')
     if (dollar) s.dtcg++
     else s.legacy++
-    // The token's own type as written; a type taken from `$schema` or `sets` is not Tokens Studio's.
+    // The token's own type as written; a type taken from `$schema` or `sets` says nothing about the format.
     const own = node.type ?? node.$type
     if (typeof own === 'string' || inheritsType || schemaType(tree)) s.typed++
-    if (typeof own === 'string' && STUDIO_ONLY_TYPES.has(own)) s.studioTypes++
+    if (typeof own === 'string' && SET_FORMAT_TYPES.has(own)) s.setTypes++
     const v = dollar ? tree.$value : tree.value
     if ((typeof v === 'string' && !v.includes('{')) || typeof v === 'number')
       s.values.add(String(v).trim().toLowerCase())
@@ -112,7 +115,7 @@ function survey(node: unknown, s: Survey, inheritsType = false, path: string[] =
     return
   }
   const groupType = typeof tree.$type === 'string'
-  if (groupType && STUDIO_ONLY_TYPES.has(tree.$type as string)) s.studioTypes++
+  if (groupType && SET_FORMAT_TYPES.has(tree.$type as string)) s.setTypes++
   for (const [k, v] of Object.entries(tree))
     if (!k.startsWith('$')) survey(v, s, inheritsType || groupType, [...path, k])
 }
@@ -157,7 +160,7 @@ const hasMarkers = (f: Loaded) =>
 
 /**
  * Which tool wrote these files, or undefined for typed DTCG (left to the core). DTCG syntax
- * without any `$type` is read like Style Dictionary: types come from names and values.
+ * without any `$type` is read like value/type JSON: types come from names and values.
  */
 function dialectOf(files: Loaded[]): Dialect | undefined {
   const s = newSurvey()
@@ -166,16 +169,16 @@ function dialectOf(files: Loaded[]): Dialect | undefined {
   const tokenFiles = files.filter((f) => !hasMarkers(f))
   const setsAtTop =
     tokenFiles.length === 1 && isObj(tokenFiles[0]!.tree) && topLevelAreSets(tokenFiles[0]!.tree)
-  if (files.some(hasMarkers) || s.studioTypes > 0 || setsAtTop) return 'tokens-studio'
-  if (s.legacy > 0) return 'style-dictionary'
-  if (s.dtcg > 0 && s.typed === 0) return 'style-dictionary'
+  if (files.some(hasMarkers) || s.setTypes > 0 || setsAtTop) return 'token-sets'
+  if (s.legacy > 0) return 'legacy-json'
+  if (s.dtcg > 0 && s.typed === 0) return 'legacy-json'
   return undefined
 }
 
-/** Prefer the export with the most typed tokens; then DTCG, Tokens Studio, Style Dictionary. */
+/** Prefer the export with the most typed tokens; then DTCG, token sets, value/type JSON. */
 function rankOf(s: Survey): number {
   const typed = Math.round((s.typed / Math.max(1, s.legacy + s.dtcg)) * 10)
-  return typed * 10 + (s.studioTypes > 0 ? 3 : s.legacy > 0 ? 2 : 4)
+  return typed * 10 + (s.setTypes > 0 ? 3 : s.legacy > 0 ? 2 : 4)
 }
 
 const jaccard = (a: Set<string>, b: Set<string>): number => {
@@ -194,13 +197,13 @@ function alternatives(a: Survey, b: Survey): boolean {
   const nb = b.legacy + b.dtcg
   if (Math.min(na, nb) / Math.max(na, nb) < 0.7) return false
   if (jaccard(a.values, b.values) < 0.5) return false
-  const sameFormat = a.studioTypes > 0 === b.studioTypes > 0 && a.dtcg > 0 === b.dtcg > 0
+  const sameFormat = a.setTypes > 0 === b.setTypes > 0 && a.dtcg > 0 === b.dtcg > 0
   return !sameFormat || jaccard(a.ids, b.ids) >= 0.8
 }
 
 /**
  * Packages often ship the same tokens in several formats (`tokens.json`,
- * `figma-tokens.json`, `style-dictionary-tokens.json`). Files whose literal values mostly
+ * `tokens.figma.json`, `tokens.legacy.json`). Files whose literal values mostly
  * coincide are alternatives: only the best-typed one is read.
  */
 function pickExports(files: Loaded[], diag?: DiagnosticBag): Loaded[] {
@@ -351,9 +354,9 @@ function convertToken(
   if (sourceType && sourceType !== type) dev.sourceType = sourceType
   // A `uuid` stays when a token is renamed: the diff matches renames by it.
   if (typeof node.uuid === 'string' && node.uuid) dev.stableId = node.uuid
-  const studio = ext['studio.tokens']
-  if (isObj(studio) && isObj(studio.modify) && typeof studio.modify.type === 'string') {
-    const m = studio.modify
+  const carrier = ext[MODIFIER_EXTENSION]
+  if (isObj(carrier) && isObj(carrier.modify) && typeof carrier.modify.type === 'string') {
+    const m = carrier.modify
     dev.colorModifier = { type: m.type, value: m.value, space: m.space, color: m.color }
   }
   if (Object.keys(dev).length > 0) ext['dev.dsgraph'] = dev
@@ -378,7 +381,7 @@ function themesOf(raw: unknown, diag: DiagnosticBag, file: string): Theme[] {
     out.push({ name: t.name, group: typeof t.group === 'string' && t.group ? t.group : 'theme', sets })
   }
   if (out.length === 0 && raw.length > 0)
-    diag.warn('tokens-studio/invalid-themes', 'No usable themes found', { file })
+    diag.warn('token-sets/invalid-themes', 'No usable themes found', { file })
   return out
 }
 
@@ -400,7 +403,7 @@ function refsIn(v: unknown, out: string[]): void {
 }
 
 /**
- * A single Tokens Studio file keeps token sets as top-level keys; references then leave the set
+ * A single exported token-set file keeps its sets as top-level keys; references then leave the set
  * name out. Without `$themes`/`$metadata` the references decide which reading resolves more.
  */
 function topLevelAreSets(tree: Record<string, unknown>): boolean {
@@ -416,7 +419,7 @@ function topLevelAreSets(tree: Record<string, unknown>): boolean {
   return hits(asSets) > hits(asGroups)
 }
 
-function studioSystem(files: Loaded[], diag: DiagnosticBag): TokenSystem {
+function setsSystem(files: Loaded[], diag: DiagnosticBag): TokenSystem {
   const unit = 'px'
   const sets = new Map<string, TokenDocument>()
   let order: string[] | undefined
@@ -438,11 +441,11 @@ function studioSystem(files: Loaded[], diag: DiagnosticBag): TokenSystem {
     if (exported || (single && topLevelAreSets(f.tree))) {
       for (const [name, tree] of Object.entries(f.tree))
         if (!name.startsWith('$') && isObj(tree))
-          sets.set(name, { file: `${f.file}#/${name}`, tree: convertTree(tree, 'tokens-studio', unit) })
+          sets.set(name, { file: `${f.file}#/${name}`, tree: convertTree(tree, 'token-sets', unit) })
     } else {
       const rel = root && f.file.startsWith(`${root}/`) ? f.file.slice(root.length + 1) : f.file
       const name = rel.replace(/\.(json|tokens)$/i, '')
-      sets.set(name, { file: f.file, tree: convertTree(f.tree, 'tokens-studio', unit) })
+      sets.set(name, { file: f.file, tree: convertTree(f.tree, 'token-sets', unit) })
     }
   }
 
@@ -456,12 +459,12 @@ function studioSystem(files: Loaded[], diag: DiagnosticBag): TokenSystem {
     modifiers: new Map(),
     order: [{ kind: 'set', name: 'base' }],
     synthetic: true,
-    kind: 'tokens-studio',
+    kind: 'token-sets',
   }
   if (themes.length === 0) {
     system.sets.set('base', docs(names))
     if (sets.size > 1)
-      diag.info('tokens-studio/no-themes', `No themes: ${sets.size} token sets are merged in set order`)
+      diag.info('token-sets/no-themes', `No themes: ${sets.size} token sets are merged in set order`)
     return system
   }
 
@@ -488,14 +491,14 @@ function studioSystem(files: Loaded[], diag: DiagnosticBag): TokenSystem {
   }
   const unused = names.filter((n) => !themes.some((t) => used(t).has(n)))
   if (unused.length > 0)
-    diag.info('tokens-studio/unused-sets', `Token sets in no theme are not read: ${unused.join(', ')}`)
+    diag.info('token-sets/unused-sets', `Token sets in no theme are not read: ${unused.join(', ')}`)
   return system
 }
 
 /**
- * Tokens Studio and Style Dictionary JSON → token system (DTCG 2025.10 values).
- * Tokens Studio: token sets (one file each, or top-level keys of one file), `$metadata.json` for
- * set order and `$themes.json` for themes; theme groups become modifiers. Style Dictionary: every
+ * Token-set JSON and value/type JSON → token system (DTCG 2025.10 values).
+ * Token sets: one file each or top-level keys of one file, `$metadata.json` for
+ * set order and `$themes.json` for themes; theme groups become modifiers. Value/type JSON: every
  * file merges into one set, untyped tokens take their type from the category (`color`, `size`,
  * `time`) or the value. Plain DTCG files are left to the core.
  */
@@ -513,18 +516,18 @@ export const jsonTokens: TokenAdapter = {
     const all = await readAll(source, config, diag)
     pickExports(all, diag)
     const loaded = all.filter((f) => wanted.has(f.file))
-    const dialect = dialectOf(loaded) ?? 'style-dictionary'
-    if (dialect === 'tokens-studio') return studioSystem(loaded, diag)
+    const dialect = dialectOf(loaded) ?? 'legacy-json'
+    if (dialect === 'token-sets') return setsSystem(loaded, diag)
     const docs: TokenDocument[] = loaded.map((f) => ({
       file: f.file,
-      tree: convertTree(f.tree, 'style-dictionary', 'px'),
+      tree: convertTree(f.tree, 'legacy-json', 'px'),
     }))
     return {
       sets: new Map([['default', docs]]),
       modifiers: new Map(),
       order: [{ kind: 'set', name: 'default' }],
       synthetic: true,
-      kind: 'style-dictionary',
+      kind: 'legacy-json',
     }
   },
 }

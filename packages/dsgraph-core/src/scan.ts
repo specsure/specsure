@@ -16,14 +16,14 @@ import { prefetch, type Source } from './source.js'
 export type ScanConfig = Config
 
 /**
- * An adapter that turns non-DTCG token sources (CSS custom properties, Tokens Studio…) into a
+ * An adapter that turns non-DTCG token sources (CSS custom properties, token-set JSON…) into a
  * token system. Adapters never resolve references; the core does (spec section 4.2).
  */
 export interface TokenAdapter {
   readonly name: string
   /**
-   * `first`: tried before DTCG token files, for formats with their own markers (Tokens Studio,
-   * Style Dictionary). `fallback` (default): tried only when no token files are found.
+   * `first`: tried before DTCG token files, for formats with their own markers (token sets with
+   * themes, value/type JSON). `fallback` (default): tried only when no token files are found.
    */
   readonly priority?: 'first' | 'fallback'
   /** Files this adapter would read; empty when it does not apply. */

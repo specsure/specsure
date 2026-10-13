@@ -2,9 +2,9 @@ import { cssColorToDtcg, evaluateExpression } from '@dsgraph/core'
 import { cssValueToToken, splitTopLevel } from './css-values.js'
 
 /** Which tool wrote the JSON: decides unit defaults and the type vocabulary. */
-export type Dialect = 'tokens-studio' | 'style-dictionary'
+export type Dialect = 'token-sets' | 'legacy-json'
 
-/** Tokens Studio and Style Dictionary types → DTCG types. Others keep their own name. */
+/** Types of token-set and value/type JSON → DTCG types. Others keep their own name. */
 const TYPES: Record<string, string> = {
   color: 'color',
   dimension: 'dimension',
@@ -39,12 +39,12 @@ const TYPES: Record<string, string> = {
   gradient: 'gradient',
 }
 
-/** `border-radius` (Style Dictionary) → `borderRadius`. */
+/** `border-radius` (kebab-case types) → `borderRadius`. */
 const mapKey = (t: string) => t.replace(/-([a-z])/g, (_, ch: string) => ch.toUpperCase())
 const mapType = (t: string) => TYPES[t] ?? TYPES[mapKey(t)] ?? t
 
-/** Types only Tokens Studio uses; their presence tells Tokens Studio from Style Dictionary. */
-export const STUDIO_ONLY_TYPES = new Set([
+/** Types only the token-set format uses; their presence tells it from plain value/type JSON. */
+export const SET_FORMAT_TYPES = new Set([
   'sizing',
   'spacing',
   'borderRadius',
@@ -91,7 +91,7 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
 
 /**
  * References as these tools write them, in DTCG syntax: `{a.b.value}` and `{a.b.$value}` drop the
- * suffix, a whole-value `$a.b` (early Tokens Studio) becomes `{a.b}`.
+ * suffix, a whole-value `$a.b` (an early notation) becomes `{a.b}`.
  */
 export function normalizeRefs(v: unknown): unknown {
   if (typeof v === 'string') {
@@ -106,7 +106,7 @@ export function normalizeRefs(v: unknown): unknown {
 /** Conversion state for one token: whether it needs the core to evaluate expressions. */
 export interface Conversion {
   dialect: Dialect
-  /** Unit for unitless dimensions: px in Tokens Studio; Style Dictionary sizes are rem. */
+  /** Unit for unitless dimensions: px in token sets; `size` category values in value/type JSON are rem. */
   unit: string
   expression: boolean
 }
@@ -241,7 +241,7 @@ function duration(v: unknown): unknown {
   return v
 }
 
-/** Style Dictionary's category/type/item: the first path segment says what an untyped token is. */
+/** Category/type/item naming: the first path segment says what an untyped token is. */
 function inferType(path: string[], v: unknown, c: Conversion): { type: string; value: unknown } {
   const category = path[0]?.toLowerCase()
   if (category === 'color' || category === 'colors') return { type: 'color', value: color(v, c) }
@@ -271,7 +271,7 @@ export function convertValue(
   const v = normalizeRefs(raw)
   if (sourceType === 'other' && typeof v === 'string' && WHOLE_REF.test(v.trim())) return { value: v.trim() }
   if (sourceType === 'other' && (typeof v === 'number' || (typeof v === 'string' && !v.includes('{')))) {
-    // Tokens Studio's catch-all type: the value says what it is.
+    // The catch-all `other` type: the value says what it is.
     const t = inferType(path, v, c)
     return t.type === 'other' ? { type: 'other', value: v } : { ...t, inferred: true }
   }

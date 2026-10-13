@@ -40,7 +40,7 @@ describe('compare', () => {
     expect(light.shown.map((c) => c.target)).not.toContain('color-accent')
   })
 
-  it('reads dropped Tokens Studio files with their themes', async () => {
+  it('reads dropped token-set files with their themes', async () => {
     const files = (accent: string) => [
       {
         path: '$themes.json',

@@ -11,7 +11,7 @@ import {
 } from './color.js'
 
 /**
- * Values computed from other values, as Tokens Studio and Style Dictionary sources write them:
+ * Values computed from other values, as token-set and value/type JSON sources write them:
  * arithmetic (`{space.base} * 2`), a color with a new alpha (`rgba({color.ink}, 0.5)`) and color
  * modifiers. Not part of DTCG 2025.10; adapters mark the tokens that use them
  * (`$extensions["dev.dsgraph"].expression`, `.colorModifier`).
@@ -121,7 +121,7 @@ export function serializeForExpression(v: unknown): string | undefined {
 
 export type ExpressionHint = 'color' | 'dimension' | 'number' | undefined
 
-/** `rgba(<color>, <alpha>)`: a color with a new alpha, as Tokens Studio writes it. */
+/** `rgba(<color>, <alpha>)`: a color with a new alpha, as token-set files write it. */
 function colorWithAlpha(text: string): Record<string, unknown> | undefined {
   const m = /^rgba?\((.+),\s*(\d*\.?\d+%?)\s*\)$/is.exec(text.trim())
   if (!m) return undefined
@@ -136,7 +136,7 @@ function colorWithAlpha(text: string): Record<string, unknown> | undefined {
 /**
  * Evaluates expression text (references already substituted) into a DTCG value: a color, a
  * dimension `{ value, unit }` or a number. Undefined when the text is neither.
- * A unitless result of a dimension takes `defaultUnit` (Tokens Studio: px).
+ * A unitless result of a dimension takes `defaultUnit` (token sets: px).
  */
 export function evaluateExpression(text: string, hint: ExpressionHint, defaultUnit?: string): unknown {
   if (hint === 'color' || /^(rgba?|hsla?|#)/i.test(text.trim())) {
@@ -175,7 +175,8 @@ const toOklch = conv('oklch')
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 
 /**
- * Applies a Tokens Studio color modifier (the formulas of `@tokens-studio/sd-transforms`) and
+ * Applies a token-set color modifier (lighten, darken, mix, alpha, with the formulas the common token
+ * build tools use) and
  * returns a DTCG color object in the modifier's space.
  */
 export function modifyColor(base: ColorValue, mod: ColorModifier): Record<string, unknown> | undefined {
