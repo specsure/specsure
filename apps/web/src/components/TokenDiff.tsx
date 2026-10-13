@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Lang } from '../i18n'
+import { LangProvider, useT } from '../i18n/react'
 import { EXAMPLE } from '../lib/example'
-import type { Progress, RunRequest, RunResponse, SideInput } from '../lib/types'
+import type { Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, readUrl, unpackFiles, writeUrl } from '../lib/url'
 import { Keys, MOD, type Result, Results } from './Results'
 import { SidePicker } from './SidePicker'
@@ -13,13 +15,22 @@ const ready = (s: SideInput): boolean =>
 /** The GitHub ref defaults to the default branch. */
 const normalize = (s: SideInput): SideInput => (s.kind === 'github' && !s.ref ? { ...s, ref: 'HEAD' } : s)
 
-export default function TokenDiff() {
+export default function TokenDiff({ lang = 'en' }: { lang?: Lang }) {
+  return (
+    <LangProvider lang={lang}>
+      <App />
+    </LangProvider>
+  )
+}
+
+function App() {
+  const t = useT()
   const [base, setBase] = useState<SideInput>(emptyNpm)
   const [head, setHead] = useState<SideInput>(emptyNpm)
   const [include, setInclude] = useState('')
   const [githubToken, setGithubToken] = useState('')
   const [context, setContext] = useState<Record<string, string>>({})
-  const [running, setRunning] = useState<string | null>(null)
+  const [running, setRunning] = useState<Stage | 'start' | null>(null)
   const [result, setResult] = useState<Result | null>(null)
   const [error, setError] = useState<{ side?: 'base' | 'head'; message: string } | null>(null)
   const [fragment, setFragment] = useState<string | null>(null)
@@ -52,16 +63,17 @@ export default function TokenDiff() {
         })
       } else {
         setResult(null)
-        setError(r.side ? { side: r.side, message: r.error } : { message: r.error })
+        const message = r.hint === 'private' ? `${r.error}. ${t.inputs.privateHint}` : r.error
+        setError(r.side ? { side: r.side, message } : { message })
       }
     }
     w.onerror = (e) => {
       setRunning(null)
-      setError({ message: e.message || 'The comparison failed' })
+      setError({ message: e.message || t.inputs.failed })
     }
     worker.current = w
     return () => w.terminate()
-  }, [])
+  }, [t])
 
   // State from the address: `?pkg=…&from=…&to=…`, `?base=…&head=…`, files in `#d=…`, `?example`.
   useEffect(() => {
@@ -98,7 +110,7 @@ export default function TokenDiff() {
       const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include }
       if (githubToken) req.githubToken = githubToken
       pending.current = req
-      setRunning('Starting…')
+      setRunning('start')
       setError(null)
       worker.current.postMessage(req)
     },
@@ -209,27 +221,31 @@ export default function TokenDiff() {
         />
         <div className="source source--glob">
           <div className="source__row">
-            <span className="source__label">Files</span>
+            <span className="source__label">{t.inputs.filesLabel}</span>
             <input
               className="source__input source__input--small"
-              aria-label="Token files"
+              aria-label={t.inputs.filesAria}
               value={include}
-              placeholder="Auto: DTCG, token JSON or CSS"
+              placeholder={t.inputs.filesPlaceholder}
               spellCheck={false}
               onChange={(e) => setInclude(e.target.value)}
-              title="Globs, comma-separated, e.g. dist/tokens.css or tokens/**/*.json"
+              title={t.inputs.filesTitle}
             />
           </div>
         </div>
         <footer className="actionbar">
           <span className="actionbar__status">
-            {error && !error.side ? <span className="source__error">{error.message}</span> : running}
+            {error && !error.side ? (
+              <span className="source__error">{error.message}</span>
+            ) : running ? (
+              t.inputs.progress[running]
+            ) : null}
           </span>
           <button type="button" className="ghost" onClick={example}>
-            Try an example
+            {t.inputs.example}
           </button>
           <button type="button" className="ghost" onClick={swap}>
-            Swap
+            {t.inputs.swap}
           </button>
           <span className="actionbar__sep" />
           <button
@@ -237,7 +253,7 @@ export default function TokenDiff() {
             className="ghost ghost--strong"
             disabled={!ready(base) || !ready(head) || !!running}
           >
-            Compare <Keys keys={[MOD, '↵']} />
+            {t.inputs.compare} <Keys keys={[MOD, '↵']} />
           </button>
         </footer>
       </form>
@@ -248,11 +264,7 @@ export default function TokenDiff() {
           context={context}
           onContext={setContext}
           share={canShare ? () => navigator.clipboard.writeText(location.href) : undefined}
-          shareNote={
-            canShare
-              ? undefined
-              : 'These files are too large for a link. Share the Markdown or the changeset JSON instead.'
-          }
+          shareNote={canShare ? undefined : t.inputs.shareTooBig}
         />
       )}
     </div>

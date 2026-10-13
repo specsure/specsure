@@ -1,13 +1,19 @@
 ---
+import type { Lang } from '../i18n'
 import Base from './Base.astro'
 
 interface Props {
-  frontmatter: { title: string; description: string; path: string }
+  frontmatter: { title: string; description: string; path: string; lang?: Lang }
 }
 const { frontmatter } = Astro.props
 ---
 
-<Base title={`${frontmatter.title} · Specsure`} description={frontmatter.description} path={frontmatter.path}>
+<Base
+  title={`${frontmatter.title} · Specsure`}
+  description={frontmatter.description}
+  path={frontmatter.path}
+  lang={frontmatter.lang ?? 'en'}
+>
   <article class="prose">
     <slot />
   </article>

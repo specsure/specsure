@@ -56,6 +56,15 @@ export type RunResponse =
       graph: { base: TokenGraph; head: TokenGraph }
       ms: number
     }
-  | { id: number; ok: false; side?: 'base' | 'head'; error: string }
+  | {
+      id: number
+      ok: false
+      side?: 'base' | 'head'
+      error: string
+      /** GitHub refused without a token: the repository may be private. */
+      hint?: 'private'
+    }
 
-export type Progress = { id: number; progress: string }
+/** Stage of a run; the page words it in its language. */
+export type Stage = 'reading' | 'comparing'
+export type Progress = { id: number; progress: Stage }

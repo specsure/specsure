@@ -1,5 +1,6 @@
 import type { Level } from '@dsgraph/core'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useT } from '../i18n/react'
 import type { GraphNode, TokenGraph } from '../lib/types'
 import { inContext } from '../lib/view'
 
@@ -58,6 +59,7 @@ function valueIn(node: GraphNode | undefined, context: Record<string, string>) {
  * uses it (below, up to three steps). Tokens changed in this comparison are marked.
  */
 export function GraphView({ id, graph, context, changed, onPick }: Props) {
+  const t = useT()
   const { rows, links } = useMemo(() => {
     const uses = new Map<string, string[]>()
     const usedBy = new Map<string, string[]>()
@@ -122,8 +124,8 @@ export function GraphView({ id, graph, context, changed, onPick }: Props) {
       </svg>
       {rows.map((row, i) => (
         <div key={row.ids[0]} className={`graph__row graph__row--${row.side}`}>
-          {i === 0 && row.side === 'up' && <span className="graph__label">Takes its value from</span>}
-          {i === firstDown && <span className="graph__label">Used by</span>}
+          {i === 0 && row.side === 'up' && <span className="graph__label">{t.graph.from}</span>}
+          {i === firstDown && <span className="graph__label">{t.graph.usedBy}</span>}
           {row.ids.map((n) => {
             const v = valueIn(graph.nodes[n], context)
             const level = changed.get(n)
@@ -148,7 +150,7 @@ export function GraphView({ id, graph, context, changed, onPick }: Props) {
                 type="button"
                 data-node={n}
                 className={cls}
-                title={`${n}: ${v?.text ?? ''} · open this change`}
+                title={`${n}: ${v?.text ?? ''} · ${t.graph.open}`}
                 onClick={() => onPick?.(n)}
               >
                 {body}
@@ -159,7 +161,7 @@ export function GraphView({ id, graph, context, changed, onPick }: Props) {
               </span>
             )
           })}
-          {row.more > 0 && <span className="graph__more">+{row.more} more</span>}
+          {row.more > 0 && <span className="graph__more">{t.graph.more(row.more)}</span>}
         </div>
       ))}
     </div>

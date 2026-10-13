@@ -1,0 +1,23 @@
+---
+import TokenDiff from '../components/TokenDiff'
+import { type Lang, localePath } from '../i18n'
+import { messages } from '../i18n/messages'
+import Base from '../layouts/Base.astro'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const d = messages[lang].diffPage
+---
+
+<Base title={d.title} description={d.description} path="/tools/diff" lang={lang}>
+  <header class="page-head">
+    <h1>Token Diff</h1>
+    <p>
+      {d.lead}{' '}
+      <a class="inline-link" href={localePath(lang, '/tools/diff/guide')}>{d.how}</a>
+    </p>
+  </header>
+  <TokenDiff client:only="react" lang={lang} />
+</Base>

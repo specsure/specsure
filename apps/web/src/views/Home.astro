@@ -1,0 +1,207 @@
+---
+import LiveFigure from '../components/LiveFigure'
+import { type Lang, localePath } from '../i18n'
+import { messages } from '../i18n/messages'
+import Base from '../layouts/Base.astro'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const m = messages[lang]
+const h = m.home
+const href = (p: string) => localePath(lang, p)
+
+const tools = [
+  { href: href('/tools/diff'), icon: 'diff', title: 'Token Diff', text: h.tools.diff, tag: 'Web' },
+  {
+    href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
+    icon: 'terminal',
+    title: h.tools.cliTitle,
+    text: h.tools.cli,
+    tag: 'npm',
+  },
+  {
+    href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-action#readme',
+    icon: 'action',
+    title: h.tools.actionTitle,
+    text: h.tools.action,
+    tag: 'Action',
+  },
+  { href: href('/tools/mcp'), icon: 'mcp', title: h.tools.mcpTitle, text: h.tools.mcp, tag: 'MCP' },
+  {
+    href: 'https://github.com/specsure/specsure',
+    icon: 'graph',
+    title: 'dsgraph',
+    text: h.tools.engine,
+    tag: 'MIT',
+  },
+  {
+    href: null,
+    icon: 'figma',
+    title: h.tools.figmaTitle,
+    text: h.tools.figma,
+    tag: h.tools.soon,
+    soon: true,
+  },
+]
+
+/**
+ * What dsgraph does with tokens, whatever wrote them. Titles are our capabilities; the formats
+ * they come from are only labels. Examples are neutral.
+ */
+const formats = [
+  {
+    text: h.formats.modes,
+    code: `"$extensions": { "mode": {
+  "light": "{color.white}",
+  "dark": "{color.black}"
+} }`,
+  },
+  {
+    text: h.formats.math,
+    code: `"lg": {
+  "value": "{space.base} * 2",
+  "type": "spacing"
+}`,
+  },
+  {
+    text: h.formats.refs,
+    code: `"primary": {
+  "value": "{color.base.ink.value}"
+}`,
+  },
+  {
+    text: h.formats.color,
+    code: `"$value": {
+  "colorSpace": "oklch",
+  "components": [0.62, 0.19, 259]
+}`,
+  },
+  {
+    text: h.formats.css,
+    code: `:root { --bg: #ffffff; }
+[data-theme="dark"] { --bg: #0c0c0e; }
+.dark { --bg: #0c0c0e; }`,
+  },
+  {
+    text: h.formats.remote,
+    code: `npm:@scope/tokens@2.1.0
+github:owner/repo/tokens@main
+./tokens`,
+  },
+]
+
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+/** Quiet highlighting: keys are dimmed, references stand out. */
+const highlight = (code: string) =>
+  escapeHtml(code)
+    .replace(/("[\w$.-]+")(\s*:)/g, '<span class="tok-key">$1</span>$2')
+    .replace(/(\{[\w.-]+\})/g, '<span class="tok-ref">$1</span>')
+    .replace(/(--[\w-]+)(?=:)/g, '<span class="tok-key">$1</span>')
+---
+
+<Base title={h.title} description={h.description} path="/" lang={lang}>
+  <header class="home-head">
+    <h1>{h.h1}</h1>
+    <p>{h.lead}</p>
+  </header>
+
+  <nav class="window launcher" aria-label="Specsure">
+    {
+      tools.map((t, i) => {
+        const Tag = t.href ? 'a' : 'div'
+        return (
+          <Tag class={`launcher__row${t.href ? '' : ' is-soon'}${i === 0 ? ' is-default' : ''}`} href={t.href ?? undefined} data-default={i === 0 ? '' : undefined}>
+            <span class="launcher__icon" aria-hidden="true">
+              {t.icon === 'diff' && (
+                <svg width="20" height="20" viewBox="0 0 32 32">
+                  <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" />
+                  <rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent-fill)" />
+                </svg>
+              )}
+              {t.icon === 'figma' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 7.5h11M4.5 12.5h11M7.5 4.5v11M12.5 4.5v11" />
+                </svg>
+              )}
+              {t.icon === 'mcp' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 10h3l2-4 2 8 2-4h3" />
+                </svg>
+              )}
+              {t.icon === 'action' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="5" r="2" />
+                  <circle cx="6" cy="15" r="2" />
+                  <circle cx="14" cy="10" r="2" />
+                  <path d="M6 7v6M8 5.5c3 0 4 1.5 4.5 2.7" />
+                </svg>
+              )}
+              {t.icon === 'terminal' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 6.5 3.5 3.5L5 13.5M10.5 14h4.5" />
+                </svg>
+              )}
+              {t.icon === 'graph' && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                  <circle cx="5" cy="5.5" r="2" />
+                  <circle cx="15" cy="5.5" r="2" />
+                  <circle cx="10" cy="15" r="2" />
+                  <path d="M6.6 6.9 9 13.2M13.4 6.9 11 13.2M7 5.5h6" />
+                </svg>
+              )}
+            </span>
+            <span class="launcher__text">
+              <span class="launcher__title">{t.title}</span>
+              <span class="launcher__sub">{t.text}</span>
+            </span>
+            <span class={`tag${t.soon ? ' tag--soon' : ''}`}>{t.tag}</span>
+            {t.href && <span class="launcher__go" aria-hidden="true">↵</span>}
+          </Tag>
+        )
+      })
+    }
+    <footer class="actionbar">
+      <span class="actionbar__status">{h.status}</span>
+      <a class="launcher__primary" href={href('/tools/diff')}>{h.open} <kbd>↵</kbd></a>
+    </footer>
+  </nav>
+  <section class="home-section" aria-labelledby="formats">
+    <header class="home-section__head">
+      <h2 id="formats">{h.formatsTitle}</h2>
+      <p>{h.formatsLead}</p>
+    </header>
+    <ul class="formats">
+      {
+        formats.map((f) => (
+          <li class="format">
+            <div class="format__name">{f.text[0]}</div>
+            <div class="format__what">{f.text[1]}</div>
+            <pre class="format__code"><code set:html={highlight(f.code)} /></pre>
+            <div class="format__from">{f.text[2]}</div>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="formats__note">{h.formatsNote}</p>
+  </section>
+
+  <section class="home-section" aria-labelledby="live">
+    <header class="home-section__head">
+      <h2 id="live">{h.liveTitle}</h2>
+      <p>{h.liveLead}</p>
+      <a class="home-section__link" href={`${href('/tools/diff')}?example`}>{h.liveOpen}</a>
+    </header>
+    <LiveFigure client:only="react" name="result" lang={lang} />
+  </section>
+
+  <script>
+    // ↵ opens Token Diff, as the hint in the action bar says; focused links keep their own Enter.
+    window.addEventListener('keydown', (e) => {
+      const first = document.querySelector<HTMLAnchorElement>('[data-default]')
+      if (first && e.key === 'Enter' && (e.target === document.body || e.target === document.documentElement))
+        location.href = first.href
+    })
+  </script>
+</Base>

@@ -1,15 +1,12 @@
 import { type NpmVersions, npmVersions, parseRemoteSpec } from '@dsgraph/sources'
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../i18n/react'
 import { filesFromDrop, filesFromInput } from '../lib/files'
 import type { DroppedFile, SideInfo, SideInput } from '../lib/types'
 
 type Kind = SideInput['kind']
 
-const KINDS: Array<[Kind, string]> = [
-  ['npm', 'npm'],
-  ['github', 'GitHub'],
-  ['files', 'Files'],
-]
+const KINDS: Kind[] = ['npm', 'github', 'files']
 
 const isStable = (v: string) => !v.includes('-')
 
@@ -68,6 +65,7 @@ interface Props {
 
 /** One source row of the input window. Dropping files anywhere on it switches it to files. */
 export function SidePicker({ side, value, onChange, error, info, githubToken = '', onGithubToken }: Props) {
+  const t = useT()
   const [over, setOver] = useState(false)
   const [tokenOpen, setTokenOpen] = useState(false)
   const setKind = (kind: Kind) => {
@@ -83,7 +81,8 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
     <span className="source__error">{versions.error}</span>
   ) : info ? (
     <span title={info.files.join('\n')}>
-      {info.tokens} tokens · {info.files.length === 1 ? info.files[0] : `${info.files.length} files`}
+      {t.inputs.tokens(info.tokens)} ·{' '}
+      {info.files.length === 1 ? info.files[0] : t.inputs.files(info.files.length)}
       {info.modifiers.map((m) => ` · ${m.name}: ${m.contexts.join(', ')}`).join('')}
     </span>
   ) : null
@@ -107,9 +106,9 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
       }}
     >
       <div className="source__row">
-        <span className="source__label">{side === 'base' ? 'Before' : 'After'}</span>
-        <div className="seg" role="tablist" aria-label="Source">
-          {KINDS.map(([k, label]) => (
+        <span className="source__label">{side === 'base' ? t.inputs.before : t.inputs.after}</span>
+        <div className="seg" role="tablist" aria-label={t.inputs.sourceAria}>
+          {KINDS.map((k) => (
             <button
               key={k}
               type="button"
@@ -118,7 +117,7 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
               className={value.kind === k ? 'is-on' : ''}
               onClick={() => setKind(k)}
             >
-              {label}
+              {t.inputs.kinds[k]}
             </button>
           ))}
         </div>
@@ -131,10 +130,10 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
             type="button"
             className="ghost"
             aria-expanded={tokenOpen}
-            title="Token for private repositories"
+            title={t.inputs.tokenTitle}
             onClick={() => setTokenOpen((o) => !o)}
           >
-            {githubToken ? 'Token ✓' : 'Token'}
+            {githubToken ? t.inputs.tokenSet : t.inputs.token}
           </button>
         )}
         {value.kind === 'files' && <FilesField files={value.files} onChange={onChange} />}
@@ -144,14 +143,14 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
           <input
             className="source__input"
             type="password"
-            aria-label="GitHub token"
+            aria-label={t.inputs.tokenAria}
             value={githubToken}
-            placeholder="GitHub token with read access, for private repositories"
+            placeholder={t.inputs.tokenPlaceholder}
             spellCheck={false}
             autoComplete="off"
             onChange={(e) => onGithubToken(e.target.value.trim())}
           />
-          <span className="muted small">Kept in this tab only: never saved, never put into links.</span>
+          <span className="muted small">{t.inputs.tokenNote}</span>
         </div>
       )}
       {meta && <div className="source__meta">{meta}</div>}
@@ -170,6 +169,7 @@ function NpmFields({
   onChange: (v: SideInput) => void
   versions: ReturnType<typeof useVersions>
 }) {
+  const t = useT()
   const data = versions.data
   // Pick sensible versions once the list arrives and none is chosen yet.
   useEffect(() => {
@@ -182,9 +182,9 @@ function NpmFields({
     <>
       <input
         className="source__input"
-        aria-label="Package"
+        aria-label={t.inputs.pkgAria}
         value={value.pkg}
-        placeholder="Package name, e.g. @scope/tokens"
+        placeholder={t.inputs.pkgPlaceholder}
         spellCheck={false}
         autoCapitalize="off"
         onChange={(e) => onChange({ kind: 'npm', pkg: e.target.value.trim(), version: '' })}
@@ -192,23 +192,23 @@ function NpmFields({
       {data ? (
         <select
           className="accessory"
-          aria-label="Version"
+          aria-label={t.inputs.versionAria}
           value={value.version}
           onChange={(e) => onChange({ ...value, version: e.target.value })}
         >
           {options.filter(Boolean).map((v) => (
             <option key={v} value={v}>
               {v}
-              {data.tags.latest === v ? '  latest' : ''}
+              {data.tags.latest === v ? `  ${t.inputs.latest}` : ''}
             </option>
           ))}
         </select>
       ) : (
         <input
           className="accessory"
-          aria-label="Version"
+          aria-label={t.inputs.versionAria}
           value={value.version}
-          placeholder={value.pkg && !versions.error ? '…' : 'version'}
+          placeholder={value.pkg && !versions.error ? '…' : t.inputs.versionPlaceholder}
           spellCheck={false}
           onChange={(e) => onChange({ ...value, version: e.target.value.trim() })}
         />
@@ -224,6 +224,7 @@ function GitHubFields({
   value: Extract<SideInput, { kind: 'github' }>
   onChange: (v: SideInput) => void
 }) {
+  const t = useT()
   const shown = value.repo ? `${value.repo}${value.root ? `/${value.root}` : ''}` : ''
   const [text, setText] = useState(shown)
   useEffect(() => setText(shown), [shown])
@@ -241,7 +242,7 @@ function GitHubFields({
     <>
       <input
         className="source__input"
-        aria-label="Repository and folder"
+        aria-label={t.inputs.repoAria}
         value={text}
         placeholder="owner/repo/tokens"
         spellCheck={false}
@@ -253,7 +254,7 @@ function GitHubFields({
       />
       <input
         className="accessory"
-        aria-label="Branch, tag or commit"
+        aria-label={t.inputs.refAria}
         value={value.ref}
         placeholder="main"
         spellCheck={false}
@@ -266,26 +267,27 @@ function GitHubFields({
 function FilesField({ files, onChange }: { files: DroppedFile[]; onChange: (v: SideInput) => void }) {
   const fileInput = useRef<HTMLInputElement>(null)
   const dirInput = useRef<HTMLInputElement>(null)
+  const t = useT()
   const set = (list: DroppedFile[]) => onChange({ kind: 'files', files: list })
   return (
     <div className="source__files">
       {files.length === 0 ? (
-        <span className="muted">Drop token files or a folder here</span>
+        <span className="muted">{t.inputs.drop}</span>
       ) : (
         <span className="source__names" title={files.map((f) => f.path).join('\n')}>
-          {files.length === 1 ? files[0]!.path : `${files[0]!.path} and ${files.length - 1} more`}
+          {files.length === 1 ? files[0]!.path : t.inputs.andMore(files[0]!.path, files.length - 1)}
         </span>
       )}
       <span className="source__file-actions">
         <button type="button" className="ghost" onClick={() => fileInput.current?.click()}>
-          Files
+          {t.inputs.filesButton}
         </button>
         <button type="button" className="ghost" onClick={() => dirInput.current?.click()}>
-          Folder
+          {t.inputs.folderButton}
         </button>
         {files.length > 0 && (
-          <button type="button" className="ghost" onClick={() => set([])} aria-label="Clear files">
-            Clear
+          <button type="button" className="ghost" onClick={() => set([])} aria-label={t.inputs.clearAria}>
+            {t.inputs.clear}
           </button>
         )}
       </span>

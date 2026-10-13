@@ -11,6 +11,8 @@ export interface CardData {
   colors: Array<{ before: ColorValue; after: ColorValue }>
   /** The diff had no changes at all. */
   empty: boolean
+  /** Words drawn on the card, in the page's language. */
+  labels: { badge: Record<Level, string>; noChanges: string; colors: string }
 }
 
 export const CARD = { width: 1200, height: 630 }
@@ -29,12 +31,6 @@ const LEVEL_COLOR: Record<Level, string> = {
   minor: '#f5a524',
   patch: '#a8a8b0',
   none: '#8b8b94',
-}
-const LEVEL_LABEL: Record<Level, string> = {
-  major: 'MAJOR',
-  minor: 'MINOR',
-  patch: 'PATCH',
-  none: 'NO IMPACT',
 }
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
@@ -77,7 +73,7 @@ export function drawCard(canvas: HTMLCanvasElement, d: CardData, scale = 1): voi
   ctx.fillText('Token Diff', pad + 32, pad + 8)
 
   // Bump badge, top right.
-  const badge = d.empty ? 'NO CHANGES' : LEVEL_LABEL[d.level]
+  const badge = d.empty ? d.labels.noChanges : d.labels.badge[d.level]
   ctx.font = `700 26px ${SANS}`
   const bw = ctx.measureText(badge).width + 40
   ctx.fillStyle = d.empty ? C.ink3 : LEVEL_COLOR[d.level]
@@ -118,7 +114,7 @@ export function drawCard(canvas: HTMLCanvasElement, d: CardData, scale = 1): voi
     const y = H - pad - size * 2 + 8
     ctx.fillStyle = C.ink3
     ctx.font = `500 20px ${SANS}`
-    ctx.fillText('Changed colors, before and after', pad, y - 16)
+    ctx.fillText(d.labels.colors, pad, y - 16)
     colors.forEach((c, i) => {
       const sx = pad + i * (size + gap)
       ctx.save()

@@ -1,66 +1,108 @@
 ---
 import core from '../../../../packages/dsgraph-core/package.json'
+import { type Lang, localePath } from '../i18n'
+import { messages } from '../i18n/messages'
 import '../styles/global.css'
 
 interface Props {
   title: string
   description: string
+  /** The page's address without the language prefix, e.g. `/tools/diff`. */
   path: string
+  lang?: Lang
 }
-const { title, description, path } = Astro.props
+const { title, description, path, lang = 'en' } = Astro.props
+const m = messages[lang]
+const other: Lang = lang === 'en' ? 'ru' : 'en'
+const href = (p: string) => localePath(lang, p)
 const nav = [
-  { href: '/tools/diff', label: 'Token Diff' },
-  { href: '/tools/diff/guide', label: 'Guide' },
-  { href: '/tools/mcp', label: 'MCP' },
-  { href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme', label: 'CLI' },
-  { href: 'https://github.com/specsure/specsure', label: 'GitHub' },
-]
-const points = [
-  'Compares two versions of design tokens: DTCG, token JSON and CSS custom properties',
-  'Shows what breaks, theme by theme, and suggests the semver bump',
-  'Reads npm packages, GitHub repositories or your own files',
-  'Exports Markdown for changelogs and pull requests, and a card for posts',
-  'Runs entirely in your browser: no sign-up, nothing is uploaded',
-  'Open source under MIT; the engine is published as dsgraph',
+  { href: href('/tools/diff'), label: m.site.nav.diff, current: '/tools/diff' },
+  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: '/tools/diff/guide' },
+  { href: href('/tools/mcp'), label: m.site.nav.mcp, current: '/tools/mcp' },
+  {
+    href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
+    label: m.site.nav.cli,
+  },
+  { href: 'https://github.com/specsure/specsure', label: m.site.nav.github },
 ]
 const year = new Date().getFullYear()
+
+/**
+ * First visit to an English page: a reader whose browser or system prefers Russian gets the
+ * Russian one. A choice made with the language switch is remembered and always wins; Russian
+ * pages never send anyone away.
+ */
+const DETECT = `(() => {
+  try { if (localStorage.getItem('specsure.lang')) return } catch (e) {}
+  const prefs = [].concat(navigator.languages || [], navigator.language || [])
+  try { prefs.push(Intl.DateTimeFormat().resolvedOptions().locale) } catch (e) {}
+  for (const p of prefs) {
+    const base = String(p || '').toLowerCase().slice(0, 2)
+    if (base === 'en') return
+    if (base === 'ru') {
+      location.replace('/ru' + location.pathname + location.search + location.hash)
+      return
+    }
+  }
+})()`
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {lang === 'en' && <script is:inline set:html={DETECT} />}
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={new URL(path, Astro.site)} />
+    <meta property="og:locale" content={lang === 'ru' ? 'ru_RU' : 'en_US'} />
+    <meta property="og:url" content={new URL(href(path), Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL(localePath('en', path), Astro.site)} />
+    <link rel="alternate" hreflang="ru" href={new URL(localePath('ru', path), Astro.site)} />
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath('en', path), Astro.site)} />
     <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f2f2f5" media="(prefers-color-scheme: light)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
     <header class="site-header">
-      <a class="wordmark" href="/">
+      <a class="wordmark" href={href('/')}>
         <svg class="mark" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
           <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor"></rect>
           <rect class="mark__after" x="10" y="16.5" width="20" height="10.5" rx="5.25"></rect>
         </svg>
-        Specsure
+        <span class="wordmark__text">Specsure</span>
       </a>
       <nav class="site-nav">
         {nav.map((n) => (
-          <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>
+          <a href={n.href} aria-current={n.current && path === n.current ? 'page' : undefined}>{n.label}</a>
         ))}
-        <button type="button" class="nav-button" data-about-open>About</button>
+        <button type="button" class="nav-button" data-about-open>{m.site.nav.about}</button>
+        <span class="lang-switch" role="group" aria-label="Language · Язык">
+          {(['en', 'ru'] as const).map((l) =>
+            l === lang ? (
+              <span class="lang-switch__item is-on" aria-current="true" lang={l}>{l.toUpperCase()}</span>
+            ) : (
+              <a
+                class="lang-switch__item"
+                href={localePath(l, path)}
+                hreflang={l}
+                lang={l}
+                title={m.switchLabel}
+                data-lang-switch={l}
+              >{l.toUpperCase()}</a>
+            ),
+          )}
+        </span>
       </nav>
     </header>
     <main>
       <slot />
     </main>
-    <dialog class="about" id="about" aria-label="About Specsure">
+    <dialog class="about" id="about" aria-label={m.site.about.label}>
       <header class="about__head">
         <svg class="mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
           <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor"></rect>
@@ -68,16 +110,13 @@ const year = new Date().getFullYear()
         </svg>
         <h2>Specsure</h2>
         <form method="dialog">
-          <button class="ghost" aria-label="Close">✕</button>
+          <button class="ghost" aria-label={m.site.about.close}>✕</button>
         </form>
       </header>
       <div class="about__body">
-        <p class="about__lead">
-          Tools for design systems. Token Diff shows what changed between two versions of your tokens,
-          what breaks and which version to release.
-        </p>
+        <p class="about__lead">{m.site.about.lead}</p>
         <ul class="about__list">
-          {points.map((p) => (
+          {m.site.about.points.map((p) => (
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -86,15 +125,15 @@ const year = new Date().getFullYear()
             </li>
           ))}
         </ul>
-        <p class="about__soon"><span class="tag tag--soon">Soon</span> Figma plugin: check variables and styles against your tokens, inside Figma.</p>
+        <p class="about__soon"><span class="tag tag--soon">{m.site.about.soon}</span> {m.site.about.soonText}</p>
         <p class="about__links">
-          <a href="/tools/diff/guide">Read the guide</a>
-          <a href="https://github.com/specsure/specsure">Source on GitHub</a>
+          <a href={href('/tools/diff/guide')}>{m.site.about.guide}</a>
+          <a href="https://github.com/specsure/specsure">{m.site.about.github}</a>
         </p>
         <div class="about__foot">
-          <span>Made by <a href="https://adamreznik.com" target="_blank" rel="noopener noreferrer">Adam Reznik</a></span>
+          <span>{m.site.about.madeBy} <a href="https://adamreznik.com" target="_blank" rel="noopener noreferrer">Adam Reznik</a></span>
           <span class="muted">© {year} Adam Reznik · dsgraph {core.version}</span>
-          <span class="muted">Package and design-system names belong to their owners. Specsure is not affiliated with them.</span>
+          <span class="muted">{m.site.about.owners}</span>
         </div>
       </div>
     </dialog>
@@ -105,10 +144,18 @@ const year = new Date().getFullYear()
       about?.addEventListener('click', (e) => {
         if (e.target === about) about.close()
       })
+      // The switch remembers the choice and keeps the page state (Token Diff keeps it in the address).
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('[data-lang-switch]'))
+        a.addEventListener('click', () => {
+          try {
+            localStorage.setItem('specsure.lang', a.dataset.langSwitch ?? 'en')
+          } catch {}
+          a.href = `${a.pathname}${location.search}${location.hash}`
+        })
     </script>
     <footer class="site-footer">
-      <span>Specsure, MIT license</span>
-      <a href="https://github.com/specsure/specsure">Source</a>
+      <span>{m.site.footer}</span>
+      <a href="https://github.com/specsure/specsure">{m.site.source}</a>
     </footer>
   </body>
 </html>

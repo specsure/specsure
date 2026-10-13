@@ -1,10 +1,12 @@
 import type { Changeset, Finding, Level } from '@dsgraph/core'
 import { formatChangeset, formatSource, groupFindings } from '@dsgraph/report'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Messages } from '../i18n/messages'
+import { useT } from '../i18n/react'
 import type { CardData } from '../lib/card'
-import { CHECK_HELP, publishedNote, verdictReason } from '../lib/explain'
+import { publishedNote, verdictReason } from '../lib/explain'
 import type { SideInfo, TokenGraph } from '../lib/types'
-import { colorPairs, contextAxes, inContext, LEVEL_TITLE, LEVELS, typeOfChange, view } from '../lib/view'
+import { colorPairs, contextAxes, inContext, LEVELS, typeOfChange, view } from '../lib/view'
 import { CardDialog } from './CardDialog'
 import { ChangeDetail, ChangeRow } from './ChangeList'
 
@@ -32,13 +34,7 @@ interface Props {
 
 const QUIET_LIMIT = 20
 
-const COUNT_LABELS: Array<[key: string, label: string]> = [
-  ['removed', 'removed'],
-  ['renamed', 'renamed'],
-  ['changed', 'changed'],
-  ['added', 'added'],
-  ['deprecated', 'deprecated'],
-]
+const COUNTED = ['removed', 'renamed', 'changed', 'added', 'deprecated'] as const
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 export const MOD = isMac ? '⌘' : 'Ctrl'
@@ -61,6 +57,8 @@ export const Keys = ({ keys }: { keys: string[] }) => (
 )
 
 export function Results({ result, context, onContext, share, shareNote, shortcuts = true }: Props) {
+  const t = useT()
+  const r = t.results
   const cs = result.changeset
   const [level, setLevel] = useState<Level | ''>('')
   const [type, setType] = useState('')
@@ -114,12 +112,12 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   const fileBase = `${result.base.label}--${result.head.label}`.replace(/[^\w.@-]+/g, '_')
   const copyMarkdown = async () => {
     await navigator.clipboard.writeText(markdown())
-    flash('Markdown copied')
+    flash(r.copied)
   }
   const copyLink = async () => {
     if (!share) return
     await share()
-    flash('Link copied')
+    flash(r.linkCopied)
   }
 
   const move = (delta: number) => {
@@ -160,13 +158,14 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   const from = versionOf(cs.base.source, result.base.label)
   const to = versionOf(cs.head.source, result.head.label)
   const cardData: CardData = {
-    title: titleOf(cs),
-    from: from === to ? 'before' : from,
-    to: from === to ? 'after' : to,
+    title: titleOf(cs, t),
+    from: from === to ? t.card.before : from,
+    to: from === to ? t.card.after : to,
     level: cs.summary.level,
-    counts: COUNT_LABELS.map(([k, label]) => [label, counts[k] ?? 0]),
+    counts: COUNTED.map((k) => [t.card.counts[k](counts[k] ?? 0), counts[k] ?? 0]),
     colors: colorPairs(cs),
     empty,
+    labels: { badge: t.card.badge, noChanges: t.card.noChanges, colors: t.card.colors },
   }
 
   const actionList: Array<{
@@ -176,12 +175,21 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
     disabled?: boolean
     title?: string
   }> = [
-    { label: 'Copy Markdown', keys: [MOD, '⇧', 'C'], run: copyMarkdown },
-    { label: 'Card for a post', run: () => setCard(true) },
-    { label: 'Copy link', run: copyLink, disabled: !share, ...(shareNote ? { title: shareNote } : {}) },
-    { label: 'Download Markdown', run: () => download(`${fileBase}.md`, markdown(), 'text/markdown') },
     {
-      label: 'Download changeset JSON',
+      label: r.copyMarkdown,
+      keys: [MOD, '⇧', 'C'],
+      run: copyMarkdown,
+      ...(r.markdownNote ? { title: r.markdownNote } : {}),
+    },
+    { label: r.card, run: () => setCard(true) },
+    { label: r.copyLink, run: copyLink, disabled: !share, ...(shareNote ? { title: shareNote } : {}) },
+    {
+      label: r.downloadMarkdown,
+      run: () => download(`${fileBase}.md`, markdown(), 'text/markdown'),
+      ...(r.markdownNote ? { title: r.markdownNote } : {}),
+    },
+    {
+      label: r.downloadJson,
       run: () =>
         download(`${fileBase}.changeset.json`, `${JSON.stringify(cs, null, 2)}\n`, 'application/json'),
     },
@@ -209,8 +217,8 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
               ref={search}
               type="search"
               value={query}
-              placeholder="Filter by token name"
-              aria-label="Filter changes"
+              placeholder={r.searchPlaceholder}
+              aria-label={r.searchAria}
               spellCheck={false}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -227,7 +235,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
                   onContext(next)
                 }}
               >
-                <option value="">Every {axis.name}</option>
+                <option value="">{r.every(axis.name)}</option>
                 {axis.values.map((x) => (
                   <option key={x} value={x}>
                     {axis.name}: {x}
@@ -237,25 +245,25 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
             ))}
             <select
               className="accessory"
-              aria-label="Impact"
+              aria-label={r.impactAria}
               value={level}
               onChange={(e) => setLevel(e.target.value as Level | '')}
             >
-              <option value="">Any impact</option>
+              <option value="">{r.anyImpact}</option>
               {LEVELS.map((l) => (
                 <option key={l} value={l}>
-                  {LEVEL_TITLE[l]}
+                  {t.levels[l]}
                 </option>
               ))}
             </select>
             {v.types.length > 1 && (
               <select
                 className="accessory"
-                aria-label="Type"
+                aria-label={r.typeAria}
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
-                <option value="">Any type</option>
+                <option value="">{r.anyType}</option>
                 {v.types.map((t) => (
                   <option key={t} value={t}>
                     {t}
@@ -267,23 +275,23 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
         )}
 
         {empty ? (
-          <div className="empty">Both versions resolve to the same tokens in every context.</div>
+          <div className="empty">{r.same}</div>
         ) : rows.length === 0 ? (
-          <div className="empty">Nothing matches these filters.</div>
+          <div className="empty">{r.noMatch}</div>
         ) : (
           <div className="split">
-            <div className="list" role="listbox" aria-label="Changes" tabIndex={0}>
+            <div className="list" role="listbox" aria-label={r.listAria} tabIndex={0}>
               {LEVELS.map((l) =>
                 v.byLevel[l].length ? (
                   // biome-ignore lint/a11y/useSemanticElements: a group of options inside a listbox, not a form fieldset
-                  <div key={l} role="group" aria-label={LEVEL_TITLE[l]}>
+                  <div key={l} role="group" aria-label={t.levels[l]}>
                     <div className={`list__section list__section--${l}`}>
-                      {LEVEL_TITLE[l]}
+                      {t.levels[l]}
                       <span className="count">{v.byLevel[l].length}</span>
                     </div>
                     {l === 'none' && folded ? (
                       <button type="button" className="list__more" onClick={() => setQuiet(true)}>
-                        Show {v.byLevel.none.length} changes nobody sees: metadata, notation
+                        {r.showQuiet(v.byLevel.none.length)}
                       </button>
                     ) : null}
                     {(l === 'none' && folded ? [] : v.byLevel[l]).map((c) => (
@@ -319,13 +327,10 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
 
         <footer className="actionbar">
           <span className="actionbar__status">
-            {status ??
-              `${rows.length} ${rows.length === 1 ? 'change' : 'changes'} · ${result.ms} ms${
-                cs.contexts.partial ? ' · some context combinations were skipped' : ''
-              }`}
+            {status ?? r.status(rows.length, result.ms, cs.contexts.partial)}
           </span>
-          <button type="button" className="ghost" onClick={copyMarkdown}>
-            Copy Markdown <Keys keys={[MOD, '⇧', 'C']} />
+          <button type="button" className="ghost" onClick={copyMarkdown} title={r.markdownNote || undefined}>
+            {r.copyMarkdown} <Keys keys={[MOD, '⇧', 'C']} />
           </button>
           <span className="actionbar__sep" />
           <div className="actions-menu">
@@ -335,7 +340,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
               aria-expanded={actions}
               onClick={() => setActions(!actions)}
             >
-              Actions <Keys keys={[MOD, 'K']} />
+              {r.actions} <Keys keys={[MOD, 'K']} />
             </button>
             {actions && (
               <div className="popover" role="menu">
@@ -370,10 +375,11 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
 
 /** The verdict above the list: sources, release level and counts. */
 export function Verdict({ result }: { result: Result }) {
+  const t = useT()
   const cs = result.changeset
   const counts = cs.summary.counts
   const empty = cs.changes.length === 0
-  const note = publishedNote(cs)
+  const note = publishedNote(cs, t)
   // Direct changes the counts above leave out: retargeted references, metadata, notation.
   const counted = new Set([
     'token.added',
@@ -393,43 +399,36 @@ export function Verdict({ result }: { result: Result }) {
         <code>{result.head.label}</code>
       </p>
       <h2 className={`verdict__title verdict__title--${empty ? 'none' : cs.summary.level}`}>
-        {empty
-          ? 'No changes'
-          : cs.summary.level === 'none'
-            ? 'No impact on consumers'
-            : `${LEVEL_TITLE[cs.summary.level]} release`}
+        {empty ? t.verdict.noChanges : t.verdict.release[cs.summary.level]}
       </h2>
       {!empty && (
         <p className="verdict__counts">
-          {COUNT_LABELS.filter(([k]) => counts[k]).map(([k, label]) => (
-            <span key={k}>
-              <strong>{counts[k]}</strong> {label}
-            </span>
+          {COUNTED.filter((k) => counts[k]).map((k) => (
+            <Count key={k} text={t.verdict.counts[k](counts[k]!)} />
           ))}
-          {counts.propagated ? (
-            <span className="muted">
-              <strong>{counts.propagated}</strong> more through references
-            </span>
-          ) : null}
-          {other ? (
-            <span className="muted">
-              <strong>{other}</strong> other
-            </span>
-          ) : null}
-          {unseen ? (
-            <span className="muted">
-              <strong>{unseen}</strong> nobody sees
-            </span>
-          ) : null}
+          {counts.propagated ? <Count muted text={t.verdict.counts.propagated(counts.propagated)} /> : null}
+          {other ? <Count muted text={t.verdict.counts.other(other)} /> : null}
+          {unseen ? <Count muted text={t.verdict.counts.unseen(unseen)} /> : null}
         </p>
       )}
-      {!empty && <p className="verdict__reason">{verdictReason(cs)}</p>}
+      {!empty && <p className="verdict__reason">{verdictReason(cs, t)}</p>}
       {note && <p className={`verdict__note verdict__note--${note.tone}`}>{note.text}</p>}
     </header>
   )
 }
 
+/** A count with its number in bold, wherever the number stands in the phrase («ещё 3 изменились»). */
+function Count({ text, muted }: { text: string; muted?: boolean }) {
+  const parts = text.split(/(\d+(?:[\u00a0\u202f\s,.]\d+)*)/)
+  return (
+    <span className={muted ? 'muted' : undefined}>
+      {parts.map((p, i) => (i % 2 ? <strong key={p + String(i)}>{p}</strong> : p))}
+    </span>
+  )
+}
+
 export function Findings({ findings, label, open }: { findings: Finding[]; label: string; open?: boolean }) {
+  const t = useT()
   const groups = useMemo(() => groupFindings(findings), [findings])
   if (findings.length === 0) return null
   const n = { error: 0, warning: 0, info: 0 }
@@ -438,12 +437,12 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
     <details className="window findings" open={open}>
       <summary className="findings__head">
         <span>
-          Checks on <code>{label}</code>
+          {t.checks.on} <code>{label}</code>
         </span>
         <span className="row__acc">
-          {n.error > 0 && <span className="tag tag--danger">{n.error} errors</span>}
-          {n.warning > 0 && <span className="tag tag--warning">{n.warning} warnings</span>}
-          {n.info > 0 && <span className="tag">{n.info} info</span>}
+          {n.error > 0 && <span className="tag tag--danger">{t.checks.errors(n.error)}</span>}
+          {n.warning > 0 && <span className="tag tag--warning">{t.checks.warnings(n.warning)}</span>}
+          {n.info > 0 && <span className="tag">{t.checks.info(n.info)}</span>}
         </span>
       </summary>
       <div className="findings__list">
@@ -456,13 +455,14 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
               >
                 {g.severity === 'error' ? '×' : g.severity === 'warning' ? '!' : 'i'}
               </span>
-              <span className="row__title row__title--text">{g.pattern}</span>
+              <span className="row__title row__title--text">{t.checks.titles[g.rule] ?? g.pattern}</span>
               <span className="row__acc">
                 <span className="acc-text">{g.rule}</span>
                 <span className="tag">{g.findings.length}</span>
               </span>
             </summary>
-            {CHECK_HELP[g.rule] && <p className="finding__hint">{CHECK_HELP[g.rule]}</p>}
+            {t.checks.help[g.rule] && <p className="finding__hint">{t.checks.help[g.rule]}</p>}
+            {t.checks.titles[g.rule] && <p className="finding__pattern">{g.pattern}</p>}
             <ul className="finding__items">
               {g.findings.slice(0, 200).map((f) => (
                 <li key={f.id}>
@@ -470,7 +470,9 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
                   <span>{f.message}</span>
                 </li>
               ))}
-              {g.findings.length > 200 && <li className="muted">and {g.findings.length - 200} more</li>}
+              {g.findings.length > 200 && (
+                <li className="muted">{t.checks.andMore(g.findings.length - 200)}</li>
+              )}
             </ul>
           </details>
         ))}
@@ -480,14 +482,14 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
 }
 
 /** Package or repository name for the card; a file label otherwise. */
-function titleOf(cs: Changeset): string {
+function titleOf(cs: Changeset, t: Messages): string {
   const b = cs.base.source
   const h = cs.head.source
   if (b.kind === 'npm' && h.kind === 'npm' && b.package === h.package) return b.package ?? 'Tokens'
   if (b.kind === 'github' && h.kind === 'github' && b.repo === h.repo) return b.repo ?? 'Tokens'
   if (h.kind === 'npm' && h.package) return h.package
   if (h.kind === 'github' && h.repo) return h.repo
-  return 'Design tokens'
+  return t.card.designTokens
 }
 
 function versionOf(s: Changeset['base']['source'], label: string): string {

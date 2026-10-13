@@ -3,7 +3,7 @@ import { type Config, DsGraph, diff, type Snapshot, type Source, scan, validateS
 import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
-import type { GraphNode, RunRequest, RunResponse, SideInfo, SideInput, TokenGraph } from './types'
+import type { GraphNode, RunRequest, RunResponse, SideInfo, SideInput, Stage, TokenGraph } from './types'
 import { cssColor, isColor } from './view'
 
 const CSS = /\.css$/i
@@ -116,7 +116,7 @@ const labelOf = (side: SideInput, g: DsGraph): string => {
 /** Loads both sides, diffs them and checks the head. `progress` reports the stage. */
 export async function compare(
   req: RunRequest,
-  progress: (stage: string) => void = () => {},
+  progress: (stage: Stage) => void = () => {},
 ): Promise<RunResponse> {
   const { id, base, head, include, githubToken } = req
   const started = performance.now()
@@ -124,16 +124,16 @@ export async function compare(
     try {
       return await load(side, include, githubToken)
     } catch (err) {
-      let message = (err as Error).message
-      if (side.kind === 'github' && !githubToken && /\b(401|403|404)\b/.test(message))
-        message += '. If the repository is private, add a GitHub token.'
-      throw Object.assign(new Error(message), { side: which })
+      const message = (err as Error).message
+      const hint =
+        side.kind === 'github' && !githubToken && /\b(401|403|404)\b/.test(message) ? 'private' : undefined
+      throw Object.assign(new Error(message), { side: which, hint })
     }
   }
   try {
-    progress('Reading tokens…')
+    progress('reading')
     const [b, h] = await Promise.all([loadSide('base', base), loadSide('head', head)])
-    progress('Comparing…')
+    progress('comparing')
     const changeset = await diff(b, h)
     const findings = await check(h)
     const types = new Map<string, string | null>()
@@ -151,8 +151,9 @@ export async function compare(
     }
   } catch (err) {
     const r: RunResponse = { id, ok: false, error: (err as Error).message }
-    const side = (err as { side?: 'base' | 'head' }).side
+    const { side, hint } = err as { side?: 'base' | 'head'; hint?: 'private' }
     if (side) r.side = side
+    if (hint) r.hint = hint
     return r
   }
 }

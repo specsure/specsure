@@ -2,13 +2,6 @@ import { type Change, type Changeset, type ColorValue, colorToHex, type Level } 
 
 export const LEVELS: Level[] = ['major', 'minor', 'patch', 'none']
 
-export const LEVEL_TITLE: Record<Level, string> = {
-  major: 'Breaking',
-  minor: 'Minor',
-  patch: 'Patch',
-  none: 'No impact',
-}
-
 /** Modifiers and their contexts as compared in the changeset (`theme: light | dark`). */
 export function contextAxes(cs: Changeset): Array<{ name: string; values: string[] }> {
   const axes = new Map<string, Set<string>>()

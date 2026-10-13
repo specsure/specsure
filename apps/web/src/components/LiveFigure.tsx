@@ -1,6 +1,8 @@
 import type { Level } from '@dsgraph/core'
 import { formatChangeset } from '@dsgraph/report'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import type { Lang } from '../i18n'
+import { LangProvider, useT } from '../i18n/react'
 import { drawCard } from '../lib/card'
 import { compare } from '../lib/compare'
 import { EXAMPLE, LEGACY_EXAMPLE } from '../lib/example'
@@ -68,9 +70,26 @@ function useResult(load: () => Promise<Result>) {
 
 const noop = () => {}
 
-export default function LiveFigure({ name, caption }: { name: FigureName; caption?: string }) {
+export default function LiveFigure({
+  name,
+  caption,
+  lang = 'en',
+}: {
+  name: FigureName
+  caption?: string
+  lang?: Lang
+}) {
+  return (
+    <LangProvider lang={lang}>
+      <Figure name={name} caption={caption} />
+    </LangProvider>
+  )
+}
+
+function Figure({ name, caption }: { name: FigureName; caption?: string | undefined }) {
+  const t = useT()
   const { result, error } = useResult(name === 'checks' ? legacy : example)
-  let body: ReactNode = <div className="figure__loading">Running dsgraph…</div>
+  let body: ReactNode = <div className="figure__loading">{t.figure.running}</div>
   if (error) body = <div className="figure__loading">{error}</div>
   else if (result) body = <Body name={name} result={result} />
   return (
@@ -82,6 +101,7 @@ export default function LiveFigure({ name, caption }: { name: FigureName; captio
 }
 
 function Body({ name, result }: { name: FigureName; result: Result }) {
+  const t = useT()
   const cs = result.changeset
   const find = (kind: string, target?: string) =>
     cs.changes.find((c) => c.kind === kind && (!target || c.target === target))
@@ -104,7 +124,7 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
           />
           <footer className="actionbar">
             <span className="actionbar__status" />
-            <span className="ghost-label">Compare</span>
+            <span className="ghost-label">{t.figure.compare}</span>
           </footer>
         </div>
       )
@@ -123,7 +143,7 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
       const v = view(cs, result.types, { context: {}, levels: ['major'], types: [], query: '' })
       return (
         <div className="window list list--static">
-          <div className="list__section list__section--major">Breaking</div>
+          <div className="list__section list__section--major">{t.levels.major}</div>
           {v.byLevel.major.map((c) => (
             <ChangeRow
               key={c.id}
@@ -196,6 +216,7 @@ function LiveResult({ result }: { result: Result }) {
 }
 
 function Card({ result }: { result: Result }) {
+  const t = useT()
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const cs = result.changeset
@@ -204,21 +225,20 @@ function Card({ result }: { result: Result }) {
       drawCard(
         canvas.current,
         {
-          title: 'Design tokens',
+          title: t.card.designTokens,
           from: 'v1',
           to: 'v2',
           level: cs.summary.level,
-          counts: [
-            ['removed', c.removed ?? 0],
-            ['renamed', c.renamed ?? 0],
-            ['changed', c.changed ?? 0],
-            ['added', c.added ?? 0],
-          ],
+          counts: (['removed', 'renamed', 'changed', 'added'] as const).map((k) => [
+            t.card.counts[k](c[k] ?? 0),
+            c[k] ?? 0,
+          ]),
           colors: colorPairs(cs),
           empty: cs.changes.length === 0,
+          labels: { badge: t.card.badge, noChanges: t.card.noChanges, colors: t.card.colors },
         },
         2,
       )
-  }, [result])
+  }, [result, t])
   return <canvas ref={canvas} className="card-preview figure__card" />
 }
