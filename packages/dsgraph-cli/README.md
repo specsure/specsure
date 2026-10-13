@@ -1,9 +1,17 @@
-# dsgraph
+# @dsgraph/cli
+
+The `dsgraph` command: scan, check and compare design tokens in a terminal or CI.
 
 ```bash
-npx dsgraph diff npm:@acme/tokens@1 npm:@acme/tokens@2
-npx dsgraph check ./tokens
-npx dsgraph scan github:owner/repo/tokens@main --out snapshot.json
+npm install -g @dsgraph/cli    # then: dsgraph diff …, dsgraph check …
+```
+
+Or without installing:
+
+```bash
+npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2
+npx @dsgraph/cli check ./tokens
+npx @dsgraph/cli scan github:owner/repo/tokens@main --out snapshot.json
 ```
 
 Formats: DTCG 2025.10 (with resolver documents and `$extensions.mode`), token JSON with sets and themes (`$themes.json`, `$metadata.json`), older token JSON with `value` and `type`, CSS custom properties.

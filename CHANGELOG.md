@@ -1,6 +1,6 @@
 # Changelog
 
-dsgraph packages (`dsgraph`, `@dsgraph/*`) share one version. The GitHub Action
+dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
 ## 0.2.0 — 2026-10-14
@@ -37,7 +37,7 @@ coding agent or the browser.
 
 ### Packages
 
-- `dsgraph`: the CLI (`scan`, `check`, `diff`; text, Markdown and JSON; `--fail-on`).
+- `@dsgraph/cli`: the CLI, command `dsgraph` (`scan`, `check`, `diff`; text, Markdown and JSON; `--fail-on`).
 - `@dsgraph/mcp`: an MCP server for coding agents. `find_token` turns a color or size into the
   token that holds it; also `get_token`, `search_tokens`, `describe_tokens`, `compare_versions`,
   `check_tokens`.

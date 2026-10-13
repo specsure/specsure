@@ -10,10 +10,10 @@
     "sync": "node scripts/sync.mjs"
   },
   "dependencies": {
+    "@dsgraph/cli": "0.2.0",
     "@dsgraph/core": "0.2.0",
     "@dsgraph/report": "0.2.0",
-    "@dsgraph/rules": "0.2.0",
-    "dsgraph": "0.2.0"
+    "@dsgraph/rules": "0.2.0"
   },
   "devDependencies": {
     "rolldown": "1.2.13"

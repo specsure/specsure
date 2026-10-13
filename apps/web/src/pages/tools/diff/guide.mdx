@@ -132,7 +132,7 @@ On GitHub, the action compares every pull request with its base branch and keeps
 With `fail-on: major` the check fails when the change is breaking, so a breaking change cannot slip out as a minor version. Elsewhere, the CLI does the same:
 
 ```bash
-npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
+npx @dsgraph/cli diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
 ```
 
 ## Coming next

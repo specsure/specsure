@@ -1,9 +1,9 @@
 import { stat } from 'node:fs/promises'
 import { basename, dirname, posix, relative, resolve } from 'node:path'
+import { diffOptions, loadConfig, loadGraph } from '@dsgraph/cli'
 import { type Config, diff, type Level } from '@dsgraph/core'
 import { formatChangeset, formatFindings } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
-import { diffOptions, loadConfig, loadGraph } from 'dsgraph'
 
 /** Where the action reads its inputs and writes its results; `process.env` and the file system in production. */
 export interface Runtime {

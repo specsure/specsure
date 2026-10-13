@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
+import { loadConfig } from '@dsgraph/cli'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { loadConfig } from 'dsgraph'
 import { createServer } from './server.js'
 
 const HELP = `dsgraph-mcp — MCP server for design tokens

@@ -31,7 +31,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 | [`@dsgraph/adapters`](packages/dsgraph-adapters) | Token-set and value/type JSON, CSS custom properties → tokens |
 | [`@dsgraph/rules`](packages/dsgraph-rules) | Rule engine, built-in rules, presets |
 | [`@dsgraph/report`](packages/dsgraph-report) | Text, Markdown and JSON formatters |
-| [`dsgraph`](packages/dsgraph-cli) | CLI |
+| [`@dsgraph/cli`](packages/dsgraph-cli) | CLI, the `dsgraph` command |
 | [`@dsgraph/mcp`](packages/dsgraph-mcp) | MCP server: find the token for a value, read tokens, compare versions |
 | [`@dsgraph/action`](packages/dsgraph-action) | GitHub Action, published to [specsure/dsgraph-action](https://github.com/specsure/dsgraph-action) |
 
@@ -40,8 +40,8 @@ All packages are isomorphic except `@dsgraph/sources/node` and the CLI.
 ## CLI
 
 ```bash
-npx dsgraph diff npm:@acme/tokens@1 npm:@acme/tokens@2 --format markdown
-npx dsgraph check ./tokens --strict
+npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2 --format markdown
+npx @dsgraph/cli check ./tokens --strict
 ```
 
 ## Library

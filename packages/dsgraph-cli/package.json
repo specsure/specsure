@@ -1,11 +1,11 @@
 {
-  "name": "dsgraph",
+  "name": "@dsgraph/cli",
   "version": "0.2.0",
   "description": "dsgraph CLI: scan, check and diff design tokens (DTCG 2025.10, CSS custom properties) from folders, npm and GitHub.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "dsgraph": "./dist/cli.js"
+    "dsgraph": "dist/cli.js"
   },
   "exports": {
     ".": {

@@ -1,9 +1,9 @@
+import { diffOptions, loadGraph } from '@dsgraph/cli'
 import { type Config, type DsGraph, diff, type Input, type Token } from '@dsgraph/core'
 import { formatChangeset, formatFindings, formatValue, formatWhen } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { parseRemoteSpec } from '@dsgraph/sources'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { diffOptions, loadGraph } from 'dsgraph'
 import { z } from 'zod'
 import { nearest, parseValue } from './nearest.js'
 

@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "dsgraph-mcp": "./dist/cli.js"
+    "dsgraph-mcp": "dist/cli.js"
   },
   "exports": {
     ".": {
@@ -37,12 +37,12 @@
   },
   "dependencies": {
     "@dsgraph/adapters": "0.2.0",
+    "@dsgraph/cli": "0.2.0",
     "@dsgraph/core": "0.2.0",
     "@dsgraph/report": "0.2.0",
     "@dsgraph/rules": "0.2.0",
     "@dsgraph/sources": "0.2.0",
     "@modelcontextprotocol/sdk": "1.31.0",
-    "dsgraph": "0.2.0",
     "zod": "4.6.5"
   }
 }

@@ -50,7 +50,7 @@ const en = {
     lead: 'Open-source tools for design systems. No account and no server: they run in your browser, your CI or your terminal.',
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
-      cli: 'The same diff and checks in your terminal and CI: npx dsgraph diff',
+      cli: 'The same diff and checks in your terminal and CI: npx @dsgraph/cli diff',
       action: 'A report on every pull request that touches tokens, and a failed check when it breaks',
       mcp: 'Coding agents find the token for a color or size instead of hard-coding it',
       engine: 'The open engine behind it: DTCG 2025.10, snapshots, diff, rules',
@@ -466,7 +466,7 @@ const ru: Messages = {
     lead: 'Открытые инструменты для дизайн-систем. Без регистрации и без сервера: всё работает в браузере, в CI или в терминале.',
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
-      cli: 'То же сравнение и проверки в терминале и CI: npx dsgraph diff',
+      cli: 'То же сравнение и проверки в терминале и CI: npx @dsgraph/cli diff',
       action:
         'Отчёт в каждом pull request, где менялись токены, и проваленная проверка, если что-то ломается',
       mcp: 'ИИ-агенты находят нужный токен по цвету или размеру, а не вписывают значение в код',

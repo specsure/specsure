@@ -133,7 +133,7 @@ Token Diff понимает JSON в формате DTCG 2025.10 (включая 
 С `fail-on: major` проверка падает на ломающих изменениях, и выпустить их под видом минорной версии не получится. В других CI то же самое делает CLI:
 
 ```bash
-npx dsgraph diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
+npx @dsgraph/cli diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
 ```
 
 ## Что дальше
