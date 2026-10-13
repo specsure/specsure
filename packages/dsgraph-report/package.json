@@ -1,19 +1,32 @@
 {
   "name": "@dsgraph/report",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Formatters for dsgraph changesets and findings: text, Markdown, JSON.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
-  "repository": { "type": "git", "url": "git+https://github.com/specsure/specsure.git", "directory": "packages/dsgraph-report" },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/specsure/specsure.git",
+    "directory": "packages/dsgraph-report"
+  },
   "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-report#readme",
-  "bugs": { "url": "https://github.com/specsure/specsure/issues" },
-  "engines": { "node": ">=20.19" },
+  "bugs": {
+    "url": "https://github.com/specsure/specsure/issues"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
   "dependencies": {
-    "@dsgraph/core": "0.1.0"
+    "@dsgraph/core": "0.2.0"
   }
 }

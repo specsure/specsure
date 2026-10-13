@@ -21,7 +21,8 @@
     "schemas": "node packages/dsgraph-schema/scripts/emit-schemas.ts",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo apps/web/dist apps/web/.astro",
     "web:dev": "npm run dev -w @specsure/web",
-    "web:build": "npm run build -w @specsure/web"
+    "web:build": "npm run build -w @specsure/web",
+    "version:set": "node scripts/set-version.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

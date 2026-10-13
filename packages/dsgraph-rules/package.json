@@ -1,20 +1,33 @@
 {
   "name": "@dsgraph/rules",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Rule engine and built-in rules for dsgraph: layers, contrast, palettes, deprecations, naming.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
-  "repository": { "type": "git", "url": "git+https://github.com/specsure/specsure.git", "directory": "packages/dsgraph-rules" },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/specsure/specsure.git",
+    "directory": "packages/dsgraph-rules"
+  },
   "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-rules#readme",
-  "bugs": { "url": "https://github.com/specsure/specsure/issues" },
-  "engines": { "node": ">=20.19" },
+  "bugs": {
+    "url": "https://github.com/specsure/specsure/issues"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
   "dependencies": {
-    "@dsgraph/core": "0.1.0",
+    "@dsgraph/core": "0.2.0",
     "culori": "4.0.2"
   },
   "devDependencies": {

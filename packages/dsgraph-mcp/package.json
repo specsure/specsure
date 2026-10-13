@@ -1,27 +1,48 @@
 {
   "name": "@dsgraph/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for design tokens: find the token for a value, read a token with its references, compare versions, run checks. DTCG, token JSON and CSS; folders, npm and GitHub.",
   "license": "MIT",
   "type": "module",
-  "bin": { "dsgraph-mcp": "./dist/cli.js" },
-  "exports": {
-    ".": { "types": "./dist/server.d.ts", "default": "./dist/server.js" }
+  "bin": {
+    "dsgraph-mcp": "./dist/cli.js"
   },
-  "files": ["dist"],
-  "repository": { "type": "git", "url": "git+https://github.com/specsure/specsure.git", "directory": "packages/dsgraph-mcp" },
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/specsure/specsure.git",
+    "directory": "packages/dsgraph-mcp"
+  },
   "homepage": "https://github.com/specsure/specsure/tree/main/packages/dsgraph-mcp#readme",
-  "bugs": { "url": "https://github.com/specsure/specsure/issues" },
-  "keywords": ["design-tokens", "dtcg", "design-system", "mcp", "model-context-protocol"],
-  "engines": { "node": ">=20.19" },
+  "bugs": {
+    "url": "https://github.com/specsure/specsure/issues"
+  },
+  "keywords": [
+    "design-tokens",
+    "dtcg",
+    "design-system",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
   "dependencies": {
-    "@dsgraph/adapters": "0.1.0",
-    "@dsgraph/core": "0.1.0",
-    "@dsgraph/report": "0.1.0",
-    "@dsgraph/rules": "0.1.0",
-    "@dsgraph/sources": "0.1.0",
+    "@dsgraph/adapters": "0.2.0",
+    "@dsgraph/core": "0.2.0",
+    "@dsgraph/report": "0.2.0",
+    "@dsgraph/rules": "0.2.0",
+    "@dsgraph/sources": "0.2.0",
     "@modelcontextprotocol/sdk": "1.31.0",
-    "dsgraph": "0.1.0",
+    "dsgraph": "0.2.0",
     "zod": "4.6.5"
   }
 }

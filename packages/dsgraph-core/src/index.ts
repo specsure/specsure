@@ -34,7 +34,7 @@ export {
   scan,
   type TokenAdapter,
 } from './scan.js'
-export { type BuildOptions, buildSnapshot, type LayerConfig } from './snapshot.js'
+export { type BuildOptions, buildSnapshot, GENERATOR, type LayerConfig } from './snapshot.js'
 export { prefetch, type Source } from './source.js'
 export { canonicalValue, INTERNAL_TYPES, STANDARD_TYPES } from './values/canonical.js'
 export {
