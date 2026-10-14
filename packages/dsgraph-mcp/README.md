@@ -34,7 +34,8 @@ The argument is the default source: a folder or file, `npm:@scope/tokens@2` or `
 | `get_token` | One token: its value in every theme, the references it takes the value from, the tokens that use it, description, deprecation, file |
 | `search_tokens` | Tokens by part of the name or a glob (`color.text.*`) and by type, with their values |
 | `describe_tokens` | An overview: tokens per type, themes and other modes, top-level groups, files |
-| `compare_versions` | What changed between two versions, what breaks and which semver bump the release needs |
+| `check_styles` | CSS or SCSS the agent just wrote, or a style file or folder of the project: colors and spacing, radii and font sizes written by hand (with the token to use), deprecated and unknown design-system variables |
+| `compare_versions` | What changed between two versions, what breaks and which semver bump the release needs; with `code`, the places in the project's styles that break or look different |
 | `check_tokens` | Broken references, cycles, legacy syntax, naming collisions, ramps out of order, colors out of gamut |
 
 Each tool takes an optional `source`, so an agent can also look at a package before upgrading it: "compare `npm:@scope/tokens@2` with `npm:@scope/tokens@3`".

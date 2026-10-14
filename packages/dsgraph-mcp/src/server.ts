@@ -1,8 +1,20 @@
+import { stat } from 'node:fs/promises'
+import { basename, dirname, resolve } from 'node:path'
+import { scanStyles } from '@dsgraph/adapters'
 import { diffOptions, loadGraph } from '@dsgraph/cli'
-import { type Config, type DsGraph, diff, type Input, type Token } from '@dsgraph/core'
+import {
+  type CodeIndex,
+  type Config,
+  type DsGraph,
+  diff,
+  type Input,
+  impactOf,
+  type Token,
+} from '@dsgraph/core'
 import { formatChangeset, formatFindings, formatValue, formatWhen } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
-import { parseRemoteSpec } from '@dsgraph/sources'
+import { MemorySource, parseRemoteSpec } from '@dsgraph/sources'
+import { NodeFsSource } from '@dsgraph/sources/node'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { nearest, parseValue } from './nearest.js'
@@ -35,6 +47,13 @@ const pinned = (spec: string) => {
 }
 const REMOTE_TTL = 5 * 60_000
 
+const CODE = z
+  .string()
+  .optional()
+  .describe(
+    'The project code that uses the tokens: a folder or a style file (CSS, SCSS, CSS modules), relative to the project. Leave out to skip the code.',
+  )
+
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
 const failure = (t: string) => ({ content: [{ type: 'text' as const, text: t }], isError: true })
 
@@ -63,6 +82,18 @@ export function createServer(opts: ServerOptions): McpServer {
       graph.catch(() => cache.delete(spec))
     }
     return graph
+  }
+  /** Styles of the project: a folder, or one file in it. Read on every call; the agent edits them. */
+  const codeOf = async (path: string): Promise<CodeIndex> => {
+    const full = resolve(opts.cwd, path)
+    const info = await stat(full).catch(() => undefined)
+    if (!info) throw new Error(`Not found: ${path}`)
+    const scanOpts: Parameters<typeof scanStyles>[1] = {}
+    if (config.code?.exclude) scanOpts.exclude = config.code.exclude
+    if (info.isFile())
+      return scanStyles(new NodeFsSource(dirname(full)), { ...scanOpts, include: [basename(full)] })
+    if (config.code?.include) scanOpts.include = config.code.include
+    return scanStyles(new NodeFsSource(full), scanOpts)
   }
   const inputOf = (graph: DsGraph, context?: Record<string, string>): Input =>
     graph.defaultInput(context ?? {})
@@ -292,14 +323,55 @@ export function createServer(opts: ServerOptions): McpServer {
           .string()
           .describe('The old version: a path, npm:package@version or github:owner/repo/path@ref'),
         head: SOURCE.describe('The new version; leave out for the project default'),
+        code: CODE.describe(
+          'The project that uses the tokens (a folder or style file): adds, under each change, the places in its styles that break or look different.',
+        ),
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ base, head }) => {
-      const [b, h] = await Promise.all([graphOf(base), graphOf(head)])
+    async ({ base, head, code }) => {
+      const [b, h, index] = await Promise.all([graphOf(base), graphOf(head), code ? codeOf(code) : undefined])
       const cs = await diff(b, h, diffOptions(config))
       const types = new Map([...b.tokens(), ...h.tokens()].map((t) => [t.id, t.type]))
-      return text(formatChangeset(cs, { format: 'markdown', types }))
+      const impact = index
+        ? impactOf(cs, b, h, index, config.code?.prefix ? { prefix: config.code.prefix } : {})
+        : undefined
+      return text(formatChangeset(cs, { format: 'markdown', types, ...(impact ? { impact } : {}) }))
+    },
+  )
+
+  server.registerTool(
+    'check_styles',
+    {
+      title: 'Check styles against the tokens',
+      description:
+        'Use after writing or editing CSS or SCSS: finds colors written by hand, spacing, radii and font sizes off the scale, deprecated and unknown design-system variables, each with the token to use instead. Pass the style text you just wrote, or a file or folder of the project.',
+      inputSchema: {
+        css: z
+          .string()
+          .optional()
+          .describe('Style text to check, e.g. the rule you are about to write. SCSS is fine.'),
+        path: CODE.describe('A style file or folder of the project to check instead of `css`.'),
+        source: SOURCE,
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ css, path, source }) => {
+      if (!css && !path) return failure('Pass `css` (style text) or `path` (a style file or folder).')
+      const [graph, code] = await Promise.all([
+        graphOf(source),
+        css ? scanStyles(new MemorySource({ 'snippet.scss': css })) : codeOf(path!),
+      ])
+      if (code.skipped.length && !code.files.length)
+        return failure(`Could not parse the styles: ${code.skipped[0]!.message}`)
+      const findings = (await check(graph, config, [], { code })).filter((f) =>
+        /^(style|usage)\//.test(f.rule),
+      )
+      if (!findings.length)
+        return text(
+          `No problems: ${code.uses.length} token use${code.uses.length === 1 ? '' : 's'}, no values written by hand that should be tokens.`,
+        )
+      return text(formatFindings(findings, { format: 'markdown', group: false }))
     },
   )
 

@@ -16,6 +16,8 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   `usage/unknown-token`, `token/unused`. Each points to the token to use, or the closest one.
 - Custom properties are matched to tokens by name, with a configured or learned prefix (`VarMatcher`).
 - `nearestTokens` moved from the MCP server to `@dsgraph/core`.
+- MCP: `check_styles` checks style text an agent wrote, or project files, against the tokens;
+  `compare_versions` takes `code` and lists the places in the project's styles a new version reaches.
 
 ## 0.2.0 — 2026-10-14
 

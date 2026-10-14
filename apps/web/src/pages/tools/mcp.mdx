@@ -29,7 +29,8 @@ You do not need to call the tools by name. Ask the way you would ask a colleague
 - “Which token is `#3366ff`? And what is closest to 14px?”
 - “Replace the hard-coded colors in `Button.tsx` with tokens.”
 - “What does `color.text.muted` look like in the dark theme, and what uses it?”
-- “We are upgrading `@scope/tokens` from 2.4 to 3.0. What breaks?”
+- “We are upgrading `@scope/tokens` from 2.4 to 3.0. What breaks in `src`?”
+- “Check the styles you just wrote against our tokens.”
 - “Check our tokens for broken references.”
 
 ## Tools
@@ -40,7 +41,8 @@ You do not need to call the tools by name. Ask the way you would ask a colleague
 | `get_token` | One token: its value in every theme, the tokens it takes its value from and the ones that use it |
 | `search_tokens` | Tokens by part of the name or by type, with their values |
 | `describe_tokens` | An overview: how many tokens of each type, the themes, the main groups |
-| `compare_versions` | What changed between two versions, what breaks and which version the release needs, the same report as [Token Diff](/tools/diff) |
+| `check_styles` | CSS or SCSS the agent just wrote, or a file of your project: colors and sizes written by hand, with the token to use instead, and variables that are deprecated or do not exist |
+| `compare_versions` | What changed between two versions, what breaks and which version the release needs, the same report as [Token Diff](/tools/diff). With your code folder, it also lists the places in your styles that break or look different |
 | `check_tokens` | Broken references, loops, old syntax, names that collide |
 
 ## Good to know

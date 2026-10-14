@@ -33,6 +33,11 @@ beforeAll(async () => {
   await mkdir(join(dir, 'previous'))
   await writeFile(join(dir, 'tokens/tokens.css'), v2)
   await writeFile(join(dir, 'previous/tokens.css'), v1)
+  await mkdir(join(dir, 'src'))
+  await writeFile(
+    join(dir, 'src/button.css'),
+    '.button {\n  color: var(--color-accent);\n  padding: var(--space-sm);\n}\n',
+  )
   const server = createServer({ source: './tokens', cwd: dir })
   const [a, b] = InMemoryTransport.createLinkedPair()
   client = new Client({ name: 'test', version: '1' })
@@ -43,6 +48,7 @@ describe('dsgraph MCP server', () => {
   it('lists read-only tools', async () => {
     const { tools } = await client.listTools()
     expect(tools.map((t) => t.name).sort()).toEqual([
+      'check_styles',
       'check_tokens',
       'compare_versions',
       'describe_tokens',
@@ -92,5 +98,27 @@ describe('dsgraph MCP server', () => {
     expect(text).toContain('suggested bump: major')
     expect(text).toContain('space-small')
     expect((await call('check_tokens')).text).toBeTruthy()
+  })
+
+  it('checks style text an agent wrote, pointing to the tokens to use', async () => {
+    const { text, isError } = await call('check_styles', {
+      css: '.card {\n  color: #3366ff;\n  padding: 15px;\n  margin: 16px;\n}',
+    })
+    expect(isError).toBe(false)
+    expect(text).toContain('Color "#3366ff" in color is written by hand; use "color-accent"')
+    expect(text).toContain('"15px" in padding is off the scale; closest is "space-md" (16px)')
+    expect(text).toContain('"16px" in margin is on the scale; use "space-md"')
+    expect((await call('check_styles', { css: '.a { color: var(--color-text) }' })).text).toMatch(
+      /^No problems/,
+    )
+    expect((await call('check_styles', {})).isError).toBe(true)
+  })
+
+  it('shows where a new version reaches into the code', async () => {
+    const { text } = await call('compare_versions', { base: './previous', code: 'src' })
+    expect(text).toContain('In the code: 1 place breaks, 1 place looks different (1 file).')
+    expect(text).toMatch(
+      /renamed `space-sm` → `space-small`.*\n\s+- breaks 1 place in the code: `button\.css:3`/,
+    )
   })
 })
