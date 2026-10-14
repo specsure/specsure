@@ -25,6 +25,13 @@ describe('dependencyVersion', () => {
       "lockfileVersion: '9.0'\nimporters:\n  .:\n    dependencies:\n      '@acme/tokens':\n        specifier: ^2.4.0\n        version: 2.4.1\npackages:\n\n  '@acme/tokens@2.4.1':\n    resolution: {integrity: x}\n"
     expect(dependencyVersion({ pnpmLock: v6 }, name)).toBe('2.4.1')
     expect(dependencyVersion({ pnpmLock: v9 }, name)).toBe('2.4.1')
+    // The name is a literal: a dot in it matches only a dot.
+    expect(
+      dependencyVersion(
+        { pnpmLock: 'packages:\n  /tokensXcss@9.9.9:\n  /tokens.css@1.0.0:\n' },
+        'tokens.css',
+      ),
+    ).toBe('1.0.0')
   })
 
   it('reads yarn.lock, classic and berry', () => {
