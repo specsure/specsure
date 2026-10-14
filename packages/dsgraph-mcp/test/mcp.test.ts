@@ -121,4 +121,19 @@ describe('dsgraph MCP server', () => {
       /renamed `space-sm` → `space-small`.*\n\s+- breaks 1 place in the code: `button\.css:3`/,
     )
   })
+
+  it('checks a component with Tailwind classes and style objects, and says how much is on tokens', async () => {
+    const { text, isError } = await call('check_styles', {
+      filename: 'Card.tsx',
+      code: 'export const Card = () => <div className="bg-[#3366ff] p-[15px] rounded-[6px]" style={{ color: "var(--color-text)" }} />',
+    })
+    expect(isError).toBe(false)
+    expect(text).toMatch(
+      /^On tokens: 25% of the design values in the code \(1 from tokens, 3 written by hand\)\./,
+    )
+    expect(text).toContain('"bg-[#3366ff]" writes a color by hand; use "bg-accent" (token "color-accent")')
+    expect(text).toContain(
+      '"p-[15px]" is off the scale; closest is "p-(--space-md)" (token "space-md", 16px)',
+    )
+  })
 })

@@ -2,12 +2,16 @@ export * from '@dsgraph/schema'
 export {
   type CodeIndex,
   type CodeLoc,
+  type Coverage,
+  coverageOf,
+  formatCoverage,
   type NearestToken,
   nearestTokens,
   type StyleLiteral,
   type TokenUse,
   VarMatcher,
   valueDistance,
+  varNames,
 } from './code.js'
 export { DiagnosticBag } from './diagnostics.js'
 export { type DiffOptions, diff } from './diff/diff.js'

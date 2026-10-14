@@ -25,10 +25,14 @@ export interface CodeLoc {
   column: number
 }
 
-/** One `var(--name)` in a style. */
+/** One use of a token in code: `var(--name)` in a style, or a utility class such as `bg-primary`. */
 export interface TokenUse extends CodeLoc {
-  /** The custom property as written, `--color-accent`. */
+  /** The custom property, `--color-accent`; for a class, its first candidate. */
   name: string
+  /** Other custom properties a class may stand for (`bg-primary` → `--color-primary`, `--primary`). */
+  candidates?: string[]
+  /** As written in the code when it is not `var()`: the class `bg-primary`. */
+  text?: string
   /** CSS property it is used in (`color`, `padding`, or a custom property it defines). */
   property: string
   selector?: string
@@ -42,6 +46,8 @@ export interface StyleLiteral extends CodeLoc {
   selector?: string
   /** The value as written, `#3366ff`, `12px`. */
   text: string
+  /** Where it was written when that is not a declaration: the class `bg-[#3366ff]`. */
+  source?: string
   type: 'color' | 'dimension'
   /** Canonical DTCG value. */
   value: unknown
@@ -75,6 +81,17 @@ export class VarMatcher {
     const direct = this.byName(n)
     if (direct) return direct
     for (const p of this.prefixes) if (n.startsWith(`${p}.`)) return this.byName(n.slice(p.length + 1))
+    return undefined
+  }
+
+  /** The token a use reads: its name, or else the first of its candidates that names a token. */
+  tokenOfUse(u: Pick<TokenUse, 'name' | 'candidates'>): Token | undefined {
+    const direct = this.token(u.name)
+    if (direct || !u.candidates) return direct
+    for (const c of u.candidates) {
+      const t = this.token(c)
+      if (t) return t
+    }
     return undefined
   }
 
@@ -132,6 +149,32 @@ function learnPrefixes(
     .filter(([, s]) => s.hits >= 2 && s.hits / s.total >= 0.5)
     .sort((a, b) => b[1].hits - a[1].hits || a[0].localeCompare(b[0]))
     .map(([p]) => p)
+}
+
+/** Names to learn a prefix from: `var()` uses as written, not the guesses behind a class. */
+export const varNames = (code: CodeIndex): string[] => code.uses.filter((u) => !u.text).map((u) => u.name)
+
+export interface Coverage {
+  /** Uses of tokens: `var()` and classes that name one. */
+  fromTokens: number
+  /** Colors and scale values written by hand. */
+  byHand: number
+  /** fromTokens / (fromTokens + byHand); null when the code has neither. */
+  share: number | null
+}
+
+/** How much of the code's design values come from tokens. */
+export function coverageOf(code: CodeIndex, vars: VarMatcher): Coverage {
+  const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)).length
+  const byHand = code.literals.length
+  const total = fromTokens + byHand
+  return { fromTokens, byHand, share: total ? fromTokens / total : null }
+}
+
+/** `On tokens: 92% of the design values in the code (120 from tokens, 10 written by hand).` */
+export function formatCoverage(c: Coverage): string {
+  if (c.share === null) return 'On tokens: no colors or sizes in the code.'
+  return `On tokens: ${Math.round(c.share * 100)}% of the design values in the code (${c.fromTokens} from tokens, ${c.byHand} written by hand).`
 }
 
 const REM = 16

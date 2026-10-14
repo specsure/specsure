@@ -36,8 +36,15 @@ const COLOR_PROPERTY =
   /^(color|background(-color)?|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?|outline(-color)?|fill|stroke|(box|text)-shadow|caret-color|accent-color|text-decoration(-color)?|column-rule(-color)?|scrollbar-color)$/i
 
 /** Properties that take values from a spacing, radius or type scale. */
+/** Spacing, radii and font sizes; positions (`top`, `inset`) are layout, not steps of a scale. */
 const SCALE_PROPERTY =
-  /^(margin|padding|inset|scroll-(margin|padding))(-(top|right|bottom|left|block|inline)(-(start|end))?)?$|^(gap|row-gap|column-gap|top|right|bottom|left|font-size)$|^border(-(top|bottom|start|end)-(left|right|start|end))?-radius$/i
+  /^(margin|padding|scroll-(margin|padding))(-(top|right|bottom|left|block|inline)(-(start|end))?)?$|^(gap|row-gap|column-gap|font-size)$|^border(-(top|bottom|start|end)-(left|right|start|end))?-radius$/i
+
+/** Properties worth reading in a style object: colors and scale values. */
+export const isStyleProperty = (property: string): boolean =>
+  COLOR_PROPERTY.test(property) ||
+  SCALE_PROPERTY.test(property) ||
+  /^(background|border|outline|box-shadow|text-shadow|fill|stroke)/i.test(property)
 
 const NOT_A_COLOR = new Set([
   'transparent',
@@ -150,16 +157,57 @@ function selectorOf(decl: Declaration): string | undefined {
   return parent && parent.type === 'rule' ? (parent as postcss.Rule).selector.replace(/\s+/g, ' ') : undefined
 }
 
-function parse(file: string, text: string): Root {
-  // postcss-scss may resolve its own copy of postcss; the tree is the same.
-  if (/\.scss$/i.test(file)) return scss.parse(text, { from: file }) as unknown as Root
-  return postcss.parse(text, { from: file })
+const WRAP = '.__dsgraph__'
+
+export interface CssTextOptions {
+  scss?: boolean
+  /** Line in the file where the text starts (1 for a whole file). */
+  line?: number
+  /** A declaration list without a selector: a `styled` template, a `style` attribute. */
+  declarations?: boolean
 }
 
 /**
- * Reads a project's style files (CSS, SCSS, CSS modules): every `var(--…)` and every color or
- * scale value written by hand. Definitions of custom properties and SCSS variables are where values
- * are named, so their literals are not reported; their `var()` references are.
+ * Reads CSS text into an index: every `var(--…)` and every color or scale value written by hand.
+ * Definitions of custom properties and SCSS variables are where values are named, so their
+ * literals are not reported; their `var()` references are. Throws when the text does not parse.
+ */
+export function scanCssText(file: string, text: string, index: CodeIndex, opts: CssTextOptions = {}): void {
+  // A wrapping rule on the same line keeps line numbers.
+  const src = opts.declarations ? `${WRAP}{${text}}` : text
+  // postcss-scss may resolve its own copy of postcss; the tree is the same.
+  const root: Root = opts.scss
+    ? (scss.parse(src, { from: file }) as unknown as Root)
+    : postcss.parse(src, { from: file })
+  const offset = (opts.line ?? 1) - 1
+  root.walkDecls((decl) => {
+    const loc = {
+      file,
+      line: (decl.source?.start?.line ?? 1) + offset,
+      column: decl.source?.start?.column ?? 0,
+    }
+    const sel = selectorOf(decl)
+    const selector = sel && !sel.includes(WRAP) ? sel : undefined
+    const property = decl.prop
+    for (const v of varsIn(decl.value)) {
+      const use: TokenUse = { ...loc, name: v.name, property }
+      if (selector) use.selector = selector
+      if (v.fallback !== undefined) use.fallback = v.fallback
+      index.uses.push(use)
+    }
+    if (property.startsWith('--') || property.startsWith('$') || property.startsWith('@')) return
+    // SCSS interpolation, variables and JS expressions compute values we cannot see.
+    if (/#\{|\$[\w-]|__expr__/.test(decl.value)) return
+    for (const l of literalsIn(property, decl.value)) {
+      const lit: StyleLiteral = { ...loc, property, ...l }
+      if (selector) lit.selector = selector
+      index.literals.push(lit)
+    }
+  })
+}
+
+/**
+ * Reads a project's style files (CSS, SCSS, CSS modules). `scanCode` reads scripts and markup too.
  */
 export async function scanStyles(source: Source, opts: StylesOptions = {}): Promise<CodeIndex> {
   const exclude = [...DEFAULT_EXCLUDE, ...(opts.exclude ?? [])]
@@ -169,33 +217,12 @@ export async function scanStyles(source: Source, opts: StylesOptions = {}): Prom
   await prefetch(source, files)
   const index: CodeIndex = { files: [], uses: [], literals: [], skipped: [] }
   for (const file of files) {
-    let root: Root
     try {
-      root = parse(file, await source.readText(file))
+      scanCssText(file, await source.readText(file), index, { scss: /\.scss$/i.test(file) })
+      index.files.push(file)
     } catch (e) {
       index.skipped.push({ file, message: (e as Error).message })
-      continue
     }
-    index.files.push(file)
-    root.walkDecls((decl) => {
-      const loc = { file, line: decl.source?.start?.line ?? 0, column: decl.source?.start?.column ?? 0 }
-      const selector = selectorOf(decl)
-      const property = decl.prop
-      for (const v of varsIn(decl.value)) {
-        const use: TokenUse = { ...loc, name: v.name, property }
-        if (selector) use.selector = selector
-        if (v.fallback !== undefined) use.fallback = v.fallback
-        index.uses.push(use)
-      }
-      if (property.startsWith('--') || property.startsWith('$') || property.startsWith('@')) return
-      // SCSS interpolation and function calls compute values we cannot see.
-      if (/#\{|\$[\w-]/.test(decl.value)) return
-      for (const l of literalsIn(property, decl.value)) {
-        const lit: StyleLiteral = { ...loc, property, ...l }
-        if (selector) lit.selector = selector
-        index.literals.push(lit)
-      }
-    })
   }
   return index
 }

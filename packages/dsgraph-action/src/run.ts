@@ -1,6 +1,6 @@
 import { stat } from 'node:fs/promises'
 import { basename, dirname, join, posix, relative, resolve } from 'node:path'
-import { scanStyles } from '@dsgraph/adapters'
+import { CODE_INCLUDE, scanCode } from '@dsgraph/adapters'
 import {
   dependencyVersion,
   diffOptions,
@@ -10,7 +10,18 @@ import {
   type Manifests,
   readManifests,
 } from '@dsgraph/cli'
-import { type CodeIndex, type Config, diff, type Finding, impactOf, type Level } from '@dsgraph/core'
+import {
+  type CodeIndex,
+  type Config,
+  coverageOf,
+  diff,
+  type Finding,
+  formatCoverage,
+  impactOf,
+  type Level,
+  VarMatcher,
+  varNames,
+} from '@dsgraph/core'
 import { formatChangeset, formatFindings } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
@@ -137,11 +148,11 @@ export async function run(rt: Runtime): Promise<number> {
     if (codePath) {
       const root = posix.normalize(codePath.split('\\').join('/')).replace(/^\.\/?|\/$/g, '')
       const within = (globs: string[]) => globs.map((g) => (root ? `${root}/${g}` : g))
-      const scanOpts: Parameters<typeof scanStyles>[1] = {
-        include: config.code?.include ?? within(['**/*.css', '**/*.scss']),
+      const scanOpts: Parameters<typeof scanCode>[1] = {
+        include: config.code?.include ?? within(CODE_INCLUDE),
       }
       if (config.code?.exclude) scanOpts.exclude = config.code.exclude
-      code = await scanStyles(new NodeFsSource(workspace), scanOpts)
+      code = await scanCode(new NodeFsSource(workspace), scanOpts)
     }
     const impact = code
       ? impactOf(cs, base, head, code, config.code?.prefix ? { prefix: config.code.prefix } : {})
@@ -168,6 +179,10 @@ export async function run(rt: Runtime): Promise<number> {
           )
         : []
       if (styles.length) body += stylesSection(styles)
+    }
+    if (code) {
+      const vars = new VarMatcher(head, varNames(code), config.code?.prefix)
+      body += `\n${formatCoverage(coverageOf(code, vars))}\n`
     }
     // Checks on someone else's package are theirs to fix; with `package` they are off unless asked for.
     if (input(rt, 'checks', pkg ? 'false' : 'true') !== 'false') {

@@ -1,6 +1,7 @@
 import { buildSnapshot, type CodeIndex, DiagnosticBag, DsGraph, systemFromDocuments } from '@dsgraph/core'
 import { describe, expect, it } from 'vitest'
 import { check } from '../src/index.js'
+import { classFor } from '../src/rules/code.js'
 
 const srgb = (r: number, g: number, b: number) => ({ colorSpace: 'srgb', components: [r, g, b] })
 /** Values in a code index are canonical, as tokens hold them. */
@@ -118,5 +119,17 @@ describe('rules on code', () => {
     expect(lines(fs, 'style/hardcoded-color')).toEqual([
       'src/app.css:6 warning Color "#2663eb" in color is written by hand; use "color.accent"',
     ])
+  })
+})
+
+describe('classFor', () => {
+  it('names the class that replaces an arbitrary value, variants kept', () => {
+    expect(classFor('hover:bg-[#2952cc]', { id: 'color-accent', type: 'color' })).toBe('hover:bg-accent')
+    expect(classFor('bg-[#0f172a]', { id: 'primary', type: 'color' })).toBe('bg-primary')
+    expect(classFor('rounded-[6px]', { id: 'radius-md', type: 'dimension' })).toBe('rounded-md')
+    expect(classFor('-mt-[16px]', { id: 'space-md', type: 'dimension' })).toBe('-mt-(--space-md)')
+    expect(classFor('text-[#111]', { id: 'color.text.primary', type: 'color' })).toBe(
+      'text-(--color-text-primary)',
+    )
   })
 })

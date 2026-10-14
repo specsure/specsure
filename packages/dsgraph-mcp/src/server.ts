@@ -1,19 +1,23 @@
 import { stat } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
-import { scanStyles } from '@dsgraph/adapters'
+import { scanCode, scanFileText } from '@dsgraph/adapters'
 import { diffOptions, loadGraph } from '@dsgraph/cli'
 import {
   type CodeIndex,
   type Config,
+  coverageOf,
   type DsGraph,
   diff,
+  formatCoverage,
   type Input,
   impactOf,
   type Token,
+  VarMatcher,
+  varNames,
 } from '@dsgraph/core'
 import { formatChangeset, formatFindings, formatValue, formatWhen } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
-import { MemorySource, parseRemoteSpec } from '@dsgraph/sources'
+import { parseRemoteSpec } from '@dsgraph/sources'
 import { NodeFsSource } from '@dsgraph/sources/node'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
@@ -51,7 +55,7 @@ const CODE = z
   .string()
   .optional()
   .describe(
-    'The project code that uses the tokens: a folder or a style file (CSS, SCSS, CSS modules), relative to the project. Leave out to skip the code.',
+    'The project code that uses the tokens: a folder or a file (CSS, SCSS, JS/TS/JSX/TSX, Vue, Svelte, Astro, HTML), relative to the project. Leave out to skip the code.',
   )
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
@@ -88,12 +92,12 @@ export function createServer(opts: ServerOptions): McpServer {
     const full = resolve(opts.cwd, path)
     const info = await stat(full).catch(() => undefined)
     if (!info) throw new Error(`Not found: ${path}`)
-    const scanOpts: Parameters<typeof scanStyles>[1] = {}
+    const scanOpts: Parameters<typeof scanCode>[1] = {}
     if (config.code?.exclude) scanOpts.exclude = config.code.exclude
     if (info.isFile())
-      return scanStyles(new NodeFsSource(dirname(full)), { ...scanOpts, include: [basename(full)] })
+      return scanCode(new NodeFsSource(dirname(full)), { ...scanOpts, include: [basename(full)] })
     if (config.code?.include) scanOpts.include = config.code.include
-    return scanStyles(new NodeFsSource(full), scanOpts)
+    return scanCode(new NodeFsSource(full), scanOpts)
   }
   const inputOf = (graph: DsGraph, context?: Record<string, string>): Input =>
     graph.defaultInput(context ?? {})
@@ -343,35 +347,57 @@ export function createServer(opts: ServerOptions): McpServer {
   server.registerTool(
     'check_styles',
     {
-      title: 'Check styles against the tokens',
+      title: 'Check code against the tokens',
       description:
-        'Use after writing or editing CSS or SCSS: finds colors written by hand, spacing, radii and font sizes off the scale, deprecated and unknown design-system variables, each with the token to use instead. Pass the style text you just wrote, or a file or folder of the project.',
+        'Use after writing or editing UI code: finds colors written by hand, spacing, radii and font sizes off the scale, deprecated and unknown design-system variables, each with the token to use instead. Reads CSS and SCSS, style objects and CSS-in-JS in JS/TS/JSX/TSX, Tailwind classes (bg-[#3366ff], p-[13px]) and Vue, Svelte, Astro and HTML. Pass the code you just wrote, or a file or folder of the project. Also says how much of the code is on tokens.',
       inputSchema: {
+        code: z
+          .string()
+          .optional()
+          .describe('Code to check, e.g. the component or rule you are about to write.'),
+        filename: z
+          .string()
+          .optional()
+          .describe(
+            'Its file name, which tells the language: Button.tsx, card.module.css, App.vue. Default: a .tsx file.',
+          ),
         css: z
           .string()
           .optional()
-          .describe('Style text to check, e.g. the rule you are about to write. SCSS is fine.'),
-        path: CODE.describe('A style file or folder of the project to check instead of `css`.'),
+          .describe('Style text to check (CSS or SCSS); same as `code` with a .scss file name.'),
+        path: CODE.describe('A file or folder of the project to check instead of `code`.'),
         source: SOURCE,
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ css, path, source }) => {
-      if (!css && !path) return failure('Pass `css` (style text) or `path` (a style file or folder).')
-      const [graph, code] = await Promise.all([
-        graphOf(source),
-        css ? scanStyles(new MemorySource({ 'snippet.scss': css })) : codeOf(path!),
-      ])
-      if (code.skipped.length && !code.files.length)
-        return failure(`Could not parse the styles: ${code.skipped[0]!.message}`)
+    async ({ code: snippet, filename, css, path, source }) => {
+      if (!snippet && !css && !path)
+        return failure('Pass `code` (with `filename`), `css` (style text) or `path` (a file or folder).')
+      const graph = await graphOf(source)
+      let code: CodeIndex
+      if (snippet || css) {
+        const file = css ? 'snippet.scss' : filename?.trim() || 'snippet.tsx'
+        code = { files: [file], uses: [], literals: [], skipped: [] }
+        try {
+          scanFileText(file, (css ?? snippet)!, code)
+        } catch (e) {
+          return failure(`Could not parse ${file}: ${(e as Error).message}`)
+        }
+      } else {
+        code = await codeOf(path!)
+        if (code.skipped.length && !code.files.length)
+          return failure(`Could not parse the code: ${code.skipped[0]!.message}`)
+      }
       const findings = (await check(graph, config, [], { code })).filter((f) =>
         /^(style|usage)\//.test(f.rule),
       )
-      if (!findings.length)
-        return text(
-          `No problems: ${code.uses.length} token use${code.uses.length === 1 ? '' : 's'}, no values written by hand that should be tokens.`,
-        )
-      return text(formatFindings(findings, { format: 'markdown', group: false }))
+      const coverage = formatCoverage(
+        coverageOf(code, new VarMatcher(graph, varNames(code), config.code?.prefix)),
+      )
+      if (!findings.length) return text(`No problems. ${coverage}`)
+      return text(
+        `${coverage}\n\n${formatFindings(findings, { format: 'markdown', group: false, heading: false })}`,
+      )
     },
   )
 

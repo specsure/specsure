@@ -27,6 +27,7 @@
     "node": ">=20.19"
   },
   "dependencies": {
+    "@babel/parser": "8.0.6",
     "@dsgraph/core": "0.4.0",
     "postcss": "8.5.28",
     "postcss-scss": "4.0.9"

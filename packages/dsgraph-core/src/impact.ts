@@ -1,5 +1,5 @@
 import type { Change, Changeset, Level } from '@dsgraph/schema'
-import { type CodeIndex, type TokenUse, VarMatcher } from './code.js'
+import { type CodeIndex, type TokenUse, VarMatcher, varNames } from './code.js'
 import type { DsGraph } from './graph.js'
 
 /** A place in the code that a change reaches: the `var()` and the token it reads. */
@@ -45,20 +45,16 @@ const IGNORED = new Set<Change['kind']>([
 
 /** Uses of each token in a graph, by token id. */
 function usesByToken(graph: DsGraph, code: CodeIndex, prefix?: string): Map<string, TokenUse[]> {
-  const vars = new VarMatcher(
-    graph,
-    code.uses.map((u) => u.name),
-    prefix,
-  )
+  const vars = new VarMatcher(graph, varNames(code), prefix)
   const out = new Map<string, TokenUse[]>()
   for (const u of code.uses) {
-    const t = vars.token(u.name)
+    const t = vars.tokenOfUse(u)
     if (t) out.set(t.id, [...(out.get(t.id) ?? []), u])
   }
   return out
 }
 
-const siteKey = (s: TokenUse) => `${s.file}:${s.line}:${s.column}:${s.name}`
+const siteKey = (s: TokenUse) => `${s.file}:${s.line}:${s.column}:${s.text ?? s.name}`
 
 /**
  * Where a changeset reaches into the code (spec section 5.4): for every direct change, the `var()`

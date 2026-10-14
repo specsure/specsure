@@ -22,6 +22,29 @@ function excepted(options: Record<string, unknown>) {
     (l.text !== undefined && values.has(l.text.toLowerCase()))
 }
 
+/** Namespaces of Tailwind 4 theme variables: `--color-accent` is `bg-accent`, `--radius-md` is `rounded-md`. */
+const NAMESPACE = /^(color|radius|spacing|text|font-weight|font|shadow|leading|tracking)-/
+
+/**
+ * The class that replaces an arbitrary value with a token, variants kept: `hover:bg-[#2952cc]` and
+ * `color-accent` give `hover:bg-accent`; a bare color name (`primary`) gives `bg-primary`; any other
+ * token is named as a variable, `p-(--space-md)`.
+ */
+export function classFor(source: string, token: { id: string; type: string | null }): string {
+  const m = /^((?:[\w-]+:)*)(!?-?)([a-z]+(?:-[a-z]+)*?)-\[/.exec(source)
+  if (!m) return token.id
+  const [, variants, sign, utility] = m
+  const id = token.id
+  const name = id.includes('.')
+    ? `(--${id.replace(/\./g, '-')})`
+    : NAMESPACE.test(id)
+      ? id.replace(NAMESPACE, '')
+      : token.type === 'color'
+        ? id
+        : `(--${id})`
+  return `${variants}${sign}${utility}-${name}`
+}
+
 const pxOf = (v: unknown): number => {
   const d = v as { value: number; unit: string }
   return d.unit === 'rem' ? d.value * 16 : d.value
@@ -53,7 +76,12 @@ function scaleOf(graph: DsGraph, property: string, cache: Map<RegExp, Token[]>):
   if (!tokens) {
     const all = graph.tokens({ type: 'dimension' })
     const named = all.filter((t) => family.names.test(normalizeName(t.id)))
-    tokens = named.length || family.strict ? named : all
+    // Without spacing tokens, any dimension may be the scale, but not a radius or a font size.
+    const others = FAMILIES.filter((f) => f.strict).map((f) => f.names)
+    tokens =
+      named.length || family.strict
+        ? named
+        : all.filter((t) => !others.some((re) => re.test(normalizeName(t.id))))
     cache.set(family.names, tokens)
   }
   return tokens
@@ -79,9 +107,13 @@ export const hardcodedColor: Rule = {
       const near = memo.get(key)
       if (!near) continue
       report({
-        message: near.exact
-          ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
-          : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
+        message: l.source
+          ? near.exact
+            ? `"${l.source}" writes a color by hand; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
+            : `"${l.source}" is not in the palette; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ΔE ${near.distance})`
+          : near.exact
+            ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
+            : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
         nodes: [near.token.id],
         evidence: {
           value: l.text,
@@ -114,9 +146,13 @@ export const offScale: Rule = {
       if (!near.exact && /radius$/i.test(l.property) && pxOf(l.value) >= 100) continue
       const px = near.value as { value: number; unit: string }
       report({
-        message: near.exact
-          ? `"${l.text}" in ${l.property} is on the scale; use "${near.token.id}"`
-          : `"${l.text}" in ${l.property} is off the scale; closest is "${near.token.id}" (${px.value}${px.unit})`,
+        message: l.source
+          ? near.exact
+            ? `"${l.source}" is on the scale; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
+            : `"${l.source}" is off the scale; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ${px.value}${px.unit})`
+          : near.exact
+            ? `"${l.text}" in ${l.property} is on the scale; use "${near.token.id}"`
+            : `"${l.text}" in ${l.property} is off the scale; closest is "${near.token.id}" (${px.value}${px.unit})`,
         nodes: [near.token.id],
         evidence: {
           value: l.text,
@@ -142,11 +178,11 @@ export const deprecatedUsage: Rule = {
     const skip = excepted(options)
     for (const u of code.uses) {
       if (skip(u)) continue
-      const t = vars.token(u.name)
+      const t = vars.tokenOfUse(u)
       if (!t?.deprecated) continue
       const replacement = t.deprecated.replacement
       report({
-        message: `"${u.name}" is deprecated${replacement ? `; use "${replacement}"` : ''}`,
+        message: `"${u.text ?? u.name}" is deprecated${replacement ? `; use "${replacement}"` : ''}`,
         nodes: [t.id],
         evidence: { reason: t.deprecated.reason, replacement, property: u.property },
         loc: locOf(u),
@@ -164,9 +200,10 @@ export const unknownToken: Rule = {
     if (!code || !vars) return
     const skip = excepted(options)
     for (const u of code.uses) {
-      if (skip(u) || !vars.isSystemName(u.name) || vars.token(u.name)) continue
+      const names = [u.name, ...(u.candidates ?? [])]
+      if (skip(u) || !names.some((n) => vars.isSystemName(n)) || vars.tokenOfUse(u)) continue
       report({
-        message: `"${u.name}" is not a token${u.fallback ? `; the fallback "${u.fallback}" is used instead` : ''}`,
+        message: `"${u.text ?? u.name}" is not a token${u.fallback ? `; the fallback "${u.fallback}" is used instead` : ''}`,
         nodes: [],
         evidence: { property: u.property, fallback: u.fallback },
         loc: locOf(u),
@@ -179,7 +216,7 @@ export const unknownToken: Rule = {
 export function usedTokens(ctx: Pick<RuleContext, 'graph' | 'code' | 'vars'>): Set<string> {
   const used = new Set<string>()
   for (const u of ctx.code?.uses ?? []) {
-    const t = ctx.vars?.token(u.name)
+    const t = ctx.vars?.tokenOfUse(u)
     if (!t || used.has(t.id)) continue
     used.add(t.id)
     for (const d of ctx.graph.dependencies(t.id, { transitive: true })) used.add(d)

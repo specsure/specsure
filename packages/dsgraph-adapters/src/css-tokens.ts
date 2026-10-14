@@ -27,14 +27,15 @@ const COMPOUND_ATTR =
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').replace(/["']/g, '').trim().toLowerCase()
 
-/** Conditional at-rules around a declaration, outermost first (`@layer` is ignored). */
+/** Conditional at-rules around a declaration, outermost first (`@layer` and `@theme` are ignored). */
 function atRulesOf(decl: Declaration): string[] {
   const out: string[] = []
   let node = decl.parent?.parent
   while (node && node.type !== 'root') {
     if (node.type === 'atrule') {
       const at = node as AtRule
-      if (at.name !== 'layer') out.unshift(`@${at.name} ${norm(at.params)}`)
+      // `@layer` orders rules and Tailwind's `@theme` declares them; neither is a condition.
+      if (at.name !== 'layer' && at.name !== 'theme') out.unshift(`@${at.name} ${norm(at.params)}`)
     }
     node = node.parent
   }
@@ -137,7 +138,9 @@ export const cssTokens: TokenAdapter = {
       // Theme files may hold only a class rule (`.dark, .dark-theme { … }`).
       if (
         /--[\w-]+\s*:/.test(text) &&
-        /(:root|html|:host|\[data-|prefers-color-scheme|\.(dark|light)\b|\.theme-|-theme\b)/.test(text)
+        /(:root|html|:host|\[data-|prefers-color-scheme|\.(dark|light)\b|\.theme-|-theme\b|@theme\b)/.test(
+          text,
+        )
       )
         out.push(f)
     }
@@ -166,11 +169,13 @@ export const cssTokens: TokenAdapter = {
       root.walkDecls((decl) => {
         if (!decl.prop.startsWith('--')) return
         const rule = decl.parent
-        if (rule?.type !== 'rule') {
+        // Tailwind's `@theme { --color-brand: … }` declares the base theme without a selector.
+        const inTheme = rule?.type === 'atrule' && (rule as AtRule).name === 'theme'
+        if (rule?.type !== 'rule' && !inTheme) {
           skipped++
           return
         }
-        const selectors = (rule as postcss.Rule).selectors
+        const selectors = inTheme ? [':root'] : (rule as postcss.Rule).selectors
         const atRules = atRulesOf(decl)
         const placement =
           (configured && configuredPlacement(selectors, atRules, configured)) ??

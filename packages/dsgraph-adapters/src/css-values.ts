@@ -51,6 +51,8 @@ export const idFromCustomProperty = (prop: string): string => prop.replace(/^--/
 const LENGTH =
   /^(-?(?:\d+\.?\d*|\.\d+))(px|rem|em|%|vw|vh|vmin|vmax|ch|ex|pt|cqw|cqh|cqi|dvh|svh|lvh|lh|rlh)$/i
 const NUMBER = /^-?(?:\d+\.?\d*|\.\d+)$/
+const HSL_CHANNELS =
+  /^-?(?:\d+\.?\d*|\.\d+)(?:deg)?\s+(?:\d+\.?\d*|\.\d+)%\s+(?:\d+\.?\d*|\.\d+)%(?:\s*\/\s*(?:\d+\.?\d*|\.\d+)%?)?$/
 const DURATION = /^(-?(?:\d+\.?\d*|\.\d+))(ms|s)$/
 const EASINGS: Record<string, number[]> = {
   ease: [0.25, 0.1, 0.25, 1],
@@ -153,6 +155,11 @@ export function cssValueToToken(prop: string, raw: string): TokenEntry {
   if (ref) return { $value: `{${idFromCustomProperty(ref.name)}}` }
   const lower = value.toLowerCase()
 
+  // Bare HSL channels (`222.2 47.4% 11.2%`), written to be wrapped as `hsl(var(--primary))`.
+  if (HSL_CHANNELS.test(value)) {
+    const color = cssColorToDtcg(`hsl(${value})`)
+    if (color) return { $type: 'color', $value: color }
+  }
   if (!NON_COLORS.has(lower)) {
     const color = cssColorToDtcg(value)
     if (color && !NUMBER.test(value)) return { $type: 'color', $value: color }

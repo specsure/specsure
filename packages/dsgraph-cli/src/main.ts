@@ -1,8 +1,19 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { scanStyles } from '@dsgraph/adapters'
-import { type CodeIndex, type Config, diff, impactOf, type Level, validateConfig } from '@dsgraph/core'
+import { scanCode } from '@dsgraph/adapters'
+import {
+  type CodeIndex,
+  type Config,
+  coverageOf,
+  diff,
+  formatCoverage,
+  impactOf,
+  type Level,
+  VarMatcher,
+  validateConfig,
+  varNames,
+} from '@dsgraph/core'
 import { type Format, formatChangeset, formatFindings } from '@dsgraph/report'
 import { check, countBySeverity } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
@@ -37,8 +48,10 @@ Options
       --to <version>              upgrade-check: the version to upgrade to (default latest)
       --max-warnings <n>          check: exit 1 when warnings exceed n
       --expand                    check: list every finding instead of collapsing repeated ones
-      --code <dir>                your project: check its styles against the tokens (check), or show
-                                  where the changes reach into it (diff). CSS, SCSS, CSS modules
+      --code <dir>                your project: check its code against the tokens (check), or show
+                                  where the changes reach into it (diff). CSS, SCSS, CSS modules,
+                                  JS/TS/JSX/TSX (style objects, CSS-in-JS, Tailwind classes),
+                                  Vue, Svelte, Astro, HTML
   -h, --help                      show help
   -v, --version                   show version
 `
@@ -143,10 +156,10 @@ export async function main(argv: string[], io: Io): Promise<number> {
     const readCode = async (fallback?: string): Promise<CodeIndex | undefined> => {
       const dir = codeDir ?? fallback
       if (!dir) return undefined
-      const opts: Parameters<typeof scanStyles>[1] = {}
+      const opts: Parameters<typeof scanCode>[1] = {}
       if (config.code?.include) opts.include = config.code.include
       if (config.code?.exclude) opts.exclude = config.code.exclude
-      const code = await scanStyles(new NodeFsSource(resolve(io.cwd, dir)), opts)
+      const code = await scanCode(new NodeFsSource(resolve(io.cwd, dir)), opts)
       for (const s of code.skipped) io.stderr(`dsgraph: skipped ${s.file}: ${s.message}\n`)
       return code
     }
@@ -169,7 +182,10 @@ export async function main(argv: string[], io: Io): Promise<number> {
         [],
         code ? { code } : {},
       )
-      await emit(formatFindings(findings, { format, group: !values.expand }))
+      let report = formatFindings(findings, { format, group: !values.expand })
+      if (code && format !== 'json')
+        report += `\n${formatCoverage(coverageOf(code, new VarMatcher(graph, varNames(code), config.code?.prefix)))}\n`
+      await emit(report)
       const counts = countBySeverity(findings)
       const max =
         values['max-warnings'] !== undefined ? Number(values['max-warnings']) : Number.POSITIVE_INFINITY

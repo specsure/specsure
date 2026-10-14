@@ -7,6 +7,7 @@ import {
   type Severity,
   sha256Hex,
   VarMatcher,
+  varNames,
 } from '@dsgraph/core'
 import { PRESETS } from './presets.js'
 import { deprecatedUsage, hardcodedColor, offScale, unknownToken, unusedToken } from './rules/code.js'
@@ -83,13 +84,7 @@ export async function check(
   const rules = [...RULES, ...extraRules]
   const settings = resolveSettings(config, rules)
   const code = opts.code
-  const vars = code
-    ? new VarMatcher(
-        graph,
-        code.uses.map((u) => u.name),
-        config.code?.prefix,
-      )
-    : undefined
+  const vars = code ? new VarMatcher(graph, varNames(code), config.code?.prefix) : undefined
   const drafts: Array<Omit<Finding, 'id'>> = []
 
   const byOrigin = new Map<string, string>()
