@@ -4,7 +4,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 
 **dsgraph** turns a design system into a graph — tokens, contexts (themes, modes), and later code and Figma — and answers questions about it: what changed between two versions, what breaks, which tokens produce a value. Everything runs locally, in CI or in the browser. There is no server and no account.
 
-> Status: **0.2** — tokens: diff, checks, CLI, GitHub Action, MCP server and [Token Diff](https://specsure.vercel.app/tools/diff). APIs may still change before 1.0. See the [changelog](CHANGELOG.md).
+> Status: **0.3** — tokens and the styles that use them: diff with impact on your code, checks, CLI, GitHub Action, MCP server and [Token Diff](https://specsure.vercel.app/tools/diff). APIs may still change before 1.0. See the [changelog](CHANGELOG.md).
 
 ## What works today
 
@@ -15,6 +15,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 - **Semver** — a suggested bump from the consumer's point of view, configurable, with non-public layers.
 - **Token JSON beyond DTCG** as a token source: token sets with `$themes.json` and `$metadata.json`, older JSON with `value` and `type`, math, color modifiers, `.value` references; modes from `$extensions.mode` and mode files (Figma variable exports).
 - **CSS custom properties** as a token source: themes from `[data-theme]`, `.dark` and `prefers-color-scheme`, other media queries as modifiers, inferred types.
+- **Your code** — CSS, SCSS and CSS modules of the project that uses the tokens: where each change reaches (what breaks, what looks different, with file and line), colors and sizes written by hand with the token to use, deprecated and unknown variables, unused tokens.
 - **Rules** — deprecated references, naming collisions, hex mismatches, gamut, palette ramps, contrast matrix, layer rules; presets by architecture pattern.
 - **Reports** — text, Markdown (for PR comments) and JSON; repeated findings are collapsed into one line per kind.
 - **CLI** — `dsgraph scan | check | diff` over folders, files, npm packages, GitHub repositories and saved snapshots.
@@ -42,6 +43,7 @@ All packages are isomorphic except `@dsgraph/sources/node` and the CLI.
 ```bash
 npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2 --format markdown
 npx @dsgraph/cli check ./tokens --strict
+npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2 --code ./src   # what breaks in your styles
 ```
 
 ## Library

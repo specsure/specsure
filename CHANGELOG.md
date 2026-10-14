@@ -3,7 +3,10 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.3.0 — 2026-10-15
+
+dsgraph reads the code that uses the tokens. A diff shows which places in your styles a new version
+breaks or changes; checks find colors and sizes written by hand, with the token to use instead.
 
 ### Your code
 
@@ -18,7 +21,7 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - `nearestTokens` moved from the MCP server to `@dsgraph/core`.
 - MCP: `check_styles` checks style text an agent wrote, or project files, against the tokens;
   `compare_versions` takes `code` and lists the places in the project's styles a new version reaches.
-- GitHub Action (next: v1.1.0): `code` input. The comment lists the places in the repository's styles
+- GitHub Action v1.1.0: `code` input. The comment lists the places in the repository's styles
   each change reaches and checks the styles of the files the pull request touches; new output
   `code-breaks`.
 - Reports: findings in code show `file:line`; Markdown findings can leave out their heading.

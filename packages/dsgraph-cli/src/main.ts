@@ -8,7 +8,7 @@ import { check, countBySeverity } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
 import { loadGraph } from './sources.js'
 
-export const VERSION = '0.2.0'
+export const VERSION = '0.3.0'
 
 const HELP = `dsgraph ${VERSION} — design-token graph: scan, check and diff
 

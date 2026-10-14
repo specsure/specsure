@@ -38,7 +38,7 @@ export interface BuildOptions {
   meta?: Record<string, unknown>
 }
 
-export const GENERATOR = 'dsgraph@0.2.0'
+export const GENERATOR = 'dsgraph@0.3.0'
 
 const inputKey = (input: Input) => canonicalize(input)
 
