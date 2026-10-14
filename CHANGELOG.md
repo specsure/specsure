@@ -48,5 +48,5 @@ coding agent or the browser.
 
 - GitHub Action v1.0.0: one pull request comment with the report, kept up to date, a job summary,
   outputs, and `fail-on`.
-- [specsure.app](https://specsure.app): Token Diff in the browser, with the reference graph of each
+- [specsure.vercel.app](https://specsure.vercel.app): Token Diff in the browser, with the reference graph of each
   change and the report in plain words, a guide, MCP setup for six agents; in English and Russian.

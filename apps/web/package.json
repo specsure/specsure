@@ -2,7 +2,7 @@
   "name": "@specsure/web",
   "private": true,
   "type": "module",
-  "description": "specsure.app: Token Diff and other design-system tools. Static, everything runs in the browser.",
+  "description": "specsure.vercel.app: Token Diff and other design-system tools. Static, everything runs in the browser.",
   "license": "MIT",
   "scripts": {
     "dev": "npm --prefix ../.. run build && astro dev",

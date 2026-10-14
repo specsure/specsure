@@ -204,7 +204,7 @@ describe('url', () => {
       '',
     )
     expect(url).toBe('/tools/diff?pkg=@acme/tokens&from=1.0.0&to=2.0.0&ctx=theme:dark')
-    const back = readUrl(new URL(url, 'https://specsure.app'))
+    const back = readUrl(new URL(url, 'https://specsure.vercel.app'))
     expect(back.base).toEqual({ kind: 'npm', pkg: '@acme/tokens', version: '1.0.0' })
     expect(back.context).toEqual({ theme: 'dark' })
   })

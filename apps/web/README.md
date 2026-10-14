@@ -1,6 +1,6 @@
 # Specsure site
 
-Static site for specsure.app, built with Astro and React islands. Token Diff lives at `/tools/diff`, its guide at `/tools/diff/guide` (MDX in `src/pages/tools/diff/guide.mdx`, with live figures from `LiveFigure`: the real engine and components on a synthetic example); About is a dialog in `src/layouts/Base.astro`.
+Static site for specsure.vercel.app, built with Astro and React islands. Token Diff lives at `/tools/diff`, its guide at `/tools/diff/guide` (MDX in `src/pages/tools/diff/guide.mdx`, with live figures from `LiveFigure`: the real engine and components on a synthetic example); About is a dialog in `src/layouts/Base.astro`.
 
 Everything runs in the browser. Dropped files are read locally and never uploaded; npm packages come from jsDelivr and repositories from the GitHub API, both requested straight from the visitor's browser. Scanning and diffing run in a Web Worker.
 

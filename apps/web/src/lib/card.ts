@@ -138,7 +138,7 @@ export function drawCard(canvas: HTMLCanvasElement, d: CardData, scale = 1): voi
 
   ctx.fillStyle = C.ink3
   ctx.font = `500 22px ${SANS}`
-  const foot = 'specsure.app · dsgraph'
+  const foot = 'specsure.vercel.app · dsgraph'
   ctx.fillText(foot, W - pad - ctx.measureText(foot).width, H - pad + 10)
 }
 

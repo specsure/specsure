@@ -2,7 +2,7 @@
 
 Compares the design tokens of a pull request with its base branch and reports what changed, what breaks and which version the release needs. The report goes into a pull request comment (updated on every push) and the job summary; the job can fail on breaking changes.
 
-It reads DTCG 2025.10 files (with resolver documents and themes), token JSON with `value` and `type`, and CSS custom properties with themes. It is the [dsgraph](https://github.com/specsure/specsure) CLI in one file; the same comparison runs in the browser at [Token Diff](https://specsure.app/tools/diff).
+It reads DTCG 2025.10 files (with resolver documents and themes), token JSON with `value` and `type`, and CSS custom properties with themes. It is the [dsgraph](https://github.com/specsure/specsure) CLI in one file; the same comparison runs in the browser at [Token Diff](https://specsure.vercel.app/tools/diff).
 
 **See it on a pull request:** [specsure/action-playground#1](https://github.com/specsure/action-playground/pull/1) removes a token and renames another, so the report is in the comment and the check fails on `fail-on: major`, as it should.
 
