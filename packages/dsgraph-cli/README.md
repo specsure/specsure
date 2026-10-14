@@ -20,7 +20,7 @@ Sources: folders, single files (`.json`, `.tokens`, `.css`, `.resolver.json`), `
 
 ## Your code
 
-`--code <dir>` reads the styles of the project that uses the tokens (CSS, SCSS, CSS modules):
+`--code <dir>` reads the project that uses the tokens: CSS, SCSS and CSS modules; JS, TS, JSX and TSX (style objects, CSS-in-JS, Tailwind classes in `className`, `cn()`, `clsx()`, `cva()`); Vue, Svelte, Astro and HTML:
 
 ```bash
 npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2 --code ./src
@@ -28,7 +28,7 @@ npx @dsgraph/cli check npm:@acme/tokens@2 --code ./src
 ```
 
 - `diff` lists under each change the places in the code it reaches, through references too: what breaks (a removed or renamed variable) and what looks different.
-- `check` adds rules on the code: colors written by hand (`style/hardcoded-color`), spacing, radii and font sizes off the scale (`style/off-scale`), deprecated and unknown design-system variables (`usage/deprecated`, `usage/unknown-token`) and tokens nothing uses (`token/unused`).
+- `check` says how much of the code's design values come from tokens and adds rules on the code: colors written by hand (`style/hardcoded-color`), spacing, radii and font sizes off the scale (`style/off-scale`), deprecated and unknown design-system variables (`usage/deprecated`, `usage/unknown-token`) and tokens nothing uses (`token/unused`).
 
 Before upgrading a token package, see what the new version does to your project:
 
@@ -37,6 +37,8 @@ npx @dsgraph/cli upgrade-check @acme/tokens --to 3.0.0     # in the project fold
 ```
 
 It takes the version you use from `node_modules`, the lockfile or `package.json`, and lists only what reaches your code and what breaks.
+
+For Tailwind, arbitrary values (`bg-[#3366ff]`, `p-[13px]`) are values written by hand, with the class to use instead (`bg-accent`); named classes (`bg-primary`, `rounded-md`) and `bg-(--brand)` use tokens. `@theme` blocks and shadcn's HSL channels are read as tokens.
 
 Custom properties match tokens by name (`--color-accent` ↔ `color.accent`); a prefix such as `--ds-` is learned from the code or set in the config: `"code": { "include": ["src/**/*.css"], "prefix": "--ds-" }`.
 

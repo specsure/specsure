@@ -15,7 +15,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 - **Semver** — a suggested bump from the consumer's point of view, configurable, with non-public layers.
 - **Token JSON beyond DTCG** as a token source: token sets with `$themes.json` and `$metadata.json`, older JSON with `value` and `type`, math, color modifiers, `.value` references; modes from `$extensions.mode` and mode files (Figma variable exports).
 - **CSS custom properties** as a token source: themes from `[data-theme]`, `.dark` and `prefers-color-scheme`, other media queries as modifiers, inferred types.
-- **Your code** — CSS, SCSS and CSS modules of the project that uses the tokens: where each change reaches (what breaks, what looks different, with file and line), colors and sizes written by hand with the token to use, deprecated and unknown variables, unused tokens.
+- **Your code** — the project that uses the tokens (CSS, SCSS, JS/TS/JSX/TSX with style objects, CSS-in-JS and Tailwind classes, Vue, Svelte, Astro, HTML): how much of it is on tokens, where each change reaches (what breaks, what looks different, with file and line), colors and sizes written by hand with the token to use, deprecated and unknown variables, unused tokens.
 - **Rules** — deprecated references, naming collisions, hex mismatches, gamut, palette ramps, contrast matrix, layer rules; presets by architecture pattern.
 - **Reports** — text, Markdown (for PR comments) and JSON; repeated findings are collapsed into one line per kind.
 - **CLI** — `dsgraph scan | check | diff` over folders, files, npm packages, GitHub repositories and saved snapshots.

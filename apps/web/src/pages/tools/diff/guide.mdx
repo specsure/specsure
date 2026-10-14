@@ -143,9 +143,9 @@ If your app uses someone's token package, check an upgrade before you take it. I
 npx @dsgraph/cli upgrade-check @scope/tokens
 ```
 
-It compares the version you use with the latest and lists the places in your styles that break or look different, with file and line. On GitHub, the action with `package: '@scope/tokens'` posts the same list on the pull request that bumps the version.
+It compares the version you use with the latest and lists the places in your code that break or look different, with file and line: CSS and SCSS, style objects and CSS-in-JS in JSX and TSX, Tailwind classes, Vue, Svelte and Astro. On GitHub, the action with `package: '@scope/tokens'` posts the same list on the pull request that bumps the version.
 
 ## Coming next
 
 - **Figma plugin.** Check Figma variables and styles against your tokens, inside Figma. Soon.
-- Tailwind themes as inputs; usages in JSX and components, not only in styles.
+- A project folder in Token Diff: the same check in the browser, without a terminal.

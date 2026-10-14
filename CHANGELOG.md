@@ -3,6 +3,25 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+### The whole front end
+
+- `--code`, `check_styles`, the Action's `code` and `upgrade-check` read scripts and markup, not only
+  styles: JS, TS, JSX and TSX (style objects such as `style={{…}}` and `sx`, CSS-in-JS templates such
+  as `styled.div` and `css`), Vue, Svelte, Astro and HTML (`<script>`, `<style>`, `class` and `style`
+  attributes, bound ones included). Scripts are parsed with `@babel/parser`.
+- Tailwind: arbitrary values (`bg-[#3366ff]`, `p-[13px]`, `[color:#222]`) are values written by hand,
+  and findings name the class to use instead (`hover:bg-[#2952cc]` → `hover:bg-accent`). Named
+  classes (`bg-primary`, `rounded-md`, `font-medium`) and `bg-(--brand)`, `bg-[var(--brand)]` use
+  tokens. Classes are read in `className`, `cn()`, `clsx()`, `cva()`, `twMerge()`, object keys and
+  strings that look like class lists.
+- Tailwind 4 `@theme` blocks are read as tokens; bare HSL channels (`--primary: 222 47% 11%`) are colors.
+- Coverage: how much of the code's design values come from tokens, in `dsgraph check --code`,
+  `check_styles` and the Action comment.
+- Positions (`top`, `left`, `inset`) are no longer checked against the scale; radii and font sizes are
+  not suggested for spacing.
+
 ## 0.4.0 — 2026-10-15
 
 Upgrading a token package: what the new version does to your project, in a terminal or on the
