@@ -4,6 +4,8 @@
   "include": ["src"],
   "references": [
     { "path": "../dsgraph-core" },
+    { "path": "../dsgraph-adapters" },
+    { "path": "../dsgraph-sources" },
     { "path": "../dsgraph-report" },
     { "path": "../dsgraph-rules" },
     { "path": "../dsgraph-cli" }

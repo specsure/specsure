@@ -34,6 +34,7 @@ function runtime(
   dir: string,
   inputs: Record<string, string>,
   comments: Array<{ id: number; body: string }> = [],
+  files: Array<{ filename: string; status: string }> = [],
 ) {
   const calls: Call[] = []
   const logs: string[] = []
@@ -53,7 +54,7 @@ function runtime(
     appendText: async (p, t) => writeFile(p, (await readFile(p, 'utf8')) + t),
     fetch: (async (url: string, init?: RequestInit) => {
       calls.push({ url, method: init?.method ?? 'GET', ...(init?.body ? { body: String(init.body) } : {}) })
-      const json = init?.method ? { id: 1 } : comments
+      const json = init?.method ? { id: 1 } : url.includes('/pulls/') ? files : comments
       return new Response(JSON.stringify(json), { status: 200 })
     }) as typeof fetch,
     log: (l) => logs.push(l),
@@ -126,5 +127,33 @@ describe('dsgraph-action', () => {
     delete rt.env.GITHUB_EVENT_PATH
     expect(await run(rt)).toBe(2)
     expect(logs[0]).toContain('Set `base`')
+  })
+
+  it('lists the places in the code a change reaches and checks the styles the pull request touches', async () => {
+    const dir = await workspace(
+      { 'color-accent': '#2563eb', 'color-danger': '#ef4444' },
+      { 'color-accent': '#3366ff' },
+    )
+    await mkdir(join(dir, 'app'))
+    await writeFile(
+      join(dir, 'app/button.css'),
+      '.b {\n  color: var(--color-accent);\n  border-color: var(--color-danger);\n}\n',
+    )
+    await writeFile(join(dir, 'app/card.css'), '.c {\n  color: #3366ff;\n}\n')
+    await writeFile(join(dir, 'app/old.css'), '.o {\n  color: #3366ff;\n}\n')
+    const { rt } = runtime(
+      dir,
+      { path: 'tokens', base: './previous', code: 'app' },
+      [],
+      [{ filename: 'app/card.css', status: 'modified' }],
+    )
+    expect(await run(rt)).toBe(0)
+    const summary = await readFile(join(dir, 'summary.md'), 'utf8')
+    expect(summary).toContain('In the code: 1 place breaks, 1 place looks different (1 file).')
+    expect(summary).toContain('breaks 1 place in the code: `app/button.css:3`')
+    expect(summary).toContain('### Styles in this pull request (1)')
+    expect(summary).toContain('app/card.css:2')
+    expect(summary).not.toContain('app/old.css')
+    expect(await readFile(join(dir, 'output.txt'), 'utf8')).toContain('code-breaks=1')
   })
 })

@@ -40,6 +40,17 @@ For a repository that publishes its tokens to npm, compare the pull request with
           base: npm:@scope/tokens@latest
 ```
 
+### With the code that uses the tokens
+
+When the tokens and an app live in one repository, point `code` at the app. The comment then lists, under each change, the places in its styles (CSS, SCSS, CSS modules) that break or look different, and checks the styles of the files the pull request touches: colors and sizes written by hand, with the token to use, and design-system variables that are deprecated or gone.
+
+```yaml
+      - uses: specsure/dsgraph-action@v1
+        with:
+          path: packages/tokens
+          code: apps/web/src
+```
+
 ## Inputs
 
 | Input | Default | |
@@ -49,12 +60,13 @@ For a repository that publishes its tokens to npm, compare the pull request with
 | `config` | `dsgraph.config.json` if present | Renames, layers, rules, thresholds |
 | `fail-on` | — | Fail when the change is at least `major`, `minor` or `patch` |
 | `comment` | `true` | One pull request comment, updated on every push; nothing is posted while there are no changes |
+| `code` | — | Folder with the code that uses the tokens: places each change reaches, and style checks on the files the pull request touches |
 | `checks` | `true` | Add checks on the new version: broken references, legacy syntax and others |
 | `github-token` | `${{ github.token }}` | For the comment and for reading the base commit |
 
 ## Outputs
 
-`level` (`major`, `minor`, `patch` or `none`), `changes` (direct changes) and `breaking` (breaking changes).
+`level` (`major`, `minor`, `patch` or `none`), `changes` (direct changes), `breaking` (breaking changes) and, with `code`, `code-breaks` (places in the code that a removed or renamed token breaks).
 
 ```yaml
       - id: tokens

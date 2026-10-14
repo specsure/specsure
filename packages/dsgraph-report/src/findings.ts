@@ -67,6 +67,8 @@ export interface FindingsFormatOptions {
   group?: boolean
   examples?: number
   maxListed?: number
+  /** Markdown: start with the `## dsgraph check — …` heading (default true). */
+  heading?: boolean
 }
 
 const summaryOf = (findings: readonly Finding[]): string => {
@@ -84,6 +86,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
   const md = format === 'markdown'
   if (findings.length === 0) return md ? '## dsgraph check — no findings\n' : 'dsgraph check — no findings\n'
   const summary = summaryOf(findings)
+  const head = opts.heading === false ? '' : `## dsgraph check — ${summary}\n\n`
 
   if (md) {
     if (!grouped) {
@@ -91,24 +94,27 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
         (f) =>
           `| ${ICON[f.severity]} ${f.severity} | \`${f.rule}\` | ${cell(f.message)}${formatWhen(f.when)} | ${f.loc?.file ? `\`${where(f.loc)}\`` : ''} |`,
       )
-      return `## dsgraph check — ${summary}\n\n| | Rule | Finding | File |\n|---|---|---|---|\n${rows.join('\n')}\n`
+      return `${head}| | Rule | Finding | File |\n|---|---|---|---|\n${rows.join('\n')}\n`
     }
     const groups = groupFindings(findings)
     const max = opts.maxListed ?? 50
     const rows = groups.map(
       (g) =>
-        `| ${ICON[g.severity]} ${g.severity} | \`${g.rule}\` | ${g.findings.length} | ${cell(g.pattern)}${g.findings.length === 1 ? formatWhen(g.findings[0]!.when) : ''} | ${g.file ? `\`${g.file}\`` : ''} |`,
+        `| ${ICON[g.severity]} ${g.severity} | \`${g.rule}\` | ${g.findings.length} | ${cell(g.pattern)}${g.findings.length === 1 ? formatWhen(g.findings[0]!.when) : ''} | ${g.findings.length === 1 && g.findings[0]!.loc?.file ? `\`${where(g.findings[0]!.loc)}\`` : g.file ? `\`${g.file}\`` : ''} |`,
     )
     const details = groups
       .filter((g) => g.findings.length > 1)
       .map((g) => {
         const items = g.findings
           .slice(0, max)
-          .map((f) => `- ${cell(f.message)}${formatWhen(f.when)}${f.nodes[0] ? ` — \`${f.nodes[0]}\`` : ''}`)
+          .map(
+            (f) =>
+              `- ${cell(f.message)}${formatWhen(f.when)}${f.loc?.line ? ` — \`${where(f.loc)}\`` : f.nodes[0] ? ` — \`${f.nodes[0]}\`` : ''}`,
+          )
         if (g.findings.length > max) items.push(`- … and ${g.findings.length - max} more`)
         return `<details><summary>${ICON[g.severity]} <code>${g.rule}</code> — ${g.findings.length} × ${escapeHtml(g.pattern)}</summary>\n\n${items.join('\n')}\n\n</details>`
       })
-    return `## dsgraph check — ${summary}\n\n| | Rule | Count | Finding | File |\n|---|---|---|---|---|\n${rows.join('\n')}\n${details.length ? `\n${details.join('\n\n')}\n` : ''}`
+    return `${head}| | Rule | Count | Finding | File |\n|---|---|---|---|---|\n${rows.join('\n')}\n${details.length ? `\n${details.join('\n\n')}\n` : ''}`
   }
 
   const line = (severity: Severity, rule: string, text: string) =>

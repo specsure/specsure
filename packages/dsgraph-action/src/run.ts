@@ -1,9 +1,11 @@
 import { stat } from 'node:fs/promises'
 import { basename, dirname, posix, relative, resolve } from 'node:path'
+import { scanStyles } from '@dsgraph/adapters'
 import { diffOptions, loadConfig, loadGraph } from '@dsgraph/cli'
-import { type Config, diff, type Level } from '@dsgraph/core'
+import { type CodeIndex, type Config, diff, type Finding, impactOf, type Level } from '@dsgraph/core'
 import { formatChangeset, formatFindings } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
+import { NodeFsSource } from '@dsgraph/sources/node'
 
 /** Where the action reads its inputs and writes its results; `process.env` and the file system in production. */
 export interface Runtime {
@@ -89,13 +91,38 @@ export async function run(rt: Runtime): Promise<number> {
     const types = new Map([...base.tokens(), ...head.tokens()].map((t) => [t.id, t.type]))
     const level = cs.changes.length ? cs.summary.level : 'none'
 
+    // The code that uses the tokens, in this repository: where the changes reach, and its styles.
+    const codePath = input(rt, 'code') || (config.code ? '.' : '')
+    let code: CodeIndex | undefined
+    if (codePath) {
+      const root = posix.normalize(codePath.split('\\').join('/')).replace(/^\.\/?|\/$/g, '')
+      const within = (globs: string[]) => globs.map((g) => (root ? `${root}/${g}` : g))
+      const scanOpts: Parameters<typeof scanStyles>[1] = {
+        include: config.code?.include ?? within(['**/*.css', '**/*.scss']),
+      }
+      if (config.code?.exclude) scanOpts.exclude = config.code.exclude
+      code = await scanStyles(new NodeFsSource(workspace), scanOpts)
+    }
+    const impact = code
+      ? impactOf(cs, base, head, code, config.code?.prefix ? { prefix: config.code.prefix } : {})
+      : undefined
+
     // The checkout's absolute path means nothing to readers of the pull request.
     const here = path === '.' ? 'this branch' : path
-    let body = formatChangeset(cs, { format: 'markdown', types })
+    let body = formatChangeset(cs, { format: 'markdown', types, ...(impact ? { impact } : {}) })
       .split(headPath)
       .join(here)
       .split(`${workspace}/`)
       .join('')
+    if (code && pr && token) {
+      const changed = await changedFiles(rt, { repo, pr: pr.number, token })
+      const styles = changed
+        ? (await check(head, config, [], { code })).filter(
+            (f) => /^(style|usage)\//.test(f.rule) && f.loc?.file && changed.has(f.loc.file),
+          )
+        : []
+      if (styles.length) body += stylesSection(styles)
+    }
     if (input(rt, 'checks', 'true') !== 'false') {
       const findings = await check(head, config)
       if (findings.length)
@@ -108,7 +135,7 @@ export async function run(rt: Runtime): Promise<number> {
     if (rt.env.GITHUB_OUTPUT)
       await rt.appendText(
         rt.env.GITHUB_OUTPUT,
-        `level=${level}\nchanges=${cs.changes.filter((c) => c.origin === 'direct').length}\nbreaking=${cs.changes.filter((c) => c.level === 'major').length}\n`,
+        `level=${level}\nchanges=${cs.changes.filter((c) => c.origin === 'direct').length}\nbreaking=${cs.changes.filter((c) => c.level === 'major').length}\ncode-breaks=${impact?.breaks ?? 0}\n`,
       )
     rt.log(`dsgraph: ${level === 'none' ? 'no impact' : `${level} release`} (${baseSpec} → ${path})`)
 
@@ -130,6 +157,34 @@ export async function run(rt: Runtime): Promise<number> {
     rt.log(command('error', `dsgraph: ${(e as Error).message}`))
     return 2
   }
+}
+
+/** Style findings in the files this pull request touches: the ones its author can fix now. */
+function stylesSection(findings: Finding[]): string {
+  return `\n### Styles in this pull request (${findings.length})\n\n${formatFindings(findings, { format: 'markdown', heading: false })}\n`
+}
+
+/** Paths changed by the pull request, or undefined when GitHub does not say. */
+async function changedFiles(
+  rt: Runtime,
+  o: { repo: string; pr: number; token: string },
+): Promise<Set<string> | undefined> {
+  const api = rt.env.GITHUB_API_URL ?? 'https://api.github.com'
+  const files = new Set<string>()
+  try {
+    for (let page = 1; page <= 30; page++) {
+      const res = await rt.fetch(`${api}/repos/${o.repo}/pulls/${o.pr}/files?per_page=100&page=${page}`, {
+        headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${o.token}` },
+      })
+      if (!res.ok) return undefined
+      const list = (await res.json()) as Array<{ filename: string; status: string }>
+      for (const f of list) if (f.status !== 'removed') files.add(f.filename)
+      if (list.length < 100) break
+    }
+  } catch {
+    return undefined
+  }
+  return files
 }
 
 /** GitHub refuses comments over 65 536 characters; a long report is cut at a line, the summary keeps all of it. */

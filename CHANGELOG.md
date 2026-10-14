@@ -18,6 +18,10 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - `nearestTokens` moved from the MCP server to `@dsgraph/core`.
 - MCP: `check_styles` checks style text an agent wrote, or project files, against the tokens;
   `compare_versions` takes `code` and lists the places in the project's styles a new version reaches.
+- GitHub Action (next: v1.1.0): `code` input. The comment lists the places in the repository's styles
+  each change reaches and checks the styles of the files the pull request touches; new output
+  `code-breaks`.
+- Reports: findings in code show `file:line`; Markdown findings can leave out their heading.
 
 ## 0.2.0 — 2026-10-14
 

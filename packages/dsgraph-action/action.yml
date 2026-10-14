@@ -20,6 +20,9 @@ inputs:
   comment:
     description: Post the report as a pull request comment, updated on every push.
     default: 'true'
+  code:
+    description: Folder of this repository with the code that uses the tokens (CSS, SCSS, CSS modules). The comment then lists the places each change breaks or alters, and checks the styles of the files the pull request touches.
+    default: ''
   checks:
     description: Add checks on the new version (broken references, legacy syntax and others).
     default: 'true'
@@ -33,6 +36,8 @@ outputs:
     description: Number of direct changes.
   breaking:
     description: Number of breaking changes.
+  code-breaks:
+    description: Places in the code that a removed or renamed token breaks (with `code`).
 runs:
   using: node24
   main: dist/index.mjs
