@@ -20,7 +20,7 @@ export const MANIFEST_FILES: Record<keyof Manifests, string> = {
   pkg: 'package.json',
 }
 
-const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
 const VERSION = /^\d+\.\d+\.\d+(?:-[\w.]+)?/
 
 function fromNpmLock(text: string, name: string): string | undefined {

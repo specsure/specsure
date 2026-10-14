@@ -167,10 +167,7 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     if (collapsible) lines.push('</details>', '')
   }
   if (hidden)
-    lines.push(
-      `${hidden} other ${hidden === 1 ? 'change does' : 'changes do'} not reach the code.`,
-      '',
-    )
+    lines.push(`${hidden} other ${hidden === 1 ? 'change does' : 'changes do'} not reach the code.`, '')
   if (cs.contexts.partial)
     lines.push(
       md
