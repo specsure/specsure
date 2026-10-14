@@ -193,7 +193,7 @@ const highlight = (code: string) =>
       <p>{h.liveLead}</p>
       <a class="home-section__link" href={`${href('/tools/diff')}?example`}>{h.liveOpen}</a>
     </header>
-    <LiveFigure client:only="react" name="result" lang={lang} />
+    <LiveFigure client:visible={{ rootMargin: "800px" }} name="result" lang={lang} />
   </section>
 
   <script>

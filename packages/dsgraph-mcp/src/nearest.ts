@@ -71,20 +71,23 @@ export function nearest(
 ): Match[] {
   const types = COMPATIBLE[parsed.type] ?? [parsed.type]
   const out: Match[] = []
+  const depth = new Map<Match, number>()
   for (const token of graph.tokens({ type: types })) {
     const value = graph.value(token.id, input)
     if (value === undefined || value === null) continue
     const d = distance(token.type === parsed.type ? parsed.type : token.type!, parsed.value, value)
     if (d === undefined) continue
     const exact = parsed.type === 'color' ? d < 1 : parsed.type === 'dimension' ? d < 0.5 : d === 0
-    out.push({ token, value, distance: Math.round(d * 100) / 100, exact })
+    const m: Match = { token, value, distance: Math.round(d * 100) / 100, exact }
+    out.push(m)
+    depth.set(m, graph.chain(token.id, input).length)
   }
   return out
     .sort(
       (a, b) =>
         Number(a.token.deprecated !== null) - Number(b.token.deprecated !== null) ||
         a.distance - b.distance ||
-        graph.chain(b.token.id, input).length - graph.chain(a.token.id, input).length ||
+        depth.get(b)! - depth.get(a)! ||
         a.token.id.localeCompare(b.token.id),
     )
     .slice(0, limit)

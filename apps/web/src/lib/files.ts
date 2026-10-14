@@ -1,7 +1,10 @@
+import { NOT_TOKENS } from '@dsgraph/core'
 import type { DroppedFile } from './types'
 
 const TOKEN_FILE = /\.(json|jsonc|tokens|css)$/i
-const SKIP = /(^|\/)(node_modules|\.git|dist)\//
+const SKIP = /(^|\/)(node_modules|\.git)\//
+/** Build output, kept only when nothing else has tokens (a published package, or `dist` itself). */
+const BUILD = /(^|\/)dist\//
 /** Files we refuse to read in full: a token file this big is almost certainly something else. */
 const MAX_BYTES = 5_000_000
 
@@ -30,13 +33,13 @@ export async function filesFromDrop(dt: DataTransfer): Promise<DroppedFile[]> {
   const entries = [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter((e): e is FileSystemEntry => !!e)
   if (entries.length) for (const e of entries) await readEntry(e, out)
   else await addFiles([...dt.files], out)
-  return dropCommonRoot(out)
+  return dropCommonRoot(withoutBuild(out))
 }
 
 export async function filesFromInput(list: FileList | null): Promise<DroppedFile[]> {
   const out: DroppedFile[] = []
   await addFiles([...(list ?? [])], out)
-  return dropCommonRoot(out)
+  return dropCommonRoot(withoutBuild(out))
 }
 
 async function addFiles(files: File[], out: DroppedFile[]) {
@@ -45,6 +48,11 @@ async function addFiles(files: File[], out: DroppedFile[]) {
     if (TOKEN_FILE.test(path) && !SKIP.test(path) && f.size <= MAX_BYTES)
       out.push({ path, text: await f.text() })
   }
+}
+
+function withoutBuild(files: DroppedFile[]): DroppedFile[] {
+  const source = files.filter((f) => !BUILD.test(f.path))
+  return source.some((f) => !NOT_TOKENS.test(f.path)) ? source : files
 }
 
 /** `tokens/a.json`, `tokens/b.json` → `a.json`, `b.json`, so both versions of a folder line up. */

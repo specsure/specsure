@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultVersions } from '../src/components/SidePicker'
 import { compare, configFor } from '../src/lib/compare'
 import { EXAMPLE, LEGACY_EXAMPLE } from '../src/lib/example'
+import { filesFromInput } from '../src/lib/files'
 import { packFiles, readUrl, unpackFiles, writeUrl } from '../src/lib/url'
 import { colorPairs, contextAxes, inContext, view } from '../src/lib/view'
 
@@ -81,6 +82,26 @@ describe('compare', () => {
     expect(r).toMatchObject({ ok: false, side: 'head' })
   })
 
+  it('skips package.json and other config files from a dropped project', async () => {
+    const files = [
+      { path: 'package.json', text: JSON.stringify({ name: 'x', scripts: { build: 'tsc' } }) },
+      { path: 'tsconfig.json', text: JSON.stringify({ compilerOptions: { strict: true } }) },
+      {
+        path: 'tokens.json',
+        text: JSON.stringify({ color: { $type: 'color', red: { $value: '#ff0000' } } }),
+      },
+    ]
+    const r = await compare({
+      id: 3,
+      base: { kind: 'files', files },
+      head: { kind: 'files', files },
+      include: '',
+    })
+    if (!r.ok) throw new Error(r.error)
+    expect(r.head.files).toEqual(['tokens.json'])
+    expect(r.findings.filter((f) => f.severity === 'error')).toEqual([])
+  })
+
   it('splits file globs between DTCG and CSS', () => {
     expect(configFor('dist/tokens.css, tokens/**/*.json')).toEqual({
       tokens: { include: ['tokens/**/*.json'] },
@@ -129,6 +150,31 @@ describe('guide figures', () => {
     expect(r.changeset.changes.some((c) => c.target === 'color-accent' && c.cause.includes(blue.id))).toBe(
       true,
     )
+  })
+})
+
+describe('files', () => {
+  const list = (paths: string[]) =>
+    paths.map((p) => ({
+      name: p.split('/').at(-1),
+      webkitRelativePath: p,
+      size: 2,
+      text: async () => '{}',
+    })) as unknown as FileList
+
+  it('leaves out build output next to token sources', async () => {
+    const files = await filesFromInput(list(['pkg/tokens/a.json', 'pkg/dist/tokens.css', 'pkg/package.json']))
+    expect(files.map((f) => f.path)).toEqual(['tokens/a.json', 'package.json'])
+  })
+
+  it('keeps build output when nothing else has tokens: a package, or dist itself', async () => {
+    expect(
+      (await filesFromInput(list(['pkg/dist/tokens.css', 'pkg/package.json']))).map((f) => f.path),
+    ).toEqual(['dist/tokens.css', 'package.json'])
+    expect((await filesFromInput(list(['dist/a.css', 'dist/b.css']))).map((f) => f.path)).toEqual([
+      'a.css',
+      'b.css',
+    ])
   })
 })
 

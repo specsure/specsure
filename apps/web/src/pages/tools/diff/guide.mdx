@@ -41,7 +41,7 @@ Every figure on this page is live: dsgraph runs in your browser on a small examp
 2. **Press Compare** (<kbd>⌘</kbd> <kbd>↵</kbd>).
 3. **Read the result** and export what you need.
 
-<LiveFigure client:only="react" name="inputs" caption="Two versions of the example as files. Under each row: how many tokens were read, from which files, and the themes found." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="inputs" caption="Two versions of the example as files. Under each row: how many tokens were read, from which files, and the themes found." />
 
 Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets and themes, and modes in `$extensions.mode` from Figma variable exports), older token JSON with `value` and `type` (token sets, theme files and `.value` references included), CSS custom properties with themes in `:root`, `[data-theme]`, `.dark` or `prefers-color-scheme`, and dsgraph snapshots. Math such as `{space.base} * 2` and color modifiers are calculated, so a change to a base value shows up in everything built on it. If a package ships many files, put the ones you mean in **Files**, for example `dist/tokens.css` or `tokens/**/*.json`.
 
@@ -54,7 +54,7 @@ Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets
 - **Checks on the new version:** broken references, alias cycles, legacy syntax, naming collisions, grouped so that 300 identical warnings take one line.
 - **Exports:** Markdown for a changelog or a pull request, the full changeset as JSON, and a 1200×630 card for a post.
 
-<LiveFigure client:only="react" name="result" caption="The full result for the example. Click a change or use the arrow keys to see its details; filter by theme, impact or type." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="result" caption="The full result for the example. Click a change or use the arrow keys to see its details; filter by theme, impact or type." />
 
 ## The graph
 
@@ -62,7 +62,7 @@ Tokens point to each other. In JSON, `"value": "{color.blue.500}"` means the tok
 
 That is what lets Token Diff tell a change from its consequences. When `color-blue-500` changes, `color-accent` changes with it, although nobody edited it. Token Diff shows `color-accent` under the change that caused it, not as a separate change, and draws the chain: above, where the token takes its value from; below, which tokens use it. Changed tokens are outlined in the color of their impact; click one to open its change.
 
-<LiveFigure client:only="react" name="graph" caption="color-blue-500 in its graph: a value of its own, used by color-accent, which changed with it." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="graph" caption="color-blue-500 in its graph: a value of its own, used by color-accent, which changed with it." />
 
 ## Reading the result
 
@@ -77,19 +77,19 @@ The verdict above the list is the highest impact of all changes. In the example 
 
 **Breaking changes come first.** A removed token shows the value it had. A rename is detected from the same values in every theme and similar names; a confidence under 80% means “check this one”.
 
-<LiveFigure client:only="react" name="breaking" caption="color-danger was removed; space-sm became space-small, with the same value in every theme." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="breaking" caption="color-danger was removed; space-sm became space-small, with the same value in every theme." />
 
 **Value changes** show both values. For colors, ΔE is the distance in OKLab, scaled so that 1 is about the smallest difference people notice; under 1 counts as a patch. **Through aliases** means a token was not edited itself, but something it points to was.
 
-<LiveFigure client:only="react" name="color" caption="color-blue-500 changed, and color-accent points to it, so it changed too without being edited." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="color" caption="color-blue-500 changed, and color-accent points to it, so it changed too without being edited." />
 
 **Themes.** Choose one in the filter bar to see only what changes there. Changes that apply everywhere stay visible.
 
-<LiveFigure client:only="react" name="themes" caption="Color changes per theme: color-accent changed only in dark mode, so it is missing on the left." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="themes" caption="Color changes per theme: color-accent changed only in dark mode, so it is missing on the left." />
 
 **Checks** run on the new version. Identical problems are grouped, so a file written the pre-2025 way gives a few lines, not hundreds.
 
-<LiveFigure client:only="react" name="checks" caption="Checks on a DTCG file with legacy string values and a reference to a token that does not exist." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="checks" caption="Checks on a DTCG file with legacy string values and a reference to a token that does not exist." />
 
 ## Sharing
 
@@ -97,9 +97,9 @@ The verdict above the list is the highest impact of all changes. In the example 
 - **Copy link** shares the comparison. For npm and GitHub the link is just the address. Your own files go into the part of the link after `#`, which browsers never send to a server; large files cannot be shared this way, so share the Markdown or JSON instead.
 - **Card for a post** makes a PNG with the verdict, the counts and the changed colors.
 
-<LiveFigure client:only="react" name="markdown" caption="Copy Markdown for the example, as it goes into a changelog or a pull request." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="markdown" caption="Copy Markdown for the example, as it goes into a changelog or a pull request." />
 
-<LiveFigure client:only="react" name="card" caption="The card for a post, 1200×630. Changed colors are shown before (top) and after (bottom)." />
+<LiveFigure client:visible={{ rootMargin: "800px" }} name="card" caption="The card for a post, 1200×630. Changed colors are shown before (top) and after (bottom)." />
 
 ## Keyboard
 

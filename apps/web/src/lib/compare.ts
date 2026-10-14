@@ -1,5 +1,14 @@
 import { cssTokens, jsonTokens } from '@dsgraph/adapters'
-import { type Config, DsGraph, diff, type Snapshot, type Source, scan, validateSnapshot } from '@dsgraph/core'
+import {
+  type Config,
+  DsGraph,
+  diff,
+  NOT_TOKENS,
+  type Snapshot,
+  type Source,
+  scan,
+  validateSnapshot,
+} from '@dsgraph/core'
 import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
@@ -51,9 +60,8 @@ export async function load(side: SideInput, include: string, githubToken?: strin
     })
     // Dropped files are what the user meant: read every JSON and CSS file unless told otherwise.
     if (!include) {
-      const json = side.files.filter(
-        (f) => /\.(json|tokens)$/i.test(f.path) && !/resolver\.json$/i.test(f.path),
-      )
+      // package.json, tsconfig.json and other config files from a dropped project are not tokens.
+      const json = side.files.filter((f) => /\.(json|tokens)$/i.test(f.path) && !NOT_TOKENS.test(f.path))
       const css = side.files.filter((f) => CSS.test(f.path))
       config = {}
       if (json.length) config.tokens = { include: json.map((f) => f.path) }

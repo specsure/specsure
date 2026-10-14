@@ -105,9 +105,9 @@ function App() {
   const [tick, setTick] = useState(0)
 
   const run = useCallback(
-    (b = base, h = head) => {
+    (b = base, h = head, inc = include) => {
       if (!worker.current || !ready(b) || !ready(h)) return
-      const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include }
+      const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include: inc }
       if (githubToken) req.githubToken = githubToken
       pending.current = req
       setRunning('start')
@@ -189,7 +189,7 @@ function App() {
     setBase(b)
     setHead(h)
     setInclude('')
-    run(b, h)
+    run(b, h, '')
   }
 
   return (
