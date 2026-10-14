@@ -1,4 +1,14 @@
 export * from '@dsgraph/schema'
+export {
+  type CodeIndex,
+  type CodeLoc,
+  type NearestToken,
+  nearestTokens,
+  type StyleLiteral,
+  type TokenUse,
+  VarMatcher,
+  valueDistance,
+} from './code.js'
 export { DiagnosticBag } from './diagnostics.js'
 export { type DiffOptions, diff } from './diff/diff.js'
 export { detectRenames, pathSimilarity, stableIdOf } from './diff/rename.js'
