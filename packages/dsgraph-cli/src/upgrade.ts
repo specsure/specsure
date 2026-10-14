@@ -37,14 +37,14 @@ function fromNpmLock(text: string, name: string): string | undefined {
 
 /** pnpm 6–9: `/@acme/tokens@1.2.3:` or `'@acme/tokens@1.2.3':` under `packages:`. */
 function fromPnpmLock(text: string, name: string): string | undefined {
-  const m = new RegExp(`^\\s+['"]?/?${escape(name)}@(\\d[^:'"(\\s]*)`, 'm').exec(text)
+  const m = new RegExp(`^\\s+['"]?/?${escapeRe(name)}@(\\d[^:'"(\\s]*)`, 'm').exec(text)
   return m?.[1]
 }
 
 /** yarn 1 (`version "1.2.3"`) and berry (`version: 1.2.3`), after the entry for the package. */
 function fromYarnLock(text: string, name: string): string | undefined {
   const m = new RegExp(
-    `^"?${escape(name)}@[^\\n]*:\\n(?:[ \\t]+[^\\n]*\\n)*?[ \\t]+version:? "?([^"\\n]+)"?`,
+    `^"?${escapeRe(name)}@[^\\n]*:\\n(?:[ \\t]+[^\\n]*\\n)*?[ \\t]+version:? "?([^"\\n]+)"?`,
     'm',
   ).exec(text)
   return m?.[1]?.trim()
