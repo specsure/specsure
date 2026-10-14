@@ -3,12 +3,15 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.4.0 — 2026-10-15
+
+Upgrading a token package: what the new version does to your project, in a terminal or on the
+pull request that bumps it.
 
 - `dsgraph upgrade-check <package> [--to <version>]`: what upgrading a token package changes in this
   project. The version in use comes from `node_modules`, the lockfile (npm, pnpm, yarn) or
   `package.json`; the report lists what reaches the code and every breaking change, the rest in one line.
-- GitHub Action: `package` input for apps that depend on a token package. The versions before and after
+- GitHub Action v1.2.0: `package` input for apps that depend on a token package. The versions before and after
   the pull request come from its lockfile or `package.json`.
 - Custom properties in code match tokens whose path ends with the same name (`var(--gray-9)` ↔
   `colors.--gray-9`), when exactly one does.

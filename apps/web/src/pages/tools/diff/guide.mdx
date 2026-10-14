@@ -135,7 +135,17 @@ With `fail-on: major` the check fails when the change is breaking, so a breaking
 npx @dsgraph/cli diff npm:@scope/tokens@1.4.0 ./tokens --format markdown --fail-on major
 ```
 
+## In your app
+
+If your app uses someone's token package, check an upgrade before you take it. In the project folder:
+
+```bash
+npx @dsgraph/cli upgrade-check @scope/tokens
+```
+
+It compares the version you use with the latest and lists the places in your styles that break or look different, with file and line. On GitHub, the action with `package: '@scope/tokens'` posts the same list on the pull request that bumps the version.
+
 ## Coming next
 
 - **Figma plugin.** Check Figma variables and styles against your tokens, inside Figma. Soon.
-- Tailwind themes as inputs, and checking your own app for what an upgrade breaks.
+- Tailwind themes as inputs; usages in JSX and components, not only in styles.
