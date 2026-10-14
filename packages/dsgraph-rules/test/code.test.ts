@@ -42,6 +42,7 @@ const code: CodeIndex = {
     { ...at(8), property: 'padding', text: '24px', type: 'dimension', value: px(24) },
     { ...at(9), property: 'margin', text: '18px', type: 'dimension', value: px(18) },
     { ...at(10), property: 'border-radius', text: '7px', type: 'dimension', value: px(7) },
+    { ...at(11), property: 'border-radius', text: '999px', type: 'dimension', value: px(999) },
     {
       file: 'src/legacy/old.css',
       line: 1,

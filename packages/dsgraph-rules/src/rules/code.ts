@@ -22,6 +22,11 @@ function excepted(options: Record<string, unknown>) {
     (l.text !== undefined && values.has(l.text.toLowerCase()))
 }
 
+const pxOf = (v: unknown): number => {
+  const d = v as { value: number; unit: string }
+  return d.unit === 'rem' ? d.value * 16 : d.value
+}
+
 const locOf = (l: { file: string; line: number; column: number }) => ({
   file: l.file,
   line: l.line,
@@ -105,6 +110,8 @@ export const offScale: Rule = {
       const scale = scaleOf(graph, l.property, scales)
       const near = nearestIn(graph, l, new Set(scale.map((t) => t.id)))
       if (!near) continue
+      // 999px, 9999px: a pill, not a step of the radius scale, unless the system has a token for it.
+      if (!near.exact && /radius$/i.test(l.property) && pxOf(l.value) >= 100) continue
       const px = near.value as { value: number; unit: string }
       report({
         message: near.exact
