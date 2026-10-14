@@ -1505,12 +1505,6 @@ a.launcher__row:focus-visible .launcher__go {
 .home-section .figure {
   margin: 0;
 }
-/* The live result loads when it comes near the screen; until then it keeps the ready figure's height,
-   so the page does not jump: the fixed part plus the list, capped like .split (and .list on narrow
-   screens). en and ru differ by up to 30px. */
-.home-section .figure--result .figure__loading {
-  min-height: calc(266px + min(68vh, 590px));
-}
 .formats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1566,9 +1560,6 @@ a.launcher__row:focus-visible .launcher__go {
 }
 
 @media (max-width: 760px) {
-  .home-section .figure--result .figure__loading {
-    min-height: calc(900px + min(50vh, 476px));
-  }
   .formats {
     grid-template-columns: 1fr;
   }
@@ -1639,9 +1630,6 @@ a.launcher__row:focus-visible .launcher__go {
 }
 
 @media (max-width: 440px) {
-  .home-section .figure--result .figure__loading {
-    min-height: calc(1025px + min(50vh, 476px));
-  }
   .wordmark__text {
     position: absolute;
     width: 1px;
