@@ -1,15 +1,31 @@
-import type { Config, DsGraph, Finding, Severity, Token, When } from '@dsgraph/core'
+import type {
+  CodeIndex,
+  Config,
+  DsGraph,
+  Finding,
+  Loc,
+  Severity,
+  Token,
+  VarMatcher,
+  When,
+} from '@dsgraph/core'
 
 export interface RuleContext {
   graph: DsGraph
   options: Record<string, unknown>
   config: Config
+  /** The project's code, when checked with it (`--code`, `code` in the config). */
+  code?: CodeIndex
+  /** Custom property names in the code to tokens; present with `code`. */
+  vars?: VarMatcher
   report(finding: {
     message: string
     nodes: string[]
     evidence?: Record<string, unknown>
     when?: When
     token?: Token
+    /** Where in the code; takes precedence over the token's origin. */
+    loc?: Loc
     severity?: Severity
   }): void
 }

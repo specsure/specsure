@@ -1,12 +1,15 @@
 import {
+  type CodeIndex,
   type Config,
   canonicalize,
   type DsGraph,
   type Finding,
   type Severity,
   sha256Hex,
+  VarMatcher,
 } from '@dsgraph/core'
 import { PRESETS } from './presets.js'
+import { deprecatedUsage, hardcodedColor, offScale, unknownToken, unusedToken } from './rules/code.js'
 import { aliasDepth, allowedSources } from './rules/layers.js'
 import {
   contrastMatrix,
@@ -29,6 +32,11 @@ export const RULES: readonly Rule[] = [
   contrastMatrix,
   aliasDepth,
   allowedSources,
+  hardcodedColor,
+  offScale,
+  deprecatedUsage,
+  unknownToken,
+  unusedToken,
 ]
 
 export interface Setting {
@@ -70,9 +78,18 @@ export async function check(
   graph: DsGraph,
   config: Config = {},
   extraRules: readonly Rule[] = [],
+  opts: { code?: CodeIndex } = {},
 ): Promise<Finding[]> {
   const rules = [...RULES, ...extraRules]
   const settings = resolveSettings(config, rules)
+  const code = opts.code
+  const vars = code
+    ? new VarMatcher(
+        graph,
+        code.uses.map((u) => u.name),
+        config.code?.prefix,
+      )
+    : undefined
   const drafts: Array<Omit<Finding, 'id'>> = []
 
   const byOrigin = new Map<string, string>()
@@ -93,6 +110,7 @@ export async function check(
       graph,
       options: setting.options,
       config,
+      ...(code && vars ? { code, vars } : {}),
       report(r) {
         const f: Omit<Finding, 'id'> = {
           rule: rule.id,
@@ -105,7 +123,8 @@ export async function check(
         }
         if (r.evidence) f.evidence = r.evidence
         if (r.when) f.when = r.when
-        if (r.token) f.loc = r.token.origin
+        if (r.loc) f.loc = r.loc
+        else if (r.token) f.loc = r.token.origin
         drafts.push(f)
       },
     }
@@ -115,7 +134,8 @@ export async function check(
   const findings: Finding[] = []
   for (const d of drafts)
     findings.push({
-      id: `${d.rule}#${(await sha256Hex(canonicalize({ n: d.nodes, w: d.when, m: d.message }))).slice(0, 12)}`,
+      // Findings in code differ by position; findings on tokens keep the ids they had.
+      id: `${d.rule}#${(await sha256Hex(canonicalize(d.loc?.line ? { n: d.nodes, w: d.when, m: d.message, l: d.loc } : { n: d.nodes, w: d.when, m: d.message }))).slice(0, 12)}`,
       ...d,
     })
   return findings.sort(

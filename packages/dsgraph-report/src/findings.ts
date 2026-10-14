@@ -5,6 +5,9 @@ import { formatWhen } from './values.js'
 const ICON: Record<Severity, string> = { error: '✖', warning: '▲', info: '•' }
 
 /** Findings of one rule whose messages differ only in quoted values (`Color "…" is a string`). */
+/** `file:line` when a finding points into code, the file alone otherwise. */
+const where = (loc: NonNullable<Finding['loc']>): string => `${loc.file}${loc.line ? `:${loc.line}` : ''}`
+
 export interface FindingGroup {
   rule: string
   severity: Severity
@@ -86,7 +89,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
     if (!grouped) {
       const rows = findings.map(
         (f) =>
-          `| ${ICON[f.severity]} ${f.severity} | \`${f.rule}\` | ${cell(f.message)}${formatWhen(f.when)} | ${f.loc?.file ? `\`${f.loc.file}\`` : ''} |`,
+          `| ${ICON[f.severity]} ${f.severity} | \`${f.rule}\` | ${cell(f.message)}${formatWhen(f.when)} | ${f.loc?.file ? `\`${where(f.loc)}\`` : ''} |`,
       )
       return `## dsgraph check — ${summary}\n\n| | Rule | Finding | File |\n|---|---|---|---|\n${rows.join('\n')}\n`
     }
@@ -116,7 +119,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
         line(
           f.severity,
           f.rule,
-          `${f.message}${formatWhen(f.when)}${f.loc?.file ? `  (${f.loc.file})` : ''}`,
+          `${f.message}${formatWhen(f.when)}${f.loc?.file ? `  (${where(f.loc)})` : ''}`,
         ),
       )
       .join('\n')}\n`
@@ -133,7 +136,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
         line(
           f.severity,
           f.rule,
-          `${f.message}${formatWhen(f.when)}${f.loc?.file ? `  (${f.loc.file})` : ''}`,
+          `${f.message}${formatWhen(f.when)}${f.loc?.file ? `  (${where(f.loc)})` : ''}`,
         ),
       )
       continue

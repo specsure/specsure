@@ -1,6 +1,8 @@
 import {
   type CodeIndex,
+  canonicalValue,
   cssColorToDtcg,
+  DiagnosticBag,
   matchGlob,
   prefetch,
   type Source,
@@ -50,6 +52,19 @@ const NOT_A_COLOR = new Set([
 const COLOR_FUNCTION = /^(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/i
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 const LENGTH = /^(-?)(\d+\.?\d*|\.\d+)(px|rem)$/i
+
+/** A parsed CSS color as the canonical value tokens hold, so code and tokens compare directly. */
+function canonicalColor(css: string): unknown {
+  const dtcg = cssColorToDtcg(css)
+  if (!dtcg) return undefined
+  const ctx = {
+    strict: false,
+    allowNonstandardUnits: true,
+    diag: new DiagnosticBag(),
+    flags: new Set<string>(),
+  }
+  return canonicalValue('color', dtcg, ctx)
+}
 
 /** Every `var(--name, fallback)` in a value, nested ones included. */
 export function varsIn(value: string): Array<{ name: string; fallback?: string }> {
@@ -104,7 +119,7 @@ export function literalsIn(
     // Any property can carry an explicit color (`fill`, gradients in `mask`), but only as hex or a color function.
     for (const p of plainParts(value))
       if (HEX.test(p) || COLOR_FUNCTION.test(p)) {
-        const color = cssColorToDtcg(p)
+        const color = canonicalColor(p)
         if (color) out.push({ text: p, type: 'color', value: color })
       }
     return out
@@ -116,7 +131,7 @@ export function literalsIn(
       COLOR_FUNCTION.test(p) ||
       (colorProperty && /^[a-z]+$/.test(lower) && !NOT_A_COLOR.has(lower))
     ) {
-      const color = cssColorToDtcg(p)
+      const color = canonicalColor(p)
       if (color) {
         out.push({ text: p, type: 'color', value: color })
         continue

@@ -1,9 +1,11 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { type Config, diff, type Level, validateConfig } from '@dsgraph/core'
+import { scanStyles } from '@dsgraph/adapters'
+import { type CodeIndex, type Config, diff, impactOf, type Level, validateConfig } from '@dsgraph/core'
 import { type Format, formatChangeset, formatFindings } from '@dsgraph/report'
 import { check, countBySeverity } from '@dsgraph/rules'
+import { NodeFsSource } from '@dsgraph/sources/node'
 import { loadGraph } from './sources.js'
 
 export const VERSION = '0.2.0'
@@ -30,6 +32,8 @@ Options
       --fail-on major|minor|patch diff: exit 1 when the suggested bump is at least this
       --max-warnings <n>          check: exit 1 when warnings exceed n
       --expand                    check: list every finding instead of collapsing repeated ones
+      --code <dir>                your project: check its styles against the tokens (check), or show
+                                  where the changes reach into it (diff). CSS, SCSS, CSS modules
   -h, --help                      show help
   -v, --version                   show version
 `
@@ -85,6 +89,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         out: { type: 'string', short: 'o' },
         strict: { type: 'boolean' },
         expand: { type: 'boolean' },
+        code: { type: 'string' },
         'fail-on': { type: 'string' },
         'max-warnings': { type: 'string' },
         help: { type: 'boolean', short: 'h' },
@@ -120,6 +125,17 @@ export async function main(argv: string[], io: Io): Promise<number> {
   try {
     const config = await loadConfig(values.config, io.cwd)
     if (values.strict) config.tokens = { ...config.tokens, strict: true }
+    // `--code <dir>`, or the project in the working folder when the config has a `code` section.
+    const codeDir = values.code ?? (config.code ? '.' : undefined)
+    const readCode = async (): Promise<CodeIndex | undefined> => {
+      if (!codeDir) return undefined
+      const opts: Parameters<typeof scanStyles>[1] = {}
+      if (config.code?.include) opts.include = config.code.include
+      if (config.code?.exclude) opts.exclude = config.code.exclude
+      const code = await scanStyles(new NodeFsSource(resolve(io.cwd, codeDir)), opts)
+      for (const s of code.skipped) io.stderr(`dsgraph: skipped ${s.file}: ${s.message}\n`)
+      return code
+    }
 
     if (command === 'scan') {
       const graph = await loadGraph(rest[0] ?? '.', config, io.cwd)
@@ -130,12 +146,14 @@ export async function main(argv: string[], io: Io): Promise<number> {
     }
 
     if (command === 'check') {
-      const graph = await loadGraph(rest[0] ?? '.', config, io.cwd)
+      const [graph, code] = await Promise.all([loadGraph(rest[0] ?? '.', config, io.cwd), readCode()])
       const findings = await check(
         graph,
         values.strict
           ? { ...config, extends: [...(config.extends ?? ['recommended']), 'dtcg-strict'] }
           : config,
+        [],
+        code ? { code } : {},
       )
       await emit(formatFindings(findings, { format, group: !values.expand }))
       const counts = countBySeverity(findings)
@@ -149,13 +167,17 @@ export async function main(argv: string[], io: Io): Promise<number> {
         io.stderr('diff needs <base> and <head>\n')
         return 2
       }
-      const [base, head] = await Promise.all([
+      const [base, head, code] = await Promise.all([
         loadGraph(rest[0]!, config, io.cwd),
         loadGraph(rest[1]!, config, io.cwd),
+        readCode(),
       ])
       const cs = await diff(base, head, diffOptions(config))
       const types = new Map([...base.tokens(), ...head.tokens()].map((t) => [t.id, t.type]))
-      await emit(formatChangeset(cs, { format, types }))
+      const impact = code
+        ? impactOf(cs, base, head, code, config.code?.prefix ? { prefix: config.code.prefix } : {})
+        : undefined
+      await emit(formatChangeset(cs, { format, types, ...(impact ? { impact } : {}) }))
       const failOn = values['fail-on'] as Level | undefined
       if (failOn && !(failOn in RANK)) {
         io.stderr(`--fail-on must be major, minor, patch or none\n`)

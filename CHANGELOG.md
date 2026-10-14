@@ -3,6 +3,20 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+### Your code
+
+- `--code <dir>` for `dsgraph diff` and `dsgraph check`, and a `code` section in the config: the styles of
+  the project that uses the tokens (CSS, SCSS, CSS modules) are read for `var()` uses and values written
+  by hand.
+- `diff` shows where each change reaches into the code, through references: what breaks and what
+  looks different, with file and line (`impactOf` in `@dsgraph/core`).
+- Rules on the code: `style/hardcoded-color`, `style/off-scale`, `usage/deprecated`,
+  `usage/unknown-token`, `token/unused`. Each points to the token to use, or the closest one.
+- Custom properties are matched to tokens by name, with a configured or learned prefix (`VarMatcher`).
+- `nearestTokens` moved from the MCP server to `@dsgraph/core`.
+
 ## 0.2.0 — 2026-10-14
 
 The first release on npm. It covers the token part of dsgraph: read design tokens from wherever they

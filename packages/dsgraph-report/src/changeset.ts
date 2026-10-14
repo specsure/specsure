@@ -1,4 +1,4 @@
-import type { Change, Changeset, Level } from '@dsgraph/core'
+import type { Change, ChangeImpact, Changeset, Impact, Level } from '@dsgraph/core'
 import { formatDelta, formatSide, formatSource, formatValue, formatWhen } from './values.js'
 
 export type Format = 'text' | 'markdown' | 'json'
@@ -74,16 +74,33 @@ export interface ChangesetFormatOptions {
   types?: Map<string, string | null>
   /** Max propagated targets listed under a cause. */
   maxPropagated?: number
+  /** Where the changes reach into a project's code (`impactOf`); adds the places under each change. */
+  impact?: Impact
+  /** Max places listed under a change. */
+  maxSites?: number
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+/** `src/button.css:12, src/card.scss:4 and 3 more` */
+function sitesLine(ci: ChangeImpact, max: number, code: (s: string) => string): string {
+  const listed = ci.sites.slice(0, max).map((s) => code(`${s.file}:${s.line}`))
+  const more = ci.sites.length > max ? ` and ${ci.sites.length - max} more` : ''
+  const verb = ci.effect === 'breaks' ? 'breaks' : 'changes'
+  return `${verb} ${plural(ci.sites.length, 'place')} in the code: ${listed.join(', ')}${more}`
 }
 
 /** Formats a changeset. Propagated value changes are listed under the direct change that caused them. */
 export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}): string {
   const format = opts.format ?? 'text'
-  if (format === 'json') return `${JSON.stringify(cs, null, 2)}\n`
+  if (format === 'json')
+    return `${JSON.stringify(opts.impact ? { ...cs, impact: opts.impact } : cs, null, 2)}\n`
   const md = format === 'markdown'
   const code = (s: string) => (md ? `\`${s}\`` : s)
   const types = opts.types ?? new Map()
   const max = opts.maxPropagated ?? 5
+  const maxSites = opts.maxSites ?? 5
+  const impactBy = new Map((opts.impact?.changes ?? []).map((ci) => [ci.change, ci]))
 
   const propagatedBy = new Map<string, Change[]>()
   for (const c of cs.changes)
@@ -107,9 +124,11 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     lines.push(`## dsgraph diff — ${title}`, '')
     lines.push(`${formatSource(cs.base.source)} → ${formatSource(cs.head.source)}`, '')
     if (summary.length) lines.push(`**${summary.join(' · ')}**`, '')
+    if (opts.impact) lines.push(impactSummary(opts.impact), '')
   } else {
     lines.push(`dsgraph diff — ${title}`, `${formatSource(cs.base.source)} → ${formatSource(cs.head.source)}`)
     if (summary.length) lines.push(summary.join(' · '))
+    if (opts.impact) lines.push(impactSummary(opts.impact))
     lines.push('')
   }
 
@@ -133,6 +152,8 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
           `${md ? '  - ' : '      '}affects ${listed}${names.length > max ? ` and ${names.length - max} more` : ''}`,
         )
       }
+      const ci = impactBy.get(c.id)
+      if (ci) lines.push(`${md ? '  - ' : '      '}${sitesLine(ci, maxSites, code)}`)
     }
     lines.push('')
     if (collapsible) lines.push('</details>', '')
@@ -148,6 +169,18 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trimEnd()}\n`
+}
+
+function impactSummary(impact: Impact): string {
+  if (impact.breaks === 0 && impact.looksDifferent === 0)
+    return 'In the code: nothing uses the changed tokens.'
+  const parts = [
+    impact.breaks ? `${plural(impact.breaks, 'place')} ${impact.breaks === 1 ? 'breaks' : 'break'}` : '',
+    impact.looksDifferent
+      ? `${plural(impact.looksDifferent, 'place')} ${impact.looksDifferent === 1 ? 'looks' : 'look'} different`
+      : '',
+  ].filter(Boolean)
+  return `In the code: ${parts.join(', ')} (${plural(impact.files.length, 'file')}).`
 }
 
 export { formatValue }

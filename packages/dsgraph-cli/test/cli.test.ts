@@ -26,6 +26,11 @@ beforeAll(async () => {
     JSON.stringify(tokens([0.18, 0.36, 1], { old: { $value: srgb(1, 1, 1) } })),
   )
   await writeFile(join(dir, 'v2', 'base.tokens.json'), JSON.stringify(tokens([0.2, 0.4, 1])))
+  await mkdir(join(dir, 'app'))
+  await writeFile(
+    join(dir, 'app', 'button.css'),
+    '.button {\n  background: var(--action-bg);\n  border-color: var(--color-old);\n  color: #ffffff;\n}\n',
+  )
   await writeFile(
     join(dir, 'theme.css'),
     ':root { --ink: #1c1c1a; --text: var(--ink); --broken: var(--nope) }',
@@ -77,6 +82,20 @@ describe('dsgraph CLI', () => {
     const r = await run('diff', 'v1', 'missing')
     expect(r.code).toBe(2)
     expect(r.err).toContain('Source not found: missing')
+  })
+
+  it('shows where a diff reaches into the code with --code', async () => {
+    const r = await run('diff', 'v1', 'v2', '--code', 'app')
+    expect(r.out).toContain('In the code: 1 place breaks, 1 place looks different (1 file).')
+    expect(r.out).toMatch(/removed color\.old\n\s+breaks 1 place in the code: button\.css:3/)
+    expect(r.out).toMatch(
+      /color\.brand: .*\n\s+affects action\.bg\n\s+changes 1 place in the code: button\.css:2/,
+    )
+  })
+
+  it('checks the styles of a project with --code', async () => {
+    const r = await run('check', 'v1', '--code', 'app')
+    expect(r.out).toContain('Color "#ffffff" in color is written by hand; use "color.old"  (button.css:4)')
   })
 })
 

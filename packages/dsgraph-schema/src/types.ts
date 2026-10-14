@@ -323,6 +323,15 @@ export const Config = T.Object(
       }),
     ),
     rules: T.Optional(T.Record(T.String(), RuleSetting)),
+    /** The project that uses the tokens: style files checked by `style/*` and `usage/*` rules and by impact. */
+    code: T.Optional(
+      T.Object({
+        include: T.Optional(T.Array(T.String())),
+        exclude: T.Optional(T.Array(T.String())),
+        /** Prefix of the design system's custom properties in code, e.g. `--ds-`; learned when left out. */
+        prefix: T.Optional(T.String()),
+      }),
+    ),
   },
   { $id: 'Config' },
 )

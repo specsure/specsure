@@ -17,6 +17,7 @@ export { type FlatDoc, flattenDocument, type RawGroup, type RawToken } from './d
 export { expandExtends, mergeDocs } from './dtcg/merge.js'
 export { type ResolvedDoc, type ResolvedToken, resolveDoc } from './dtcg/resolve.js'
 export { DsGraph, type TokenFilter } from './graph.js'
+export { type ChangeImpact, type Impact, type ImpactSite, impactOf } from './impact.js'
 export { parseJsonLenient } from './json.js'
 export { NOT_TOKENS } from './not-tokens.js'
 export { cssVarToName, globToRegExp, matchGlob, matchPath, normalizeName, tokenId } from './path.js'
