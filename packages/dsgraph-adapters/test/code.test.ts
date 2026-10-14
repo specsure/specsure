@@ -82,6 +82,7 @@ export function Button({ active }) {
     </main>
   )
 }`,
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: the source of a styled-components file
   'components/card.styled.ts':
     "import styled from 'styled-components'\nexport const Card = styled.div`\n  color: ${(p) => p.color};\n  background: #fafafa;\n  &:hover { background: var(--color-bg-hover); }\n`",
   'src/App.vue': `<template>
