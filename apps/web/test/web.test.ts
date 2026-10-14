@@ -87,6 +87,10 @@ describe('compare', () => {
       { path: 'package.json', text: JSON.stringify({ name: 'x', scripts: { build: 'tsc' } }) },
       { path: 'tsconfig.json', text: JSON.stringify({ compilerOptions: { strict: true } }) },
       {
+        path: 'resolver.json',
+        text: JSON.stringify({ version: '2025.10', resolutionOrder: [{ $ref: '#/sets/base' }] }),
+      },
+      {
         path: 'tokens.json',
         text: JSON.stringify({ color: { $type: 'color', red: { $value: '#ff0000' } } }),
       },
@@ -99,7 +103,7 @@ describe('compare', () => {
     })
     if (!r.ok) throw new Error(r.error)
     expect(r.head.files).toEqual(['tokens.json'])
-    expect(r.findings.filter((f) => f.severity === 'error')).toEqual([])
+    expect(r.findings.filter((f) => f.severity === 'error' || f.rule === 'dtcg/invalid-node')).toEqual([])
   })
 
   it('splits file globs between DTCG and CSS', () => {

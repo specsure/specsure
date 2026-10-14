@@ -8,6 +8,7 @@ export { expandExtends, mergeDocs } from './dtcg/merge.js'
 export { type ResolvedDoc, type ResolvedToken, resolveDoc } from './dtcg/resolve.js'
 export { DsGraph, type TokenFilter } from './graph.js'
 export { parseJsonLenient } from './json.js'
+export { NOT_TOKENS } from './not-tokens.js'
 export { cssVarToName, globToRegExp, matchGlob, matchPath, normalizeName, tokenId } from './path.js'
 export { getAt, parsePointer, toPointer } from './pointer.js'
 export { expandModes } from './resolver/modes.js'
@@ -28,7 +29,6 @@ export {
   DEFAULT_EXCLUDE,
   excludeFor,
   loadSystem,
-  NOT_TOKENS,
   type ScanConfig,
   type ScanOptions,
   scan,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DsGraph, scan } from '../src/index.js'
+import { DsGraph, NOT_TOKENS, scan } from '../src/index.js'
 import { InlineSource, px } from './helpers.js'
 
 describe('scan', () => {
@@ -36,5 +36,20 @@ describe('scan', () => {
     const snapshot = await scan(source)
     expect(snapshot.diagnostics.map((d) => d.code)).toContain('tokens/non-json')
     expect(DsGraph.from(snapshot).value('n')).toBe(1)
+  })
+})
+
+describe('NOT_TOKENS', () => {
+  it('matches config files and resolver documents, not token files', () => {
+    for (const p of [
+      'package.json',
+      'a/tsconfig.base.json',
+      '.eslintrc.json',
+      'resolver.json',
+      'x/system.resolver.json',
+    ])
+      expect(NOT_TOKENS.test(p), p).toBe(true)
+    for (const p of ['tokens.json', 'color.tokens.json', 'a/resolvers.json', 'myresolver.json'])
+      expect(NOT_TOKENS.test(p), p).toBe(false)
   })
 })

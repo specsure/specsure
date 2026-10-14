@@ -1,6 +1,7 @@
 import type { Config, Snapshot } from '@dsgraph/schema'
 import { DiagnosticBag } from './diagnostics.js'
 import { parseJsonLenient } from './json.js'
+import { NOT_TOKENS } from './not-tokens.js'
 import { matchGlob } from './path.js'
 import { expandModes, systemFromModeFiles } from './resolver/modes.js'
 import {
@@ -52,10 +53,6 @@ export function excludeFor(config: ScanConfig, section: 'tokens' | 'css'): strin
   const skipBuild = !own?.include && !(config as LoadConfig).includeBuild
   return [...ALWAYS_EXCLUDE, ...(skipBuild ? BUILD_OUTPUT : []), ...(own?.exclude ?? [])]
 }
-
-/** JSON files that are never token files, skipped when looking through all `*.json`. */
-export const NOT_TOKENS =
-  /(^|\/)(package(-lock)?|tsconfig[\w.-]*|jsconfig|composer|lerna|nx|project|turbo|vercel|biome|renovate|manifest|\.?[\w-]*rc|[\w.-]*\.schema|[\w.-]*\.resolver|dsgraph\.config)\.json$/i
 
 /**
  * Loads a token system. Precedence: a resolver document, then DTCG token files, then adapters.
