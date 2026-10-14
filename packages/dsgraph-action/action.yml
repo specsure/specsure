@@ -20,6 +20,9 @@ inputs:
   comment:
     description: Post the report as a pull request comment, updated on every push.
     default: 'true'
+  package:
+    description: A token package this repository depends on, e.g. @acme/tokens. Compares its version before and after the pull request (from the lockfile or package.json) and reports what the upgrade changes in the code. Use on dependency update pull requests.
+    default: ''
   code:
     description: Folder of this repository with the code that uses the tokens (CSS, SCSS, CSS modules). The comment then lists the places each change breaks or alters, and checks the styles of the files the pull request touches.
     default: ''

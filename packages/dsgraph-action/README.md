@@ -51,6 +51,32 @@ When the tokens and an app live in one repository, point `code` at the app. The 
           code: apps/web/src
 ```
 
+### Upgrading a token package
+
+In an app that depends on a token package, run it on pull requests that change the version (a Dependabot or Renovate update, or your own). The action reads the version before and after from the lockfile (npm, pnpm, yarn) or `package.json`, compares the two releases from npm and lists what the upgrade breaks or changes in your styles. Changes that do not reach your code become one line.
+
+```yaml
+name: Token upgrade
+on:
+  pull_request:
+    paths: [package.json, package-lock.json, pnpm-lock.yaml, yarn.lock]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: specsure/dsgraph-action@v1
+        with:
+          package: '@acme/tokens'
+          code: src
+          fail-on: major
+```
+
 ## Inputs
 
 | Input | Default | |
@@ -60,6 +86,7 @@ When the tokens and an app live in one repository, point `code` at the app. The 
 | `config` | `dsgraph.config.json` if present | Renames, layers, rules, thresholds |
 | `fail-on` | — | Fail when the change is at least `major`, `minor` or `patch` |
 | `comment` | `true` | One pull request comment, updated on every push; nothing is posted while there are no changes |
+| `package` | — | A token package this repository depends on: compares its version before and after the pull request and reports what the upgrade changes in the code |
 | `code` | — | Folder with the code that uses the tokens: places each change reaches, and style checks on the files the pull request touches |
 | `checks` | `true` | Add checks on the new version: broken references, legacy syntax and others |
 | `github-token` | `${{ github.token }}` | For the comment and for reading the base commit |

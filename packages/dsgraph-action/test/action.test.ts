@@ -35,6 +35,7 @@ function runtime(
   inputs: Record<string, string>,
   comments: Array<{ id: number; body: string }> = [],
   files: Array<{ filename: string; status: string }> = [],
+  atBase: Record<string, string> = {},
 ) {
   const calls: Call[] = []
   const logs: string[] = []
@@ -54,6 +55,11 @@ function runtime(
     appendText: async (p, t) => writeFile(p, (await readFile(p, 'utf8')) + t),
     fetch: (async (url: string, init?: RequestInit) => {
       calls.push({ url, method: init?.method ?? 'GET', ...(init?.body ? { body: String(init.body) } : {}) })
+      const content = /\/contents\/([^?]+)\?ref=/.exec(url)
+      if (content) {
+        const text = atBase[content[1]!]
+        return text === undefined ? new Response('', { status: 404 }) : new Response(text, { status: 200 })
+      }
       const json = init?.method ? { id: 1 } : url.includes('/pulls/') ? files : comments
       return new Response(JSON.stringify(json), { status: 200 })
     }) as typeof fetch,
@@ -155,5 +161,40 @@ describe('dsgraph-action', () => {
     expect(summary).toContain('app/card.css:2')
     expect(summary).not.toContain('app/old.css')
     expect(await readFile(join(dir, 'output.txt'), 'utf8')).toContain('code-breaks=1')
+  })
+
+  it('with package, does nothing when the pull request keeps the version', async () => {
+    const dir = await workspace({ a: '#fff' }, { a: '#fff' })
+    const lock = (v: string) => JSON.stringify({ packages: { 'node_modules/open-props': { version: v } } })
+    await writeFile(join(dir, 'package-lock.json'), lock('1.6.21'))
+    const { rt, logs } = runtime(dir, { package: 'open-props' }, [], [], {
+      'package-lock.json': lock('1.6.21'),
+    })
+    expect(await run(rt)).toBe(0)
+    expect(logs.join('\n')).toContain('open-props stays at 1.6.21; nothing to compare')
+    expect(await readFile(join(dir, 'output.txt'), 'utf8')).toContain('level=none')
+  })
+
+  it('with package, says when the repository does not depend on it', async () => {
+    const dir = await workspace({ a: '#fff' }, { a: '#fff' })
+    const { rt, logs } = runtime(dir, { package: '@acme/tokens' })
+    expect(await run(rt)).toBe(2)
+    expect(logs.join('\n')).toContain('@acme/tokens is not a dependency of this repository')
+  })
+})
+
+describe.runIf(process.env.DSGRAPH_NETWORK_TESTS === '1')('dsgraph-action (network)', () => {
+  it('with package, reports what the upgrade changes in the code', async () => {
+    const dir = await workspace({ a: '#fff' }, { a: '#fff' })
+    const lock = (v: string) => JSON.stringify({ packages: { 'node_modules/open-props': { version: v } } })
+    await writeFile(join(dir, 'package-lock.json'), lock('1.7.16'))
+    await mkdir(join(dir, 'src'))
+    await writeFile(join(dir, 'src/app.css'), '.hero {\n  background-image: var(--gradient-1);\n}\n')
+    const { rt } = runtime(dir, { package: 'open-props' }, [], [], { 'package-lock.json': lock('1.6.21') })
+    expect(await run(rt)).toBe(0)
+    const summary = await readFile(join(dir, 'summary.md'), 'utf8')
+    expect(summary).toContain('npm:open-props@1.6.21')
+    expect(summary).toContain('changes 1 place in the code: `src/app.css:2`')
+    expect(summary).toMatch(/\d+ other changes do not reach the code/)
   })
 })

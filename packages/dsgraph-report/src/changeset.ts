@@ -78,6 +78,11 @@ export interface ChangesetFormatOptions {
   impact?: Impact
   /** Max places listed under a change. */
   maxSites?: number
+  /**
+   * With `impact`: list only the changes that reach the code, and every breaking one; the rest
+   * become one line. For people upgrading a token package, not releasing one.
+   */
+  focusOnCode?: boolean
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -105,7 +110,10 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
   const propagatedBy = new Map<string, Change[]>()
   for (const c of cs.changes)
     for (const cause of c.cause) propagatedBy.set(cause, [...(propagatedBy.get(cause) ?? []), c])
-  const shown = cs.changes.filter((c) => !(c.origin === 'propagated' && c.cause.length > 0))
+  const listed = cs.changes.filter((c) => !(c.origin === 'propagated' && c.cause.length > 0))
+  const focus = !!(opts.focusOnCode && opts.impact)
+  const shown = focus ? listed.filter((c) => impactBy.has(c.id) || c.level === 'major') : listed
+  const hidden = listed.length - shown.length
 
   const counts = cs.summary.counts
   const summary = [
@@ -158,6 +166,11 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     lines.push('')
     if (collapsible) lines.push('</details>', '')
   }
+  if (hidden)
+    lines.push(
+      `${hidden} other ${hidden === 1 ? 'change does' : 'changes do'} not reach the code.`,
+      '',
+    )
   if (cs.contexts.partial)
     lines.push(
       md

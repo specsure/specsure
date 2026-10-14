@@ -54,13 +54,16 @@ export interface StyleLiteral extends CodeLoc {
  */
 export class VarMatcher {
   private readonly prefixes: string[]
+  private suffixes?: Map<string, Token[]>
 
   constructor(
     private readonly graph: DsGraph,
     names: Iterable<string> = [],
     prefix?: string,
   ) {
-    this.prefixes = prefix ? [normalizeName(prefix.replace(/^--/, ''))] : learnPrefixes(graph, names)
+    this.prefixes = prefix
+      ? [normalizeName(prefix.replace(/^--/, ''))]
+      : learnPrefixes(graph, names, (n) => this.byName(n))
   }
 
   /** The token a custom property names, or undefined. */
@@ -85,24 +88,44 @@ export class VarMatcher {
     return this.prefixes[0]
   }
 
+  /**
+   * A token by normalized name: the whole path, or else the end of exactly one path. Exports that
+   * group variables by category (`colors.--gray-9`, `spacing.space.4`) match their names in code.
+   */
   private byName(n: string): Token | undefined {
     const hits = this.graph.byCssVar(`--${n}`)
-    return hits.length === 1 ? hits[0] : undefined
+    if (hits.length) return hits.length === 1 ? hits[0] : undefined
+    if (!this.suffixes) {
+      this.suffixes = new Map()
+      for (const t of this.graph.tokens()) {
+        const segs = normalizeName(t.id).split('.')
+        for (let i = 1; i < segs.length; i++) {
+          const key = segs.slice(i).join('.')
+          this.suffixes.set(key, [...(this.suffixes.get(key) ?? []), t])
+        }
+      }
+    }
+    const tail = this.suffixes.get(n)
+    return tail?.length === 1 ? tail[0] : undefined
   }
 }
 
 /** Leading segments that, removed, turn most names that carry them into token names. */
-function learnPrefixes(graph: DsGraph, names: Iterable<string>): string[] {
+function learnPrefixes(
+  graph: DsGraph,
+  names: Iterable<string>,
+  byName: (n: string) => Token | undefined,
+): string[] {
   const stats = new Map<string, { total: number; hits: number }>()
   for (const name of new Set(names)) {
     const n = normalizeName(name.replace(/^--/, ''))
-    if (graph.token(name.replace(/^--/, '')) || graph.byCssVar(`--${n}`).length) continue
+    if (graph.token(name.replace(/^--/, '')) || byName(n)) continue
     const dot = n.indexOf('.')
     if (dot < 0) continue
     const head = n.slice(0, dot)
     const s = stats.get(head) ?? { total: 0, hits: 0 }
     s.total++
-    if (graph.byCssVar(`--${n.slice(dot + 1)}`).length === 1) s.hits++
+    if (byName(n.slice(dot + 1))) s.hits++
     stats.set(head, s)
   }
   return [...stats]

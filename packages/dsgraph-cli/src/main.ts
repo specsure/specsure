@@ -7,6 +7,7 @@ import { type Format, formatChangeset, formatFindings } from '@dsgraph/report'
 import { check, countBySeverity } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
 import { loadGraph } from './sources.js'
+import { installedVersion } from './upgrade.js'
 
 export const VERSION = '0.3.0'
 
@@ -16,6 +17,9 @@ Usage
   dsgraph scan  [source]          Print (or --out) a canonical snapshot
   dsgraph check [source]          Run rules; exit 1 on errors
   dsgraph diff  <base> <head>     Compare two versions; suggest a semver bump
+  dsgraph upgrade-check <package> What an upgrade of a token package changes in this project:
+                                  the version in use (node_modules, lockfile, package.json)
+                                  against --to (default latest), with the places in --code (default .)
 
 Sources
   ./tokens                        folder (DTCG, a *.resolver.json, token JSON or CSS)
@@ -30,6 +34,7 @@ Options
   -o, --out <file>                write output to a file
       --strict                    DTCG 2025.10 strict mode (legacy syntax is an error)
       --fail-on major|minor|patch diff: exit 1 when the suggested bump is at least this
+      --to <version>              upgrade-check: the version to upgrade to (default latest)
       --max-warnings <n>          check: exit 1 when warnings exceed n
       --expand                    check: list every finding instead of collapsing repeated ones
       --code <dir>                your project: check its styles against the tokens (check), or show
@@ -47,6 +52,13 @@ export interface Io {
 const RANK: Record<Level, number> = { none: 0, patch: 1, minor: 2, major: 3 }
 
 export { loadGraph } from './sources.js'
+export {
+  dependencyVersion,
+  installedVersion,
+  MANIFEST_FILES,
+  type Manifests,
+  readManifests,
+} from './upgrade.js'
 
 /** Reads `dsgraph.config.json` (or the given file) from `cwd`; no file means an empty config. */
 export async function loadConfig(path: string | undefined, cwd: string): Promise<Config> {
@@ -90,6 +102,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         strict: { type: 'boolean' },
         expand: { type: 'boolean' },
         code: { type: 'string' },
+        to: { type: 'string' },
         'fail-on': { type: 'string' },
         'max-warnings': { type: 'string' },
         help: { type: 'boolean', short: 'h' },
@@ -127,12 +140,13 @@ export async function main(argv: string[], io: Io): Promise<number> {
     if (values.strict) config.tokens = { ...config.tokens, strict: true }
     // `--code <dir>`, or the project in the working folder when the config has a `code` section.
     const codeDir = values.code ?? (config.code ? '.' : undefined)
-    const readCode = async (): Promise<CodeIndex | undefined> => {
-      if (!codeDir) return undefined
+    const readCode = async (fallback?: string): Promise<CodeIndex | undefined> => {
+      const dir = codeDir ?? fallback
+      if (!dir) return undefined
       const opts: Parameters<typeof scanStyles>[1] = {}
       if (config.code?.include) opts.include = config.code.include
       if (config.code?.exclude) opts.exclude = config.code.exclude
-      const code = await scanStyles(new NodeFsSource(resolve(io.cwd, codeDir)), opts)
+      const code = await scanStyles(new NodeFsSource(resolve(io.cwd, dir)), opts)
       for (const s of code.skipped) io.stderr(`dsgraph: skipped ${s.file}: ${s.message}\n`)
       return code
     }
@@ -162,22 +176,55 @@ export async function main(argv: string[], io: Io): Promise<number> {
       return counts.error > 0 || counts.warning > max ? 1 : 0
     }
 
-    if (command === 'diff') {
-      if (rest.length !== 2) {
-        io.stderr('diff needs <base> and <head>\n')
-        return 2
+    if (command === 'diff' || command === 'upgrade-check') {
+      let specs: [string, string]
+      let code: CodeIndex | undefined
+      if (command === 'upgrade-check') {
+        const pkg = rest[0]
+        if (!pkg || rest.length !== 1) {
+          io.stderr('upgrade-check needs the token package, e.g. @acme/tokens\n')
+          return 2
+        }
+        const current = await installedVersion(io.cwd, pkg)
+        if (!current) {
+          io.stderr(
+            `${pkg} is not a dependency of this project (no node_modules, lockfile or package.json entry)\n`,
+          )
+          return 2
+        }
+        specs = [`npm:${pkg}@${current}`, `npm:${pkg}@${values.to ?? 'latest'}`]
+        // The project is the code to check, unless told otherwise.
+        code = await readCode('.')
+      } else {
+        if (rest.length !== 2) {
+          io.stderr('diff needs <base> and <head>\n')
+          return 2
+        }
+        specs = [rest[0]!, rest[1]!]
+        code = await readCode()
       }
-      const [base, head, code] = await Promise.all([
-        loadGraph(rest[0]!, config, io.cwd),
-        loadGraph(rest[1]!, config, io.cwd),
-        readCode(),
+      const [base, head] = await Promise.all([
+        loadGraph(specs[0], config, io.cwd),
+        loadGraph(specs[1], config, io.cwd),
       ])
+      if (command === 'upgrade-check' && base.snapshot.source.version === head.snapshot.source.version) {
+        io.stdout(`${rest[0]} ${base.snapshot.source.version} is already the version you asked for.\n`)
+        return 0
+      }
       const cs = await diff(base, head, diffOptions(config))
       const types = new Map([...base.tokens(), ...head.tokens()].map((t) => [t.id, t.type]))
       const impact = code
         ? impactOf(cs, base, head, code, config.code?.prefix ? { prefix: config.code.prefix } : {})
         : undefined
-      await emit(formatChangeset(cs, { format, types, ...(impact ? { impact } : {}) }))
+      await emit(
+        formatChangeset(cs, {
+          format,
+          types,
+          ...(impact ? { impact } : {}),
+          // Upgrading: what happens to this project, not the whole release.
+          focusOnCode: command === 'upgrade-check',
+        }),
+      )
       const failOn = values['fail-on'] as Level | undefined
       if (failOn && !(failOn in RANK)) {
         io.stderr(`--fail-on must be major, minor, patch or none\n`)

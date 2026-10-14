@@ -30,6 +30,14 @@ npx @dsgraph/cli check npm:@acme/tokens@2 --code ./src
 - `diff` lists under each change the places in the code it reaches, through references too: what breaks (a removed or renamed variable) and what looks different.
 - `check` adds rules on the code: colors written by hand (`style/hardcoded-color`), spacing, radii and font sizes off the scale (`style/off-scale`), deprecated and unknown design-system variables (`usage/deprecated`, `usage/unknown-token`) and tokens nothing uses (`token/unused`).
 
+Before upgrading a token package, see what the new version does to your project:
+
+```bash
+npx @dsgraph/cli upgrade-check @acme/tokens --to 3.0.0     # in the project folder; --to defaults to latest
+```
+
+It takes the version you use from `node_modules`, the lockfile or `package.json`, and lists only what reaches your code and what breaks.
+
 Custom properties match tokens by name (`--color-accent` ↔ `color.accent`); a prefix such as `--ds-` is learned from the code or set in the config: `"code": { "include": ["src/**/*.css"], "prefix": "--ds-" }`.
 
 Repeated findings are collapsed (`247× Color "…" is a string`, with the first tokens listed); `--expand` lists every one.
