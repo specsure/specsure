@@ -1819,9 +1819,21 @@ a.launcher__row:focus-visible .launcher__go {
   text-align: left;
   cursor: pointer;
 }
+.inputs__toggle,
+.inputs__toggle:hover,
+.inputs__toggle:active {
+  height: auto;
+  border-radius: 0;
+  background: none;
+  font: var(--text-caption);
+  transition: color var(--dur-fast) var(--ease-standard);
+}
 .inputs__toggle:hover,
 .inputs__toggle:focus-visible {
   color: var(--ink-2);
+}
+.inputs__toggle:focus-visible {
+  outline-offset: -2px;
 }
 .inputs__toggle[aria-expanded="true"] {
   padding-bottom: 0;
