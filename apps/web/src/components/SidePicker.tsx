@@ -217,12 +217,15 @@ function NpmFields({
   )
 }
 
-function GitHubFields({
+/** Repository with an optional folder, and a ref. Shared by the token sides and the code row. */
+export function GitHubFields({
   value,
   onChange,
+  placeholder = 'owner/repo/tokens',
 }: {
   value: Extract<SideInput, { kind: 'github' }>
-  onChange: (v: SideInput) => void
+  onChange: (v: Extract<SideInput, { kind: 'github' }>) => void
+  placeholder?: string
 }) {
   const t = useT()
   const shown = value.repo ? `${value.repo}${value.root ? `/${value.root}` : ''}` : ''
@@ -233,7 +236,7 @@ function GitHubFields({
       `github:${repoPath.replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '')}`,
     )
     if (r?.kind === 'github') {
-      const next: SideInput = { kind: 'github', repo: r.repo, ref: value.ref }
+      const next: Extract<SideInput, { kind: 'github' }> = { kind: 'github', repo: r.repo, ref: value.ref }
       if (r.root) next.root = r.root
       onChange(next)
     }
@@ -244,7 +247,7 @@ function GitHubFields({
         className="source__input"
         aria-label={t.inputs.repoAria}
         value={text}
-        placeholder="owner/repo/tokens"
+        placeholder={placeholder}
         spellCheck={false}
         autoCapitalize="off"
         onChange={(e) => {

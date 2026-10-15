@@ -6,6 +6,11 @@ export type SideInput =
   | { kind: 'github'; repo: string; root?: string; ref: string }
   | { kind: 'files'; files: DroppedFile[] }
 
+/** The project that uses the tokens: a folder read in the browser, or a GitHub repository at a ref. */
+export type CodeInput =
+  | { kind: 'files'; files: DroppedFile[] }
+  | { kind: 'github'; repo: string; root?: string; ref: string }
+
 export interface DroppedFile {
   path: string
   text: string
@@ -42,13 +47,17 @@ export interface RunRequest {
   include: string
   /** For private GitHub repositories; kept in the tab, never put into links. */
   githubToken?: string
-  /** The project that uses the tokens, read in the browser; never put into links. */
-  code?: DroppedFile[]
+  /** The project that uses the tokens: files read in the browser (never put into links) or a repository. */
+  code?: CodeInput
 }
 
 /** What the comparison means for a project's code. Checked against the old version, which it uses today. */
 export interface CodeReport {
+  /** Where the code came from: `acme/web@main (1a2b3c4)` for a repository. */
+  label?: string
   files: number
+  /** Only part of a large repository was read: how many files it has. */
+  limited?: number
   skipped: Array<{ file: string; message: string }>
   /** Share of the code's design values on tokens of the old version. */
   coverage: Coverage
@@ -74,7 +83,7 @@ export type RunResponse =
   | {
       id: number
       ok: false
-      side?: 'base' | 'head'
+      side?: 'base' | 'head' | 'code'
       error: string
       /** GitHub refused without a token: the repository may be private. */
       hint?: 'private' | 'reload'

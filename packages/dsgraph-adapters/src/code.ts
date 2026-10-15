@@ -6,6 +6,8 @@ export interface CodeOptions {
   /** Globs of files to read; default every style, script and markup file. */
   include?: string[]
   exclude?: string[]
+  /** Read at most this many files (a remote monorepo is not downloaded whole); `limited` says so. */
+  maxFiles?: number
 }
 
 /** Every style, script and markup file. */
@@ -130,9 +132,11 @@ export function scanFileText(file: string, text: string, index: CodeIndex): void
  */
 export async function scanCode(source: Source, opts: CodeOptions = {}): Promise<CodeIndex> {
   const exclude = [...DEFAULT_EXCLUDE, ...(opts.exclude ?? [])]
-  const files = (await source.list(opts.include ?? CODE_INCLUDE)).filter((f) => !matchGlob(f, exclude)).sort()
+  const all = (await source.list(opts.include ?? CODE_INCLUDE)).filter((f) => !matchGlob(f, exclude)).sort()
+  const files = opts.maxFiles !== undefined ? all.slice(0, opts.maxFiles) : all
   await prefetch(source, files)
   const index: CodeIndex = { files: [], uses: [], literals: [], skipped: [] }
+  if (files.length < all.length) index.limited = all.length
   for (const file of files) {
     let text: string
     try {

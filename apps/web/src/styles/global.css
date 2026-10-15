@@ -1804,24 +1804,6 @@ a.launcher__row:focus-visible .launcher__go {
   border-top: 1px solid var(--line);
   margin-top: var(--space-2);
 }
-.source--code .source__empty {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  color: var(--ink-3);
-}
-.source__formats {
-  color: var(--ink-2);
-  font: var(--text-code);
-}
-/* Two lines when empty (what to drop, which formats): the field grows instead of clipping. */
-.source--code .source__files {
-  height: auto;
-  min-height: 36px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
 .source--code .source__meta {
   overflow: visible;
   white-space: normal;

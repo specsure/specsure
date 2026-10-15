@@ -17,6 +17,8 @@ export interface CodeIndex {
   literals: StyleLiteral[]
   /** Files that could not be read or parsed. */
   skipped: Array<{ file: string; message: string }>
+  /** Set when only part of the code was read: how many files there were. */
+  limited?: number
 }
 
 export interface CodeLoc {

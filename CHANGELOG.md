@@ -10,6 +10,10 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   that reach the code, lists those places in each change's details and in the Markdown, and adds a
   **Your code** window: how much of it is on tokens, values written by hand with what to write
   instead, deprecated and unknown variables. The script parser loads only when code is added.
+- **Your code** can also be a GitHub repository (with a folder and a ref; the GitHub token covers
+  private ones). It goes into the link (`?code=github:owner/repo/src@main`), so a result can be
+  shared; up to 1,500 files are read. The input window groups the design system and your product.
+- `scanCode` takes `maxFiles` and says when it read only part of the code (`limited`).
 - Usage findings carry the name as written (`evidence.name`).
 
 ## 0.5.0 — 2026-10-15

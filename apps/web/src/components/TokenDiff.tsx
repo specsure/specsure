@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { LangProvider, useT } from '../i18n/react'
 import { EXAMPLE, EXAMPLE_APP } from '../lib/example'
-import type { DroppedFile, Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
+import type { CodeInput, Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, readUrl, unpackFiles, writeUrl } from '../lib/url'
 import { CodeField } from './CodeField'
 import { Keys, MOD, type Result, Results } from './Results'
@@ -31,11 +31,11 @@ function App() {
   const [include, setInclude] = useState('')
   const [githubToken, setGithubToken] = useState('')
   /** The user's project, read in the browser; optional. */
-  const [code, setCode] = useState<DroppedFile[]>([])
+  const [code, setCode] = useState<CodeInput>({ kind: 'files', files: [] })
   const [context, setContext] = useState<Record<string, string>>({})
   const [running, setRunning] = useState<Stage | 'start' | null>(null)
   const [result, setResult] = useState<Result | null>(null)
-  const [error, setError] = useState<{ side?: 'base' | 'head'; message: string } | null>(null)
+  const [error, setError] = useState<{ side?: 'base' | 'head' | 'code'; message: string } | null>(null)
   const [fragment, setFragment] = useState<string | null>(null)
   /** The inputs of the comparison on screen; the address is built from these, not from the fields. */
   const [ran, setRan] = useState<RunRequest | null>(null)
@@ -92,11 +92,12 @@ function App() {
     setContext(s.context)
     if (s.base) setBase(s.base)
     if (s.head) setHead(s.head)
+    if (s.code) setCode(s.code)
     // `?example`: the built-in example, as linked from the home page.
     if (url.searchParams.has('example')) {
       setBase({ kind: 'files', files: EXAMPLE.base })
       setHead({ kind: 'files', files: EXAMPLE.head })
-      setCode(EXAMPLE_APP)
+      setCode({ kind: 'files', files: EXAMPLE_APP })
       autoRun.current = true
       setTick((t) => t + 1)
       return
@@ -119,7 +120,8 @@ function App() {
       if (!worker.current || !ready(b) || !ready(h)) return
       const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include: inc }
       if (githubToken) req.githubToken = githubToken
-      if (project.length) req.code = project
+      if (project.kind === 'files' ? project.files.length > 0 : !!project.repo)
+        req.code = project.kind === 'github' ? (normalize(project) as CodeInput) : project
       pending.current = req
       setRunning('start')
       setError(null)
@@ -160,6 +162,7 @@ function App() {
       const state: Parameters<typeof writeUrl>[1] = { include: inc, context }
       if (b.kind !== 'files') state.base = b
       if (h.kind !== 'files') state.head = h
+      if (ran.code?.kind === 'github') state.code = ran.code
       history.replaceState(null, '', writeUrl(location.pathname, state, frag))
       setFragment(frag)
     }
@@ -200,8 +203,9 @@ function App() {
     setBase(b)
     setHead(h)
     setInclude('')
-    setCode(EXAMPLE_APP)
-    run(b, h, '', EXAMPLE_APP)
+    const app: CodeInput = { kind: 'files', files: EXAMPLE_APP }
+    setCode(app)
+    run(b, h, '', app)
   }
 
   return (
@@ -247,7 +251,14 @@ function App() {
           </div>
         </div>
         <div className="inputs__group inputs__group--product">{t.yourCode.groupProduct}</div>
-        <CodeField files={code} onChange={setCode} report={result?.code} />
+        <CodeField
+          value={code}
+          onChange={setCode}
+          report={result?.code}
+          error={error?.side === 'code' ? error.message : undefined}
+          githubToken={githubToken}
+          onGithubToken={setGithubToken}
+        />
         <footer className="actionbar">
           <span className="actionbar__status">
             {error && !error.side ? (

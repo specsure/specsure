@@ -154,13 +154,22 @@ export async function compare(
     const changeset = await diff(b, h)
     const findings = await check(h)
     let code: CodeReport | undefined
-    if (req.code?.length) {
+    if (req.code && (req.code.kind === 'files' ? req.code.files.length > 0 : !!req.code.repo)) {
       progress('code')
       // A tab opened before a new deploy asks for a chunk that is gone: say so instead of a 404.
       const { checkCode } = await import('./code').catch(() => {
         throw Object.assign(new Error('Could not load the code checker'), { hint: 'reload' })
       })
-      code = await checkCode(req.code, b, h, changeset)
+      try {
+        code = await checkCode(req.code, b, h, changeset, githubToken)
+      } catch (err) {
+        const message = (err as Error).message
+        const hint =
+          req.code.kind === 'github' && !githubToken && /\b(401|403|404)\b/.test(message)
+            ? 'private'
+            : undefined
+        throw Object.assign(new Error(message), { side: 'code', hint })
+      }
     }
     const types = new Map<string, string | null>()
     for (const t of [...b.tokens(), ...h.tokens()]) types.set(t.id, t.type)
@@ -178,7 +187,7 @@ export async function compare(
     }
   } catch (err) {
     const r: RunResponse = { id, ok: false, error: (err as Error).message }
-    const { side, hint } = err as { side?: 'base' | 'head'; hint?: 'private' | 'reload' }
+    const { side, hint } = err as { side?: 'base' | 'head' | 'code'; hint?: 'private' | 'reload' }
     if (side) r.side = side
     if (hint) r.hint = hint
     return r

@@ -112,7 +112,7 @@ describe('compare', () => {
       base: { kind: 'files', files: EXAMPLE.base },
       head: { kind: 'files', files: EXAMPLE.head },
       include: '',
-      code: EXAMPLE_APP,
+      code: { kind: 'files', files: EXAMPLE_APP },
     })
     if (!r.ok) throw new Error(r.error)
     const code = r.code!
@@ -276,6 +276,46 @@ describe('url', () => {
     expect(url).toBe('/d?base=github:acme/ds/tokens@v1&head=npm:acme-tokens@2.0.0&files=dist/*.css')
     const frag = await packFiles({ base: EXAMPLE.base })
     expect(await unpackFiles(`#${frag}`)).toEqual({ base: EXAMPLE.base })
+  })
+
+  it('puts the code repository into the link and reads it back', () => {
+    const code = { kind: 'github' as const, repo: 'acme/web', root: 'src', ref: 'main' }
+    const url = writeUrl('/d', {
+      base: { kind: 'npm', pkg: 'acme-tokens', version: '1.0.0' },
+      include: '',
+      context: {},
+      code,
+    })
+    expect(url).toBe('/d?base=npm:acme-tokens@1.0.0&code=github:acme/web/src@main')
+    expect(readUrl(new URL(url, 'https://example.test')).code).toEqual(code)
+  })
+})
+
+describe.runIf(process.env.DSGRAPH_NETWORK_TESTS === '1')('code from a repository (network)', () => {
+  it('reads an app on GitHub and checks it against the comparison', async () => {
+    const r = await compare({
+      id: 9,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+      code: { kind: 'github', repo: 'specsure/action-playground', root: 'app', ref: 'main' },
+      ...(process.env.GITHUB_TOKEN ? { githubToken: process.env.GITHUB_TOKEN } : {}),
+    })
+    if (!r.ok) throw new Error(r.error)
+    expect(r.code!.label).toMatch(/^specsure\/action-playground\/app@main \([0-9a-f]{7}\)$/)
+    expect(r.code!.files).toBe(2)
+    expect(r.code!.impact.breaks).toBeGreaterThan(0)
+  })
+
+  it('names the code row when the repository is missing', async () => {
+    const r = await compare({
+      id: 10,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+      code: { kind: 'github', repo: 'specsure/no-such-repo-here', ref: 'main' },
+    })
+    expect(r).toMatchObject({ ok: false, side: 'code' })
   })
 })
 

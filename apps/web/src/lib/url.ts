@@ -1,11 +1,13 @@
 import { formatRemoteSpec, parseRemoteSpec } from '@dsgraph/sources'
-import type { DroppedFile, SideInput } from './types'
+import type { CodeInput, DroppedFile, SideInput } from './types'
 
 export interface UrlState {
   base?: SideInput
   head?: SideInput
   include: string
   context: Record<string, string>
+  /** The app's code, when it is a repository (`?code=github:owner/repo/src@main`); folders stay out of links. */
+  code?: Extract<CodeInput, { kind: 'github' }>
 }
 
 const toSpec = (s: SideInput): string | null => (s.kind === 'files' ? null : formatRemoteSpec(s))
@@ -33,6 +35,8 @@ export function readUrl(url: URL): UrlState {
     if (base) state.base = base
     if (head) state.head = head
   }
+  const code = fromSpec(q.get('code'))
+  if (code?.kind === 'github') state.code = code
   for (const pair of (q.get('ctx') ?? '').split(',')) {
     const [k, v] = pair.split(':')
     if (k && v) state.context[k] = v
@@ -53,6 +57,7 @@ export function writeUrl(base: string, s: UrlState, fragment = ''): string {
     if (h) q.set('head', h)
   }
   if (s.include) q.set('files', s.include)
+  if (s.code) q.set('code', formatRemoteSpec(s.code))
   const ctx = Object.entries(s.context)
     .map(([k, v]) => `${k}:${v}`)
     .join(',')

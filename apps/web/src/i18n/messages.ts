@@ -127,7 +127,7 @@ const en = {
     title: 'Token Diff · Specsure',
     description:
       'Compare two versions of design tokens: what changed, what breaks and which semver bump it needs, and what the change does to your code: CSS, JSX and TSX, Tailwind, Vue, Svelte. Runs in your browser.',
-    lead: 'Compare two versions of design tokens: what was removed, renamed or changed in each theme, and the semver bump it needs. Add your project to see what the change breaks in its code: CSS, JSX and TSX, Tailwind, Vue, Svelte, Astro. Everything is read in your browser and never uploaded.',
+    lead: 'Compare two versions of design tokens: what was removed, renamed or changed in each theme, and the semver bump it needs. Add your app to see what the change breaks in its code, JSX, Vue or CSS. Everything is read in your browser and never uploaded.',
     how: 'How it works',
   },
 
@@ -180,13 +180,15 @@ const en = {
     title: 'Your code',
     groupTokens: 'Design system',
     groupProduct: 'Your product · optional',
+    kinds: { files: 'Folder', github: 'GitHub' },
     drop: 'Drop the folder of an app that uses these tokens',
     formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
-    folder: 'Folder',
+    limited: (read: number, total: number) =>
+      `${num('en', read)} of ${count('en', total, { one: 'file', other: 'files' })} of code read`,
+    folder: 'Choose',
     clear: 'Clear',
     clearAria: 'Remove your code',
     note: 'Read in this tab: never uploaded and never put into links.',
-    hint: 'Shows what this release breaks in your code, how much of it is on tokens and what to write instead of values written by hand.',
     read: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} of code`,
     summary: (breaks: number, looks: number, files: number) =>
       breaks + looks === 0
@@ -609,7 +611,7 @@ const ru: Messages = {
     title: 'Token Diff · Specsure',
     description:
       'Сравните две версии дизайн-токенов: что изменилось, что сломается, какую версию выпускать по semver и что изменение сделает с вашим кодом: CSS, JSX и TSX, Tailwind, Vue, Svelte. Работает в браузере.',
-    lead: 'Сравните две версии дизайн-токенов: что удалили, переименовали или изменили в каждой теме и какую версию нужно выпустить по semver. Добавьте свой проект, чтобы увидеть, что изменение сломает в его коде: CSS, JSX и TSX, Tailwind, Vue, Svelte, Astro. Всё читается в браузере и никуда не загружается.',
+    lead: 'Сравните две версии дизайн-токенов: что удалили, переименовали или изменили в каждой теме и какую версию нужно выпустить по semver. Добавьте своё приложение, чтобы увидеть, что изменение сломает в его коде — JSX, Vue или CSS. Всё читается в браузере и никуда не загружается.',
     how: 'Как это работает',
   },
 
@@ -662,13 +664,15 @@ const ru: Messages = {
     title: 'Ваш код',
     groupTokens: 'Дизайн-система',
     groupProduct: 'Ваш продукт · необязательно',
+    kinds: { files: 'Папка', github: 'GitHub' },
     drop: 'Перетащите папку приложения, которое использует эти токены',
     formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
-    folder: 'Папка',
+    limited: (read: number, total: number) =>
+      `прочитано ${num('ru', read)} из ${count('ru', total, { one: 'файла', few: 'файлов', many: 'файлов', other: 'файлов' })} кода`,
+    folder: 'Выбрать',
     clear: 'Очистить',
     clearAria: 'Убрать ваш код',
     note: 'Читается в этой вкладке: никуда не загружается и не попадает в ссылки.',
-    hint: 'Покажем, что этот релиз сломает в вашем коде, какая доля значений на токенах и что написать вместо значений, вписанных вручную.',
     read: (n: number) =>
       `${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })} кода`,
     summary: (breaks: number, looks: number, files: number) =>
