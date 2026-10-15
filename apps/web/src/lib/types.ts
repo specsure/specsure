@@ -1,4 +1,4 @@
-import type { Changeset, Finding } from '@dsgraph/core'
+import type { Changeset, Coverage, Finding, Impact } from '@dsgraph/core'
 
 /** One side of a comparison. Files never leave the browser; npm and GitHub are read through CORS APIs. */
 export type SideInput =
@@ -42,6 +42,20 @@ export interface RunRequest {
   include: string
   /** For private GitHub repositories; kept in the tab, never put into links. */
   githubToken?: string
+  /** The project that uses the tokens, read in the browser; never put into links. */
+  code?: DroppedFile[]
+}
+
+/** What the comparison means for a project's code. Checked against the old version, which it uses today. */
+export interface CodeReport {
+  files: number
+  skipped: Array<{ file: string; message: string }>
+  /** Share of the code's design values on tokens of the old version. */
+  coverage: Coverage
+  /** Where each change reaches into the code. */
+  impact: Impact
+  /** Values written by hand, deprecated and unknown variables, against the old version. */
+  findings: Finding[]
 }
 
 export type RunResponse =
@@ -54,6 +68,7 @@ export type RunResponse =
       head: SideInfo
       findings: Finding[]
       graph: { base: TokenGraph; head: TokenGraph }
+      code?: CodeReport
       ms: number
     }
   | {
@@ -66,5 +81,5 @@ export type RunResponse =
     }
 
 /** Stage of a run; the page words it in its language. */
-export type Stage = 'reading' | 'comparing'
+export type Stage = 'reading' | 'comparing' | 'code'
 export type Progress = { id: number; progress: Stage }

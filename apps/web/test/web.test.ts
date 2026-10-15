@@ -2,8 +2,8 @@ import { groupFindings } from '@dsgraph/report'
 import { describe, expect, it } from 'vitest'
 import { defaultVersions } from '../src/components/SidePicker'
 import { compare, configFor } from '../src/lib/compare'
-import { EXAMPLE, LEGACY_EXAMPLE } from '../src/lib/example'
-import { filesFromInput } from '../src/lib/files'
+import { EXAMPLE, EXAMPLE_APP, LEGACY_EXAMPLE } from '../src/lib/example'
+import { codeFromInput, filesFromInput } from '../src/lib/files'
 import { packFiles, readUrl, unpackFiles, writeUrl } from '../src/lib/url'
 import { colorPairs, contextAxes, inContext, view } from '../src/lib/view'
 
@@ -106,6 +106,38 @@ describe('compare', () => {
     expect(r.findings.filter((f) => f.severity === 'error' || f.rule === 'dtcg/invalid-node')).toEqual([])
   })
 
+  it('checks the code of a project against the comparison', async () => {
+    const r = await compare({
+      id: 4,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+      code: EXAMPLE_APP,
+    })
+    if (!r.ok) throw new Error(r.error)
+    const code = r.code!
+    expect(code.files).toBe(4)
+    expect(code.coverage).toMatchObject({ fromTokens: 12, byHand: 6 })
+    expect(code.impact.breaks).toBe(2)
+    const breaks = code.impact.changes
+      .filter((c) => c.effect === 'breaks')
+      .map((c) => `${c.kind} ${c.sites.map((s) => s.text).join(' ')}`)
+    expect(breaks).toEqual(['token.removed bg-danger', 'token.renamed p-(--space-sm)'])
+    const hand = code.findings.map((f) => (f.evidence as { replacement: string }).replacement)
+    expect(hand).toContain('bg-accent')
+    expect(hand).toContain('rounded-md')
+  })
+
+  it('leaves the code out unless it is given', async () => {
+    const r = await compare({
+      id: 5,
+      base: { kind: 'files', files: EXAMPLE.base },
+      head: { kind: 'files', files: EXAMPLE.head },
+      include: '',
+    })
+    expect(r.ok && r.code).toBeUndefined()
+  })
+
   it('splits file globs between DTCG and CSS', () => {
     expect(configFor('dist/tokens.css, tokens/**/*.json')).toEqual({
       tokens: { include: ['tokens/**/*.json'] },
@@ -179,6 +211,31 @@ describe('files', () => {
       'a.css',
       'b.css',
     ])
+  })
+})
+
+describe('code files', () => {
+  const list = (paths: string[]) =>
+    paths.map((p) => ({
+      name: p.split('/').at(-1),
+      webkitRelativePath: p,
+      size: 2,
+      text: async () => '',
+    })) as unknown as FileList
+
+  it('reads styles, scripts and markup, and skips dependencies and build output', async () => {
+    const files = await codeFromInput(
+      list([
+        'app/src/Button.tsx',
+        'app/src/theme.css',
+        'app/src/App.vue',
+        'app/README.md',
+        'app/node_modules/x/index.js',
+        'app/dist/bundle.js',
+        'app/.next/server/page.js',
+      ]),
+    )
+    expect(files.map((f) => f.path)).toEqual(['src/Button.tsx', 'src/theme.css', 'src/App.vue'])
   })
 })
 

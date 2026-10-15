@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { LangProvider, useT } from '../i18n/react'
-import { EXAMPLE } from '../lib/example'
-import type { Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
+import { EXAMPLE, EXAMPLE_APP } from '../lib/example'
+import type { DroppedFile, Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, readUrl, unpackFiles, writeUrl } from '../lib/url'
+import { CodeField } from './CodeField'
 import { Keys, MOD, type Result, Results } from './Results'
 import { SidePicker } from './SidePicker'
 
@@ -29,6 +30,8 @@ function App() {
   const [head, setHead] = useState<SideInput>(emptyNpm)
   const [include, setInclude] = useState('')
   const [githubToken, setGithubToken] = useState('')
+  /** The user's project, read in the browser; optional. */
+  const [code, setCode] = useState<DroppedFile[]>([])
   const [context, setContext] = useState<Record<string, string>>({})
   const [running, setRunning] = useState<Stage | 'start' | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -59,6 +62,7 @@ function App() {
           head: r.head,
           findings: r.findings,
           graph: r.graph,
+          code: r.code,
           ms: r.ms,
         })
       } else {
@@ -87,6 +91,7 @@ function App() {
     if (url.searchParams.has('example')) {
       setBase({ kind: 'files', files: EXAMPLE.base })
       setHead({ kind: 'files', files: EXAMPLE.head })
+      setCode(EXAMPLE_APP)
       autoRun.current = true
       setTick((t) => t + 1)
       return
@@ -105,16 +110,17 @@ function App() {
   const [tick, setTick] = useState(0)
 
   const run = useCallback(
-    (b = base, h = head, inc = include) => {
+    (b = base, h = head, inc = include, project = code) => {
       if (!worker.current || !ready(b) || !ready(h)) return
       const req: RunRequest = { id: ++runId.current, base: normalize(b), head: normalize(h), include: inc }
       if (githubToken) req.githubToken = githubToken
+      if (project.length) req.code = project
       pending.current = req
       setRunning('start')
       setError(null)
       worker.current.postMessage(req)
     },
-    [base, head, include, githubToken],
+    [base, head, include, githubToken, code],
   )
 
   // ⌘↵ compares from anywhere on the page.
@@ -189,7 +195,8 @@ function App() {
     setBase(b)
     setHead(h)
     setInclude('')
-    run(b, h, '')
+    setCode(EXAMPLE_APP)
+    run(b, h, '', EXAMPLE_APP)
   }
 
   return (
@@ -219,6 +226,7 @@ function App() {
           githubToken={githubToken}
           onGithubToken={setGithubToken}
         />
+        <CodeField files={code} onChange={setCode} report={result?.code} />
         <div className="source source--glob">
           <div className="source__row">
             <span className="source__label">{t.inputs.filesLabel}</span>

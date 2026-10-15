@@ -108,7 +108,7 @@ const en = {
     codeTitle: 'Your code stays on the design system',
     codeLead:
       'For designers who build in code, on their own or with an agent. dsgraph reads CSS, JSX and TSX, Tailwind classes, Vue and Svelte: how much of it comes from tokens, which values are written by hand and what to write instead, and what the next version of the design system will break.',
-    codeOpen: 'Run it on your project →',
+    codeOpen: 'Try it on your project in Token Diff →',
     codeCaption:
       'Four components of a small app on the example’s tokens, checked by dsgraph when this site was built. The same report comes from dsgraph check --code, the MCP server and the GitHub Action.',
     code: {
@@ -164,10 +164,53 @@ const en = {
     example: 'Try an example',
     swap: 'Swap',
     compare: 'Compare',
-    progress: { start: 'Starting…', reading: 'Reading tokens…', comparing: 'Comparing…' },
+    progress: {
+      start: 'Starting…',
+      reading: 'Reading tokens…',
+      comparing: 'Comparing…',
+      code: 'Reading your code…',
+    },
     failed: 'The comparison failed',
     privateHint: 'If the repository is private, add a GitHub token.',
     shareTooBig: 'These files are too large for a link. Share the Markdown or the changeset JSON instead.',
+  },
+
+  yourCode: {
+    title: 'Your code',
+    drop: 'Optional: drop your project folder to see what this release changes in it',
+    folder: 'Folder',
+    clear: 'Clear',
+    clearAria: 'Remove your code',
+    note: 'Read in this tab: never uploaded and never put into links.',
+    read: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} of code`,
+    summary: (breaks: number, looks: number, files: number) =>
+      breaks + looks === 0
+        ? 'Nothing in your code uses the changed tokens.'
+        : `In your code: ${[
+            breaks
+              ? `${count('en', breaks, { one: 'place', other: 'places' })} ${breaks === 1 ? 'breaks' : 'break'}`
+              : '',
+            looks
+              ? `${count('en', looks, { one: 'place', other: 'places' })} ${looks === 1 ? 'looks' : 'look'} different`
+              : '',
+          ]
+            .filter(Boolean)
+            .join(', ')} (${count('en', files, { one: 'file', other: 'files' })}).`,
+    rowTitle: (n: number) => `Used in ${count('en', n, { one: 'place', other: 'places' })} of your code`,
+    inCode: (n: number, breaks: boolean) =>
+      `${breaks ? 'Breaks' : 'Changes'} in your code: ${count('en', n, { one: 'place', other: 'places' })}`,
+    more: (n: number) => `and ${num('en', n)} more`,
+    against: (label: string) => `Checked against ${label}, the version this code uses now.`,
+    onTokens: 'On tokens',
+    split: (fromTokens: number, byHand: number) =>
+      `${num('en', fromTokens)} from tokens · ${num('en', byHand)} written by hand`,
+    handTitle: 'Written by hand',
+    closest: 'closest',
+    usageTitle: 'Variables to update',
+    deprecated: (replacement?: string) => (replacement ? `deprecated, use ${replacement}` : 'deprecated'),
+    unknown: 'not a token in this version',
+    skipped: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} could not be read`,
+    clean: 'Nothing written by hand and no outdated variables.',
   },
 
   levels: { major: 'Breaking', minor: 'Minor', patch: 'Patch', none: 'No impact' } as LevelText,
@@ -432,6 +475,7 @@ export type Messages = typeof en
 
 const ruToken: Forms = { one: 'токен', few: 'токена', many: 'токенов', other: 'токена' }
 const ruChange: Forms = { one: 'изменение', few: 'изменения', many: 'изменений', other: 'изменения' }
+const ruPlace: Forms = { one: 'место', few: 'места', many: 'мест', other: 'места' }
 /** «удалён / удалены / удалено» after a number of tokens. */
 const ruDone = (one: string, few: string, many: string) => (n: number) =>
   `${num('ru', n)} ${plural('ru', n, { one, few, many, other: few })}`
@@ -541,7 +585,7 @@ const ru: Messages = {
     codeTitle: 'Ваш код остаётся в дизайн-системе',
     codeLead:
       'Для дизайнеров, которые собирают интерфейс в коде — сами или с агентом. dsgraph читает CSS, JSX и TSX, классы Tailwind, Vue и Svelte и показывает, какая доля значений взята из токенов, что вписано вручную и что написать вместо этого, а ещё — что сломает следующая версия дизайн-системы.',
-    codeOpen: 'Запустить на своём проекте →',
+    codeOpen: 'Проверить свой проект в Token Diff →',
     codeCaption:
       'Четыре компонента небольшого приложения на токенах из примера. dsgraph проверил их при сборке этого сайта; тот же отчёт дают dsgraph check --code, MCP-сервер и GitHub Action.',
     code: {
@@ -597,10 +641,53 @@ const ru: Messages = {
     example: 'Пример',
     swap: 'Поменять местами',
     compare: 'Сравнить',
-    progress: { start: 'Запуск…', reading: 'Чтение токенов…', comparing: 'Сравнение…' },
+    progress: {
+      start: 'Запуск…',
+      reading: 'Чтение токенов…',
+      comparing: 'Сравнение…',
+      code: 'Чтение вашего кода…',
+    },
     failed: 'Сравнить не удалось',
     privateHint: 'Если репозиторий приватный, добавьте токен GitHub.',
     shareTooBig: 'Файлы слишком большие для ссылки. Поделитесь отчётом в Markdown или JSON с изменениями.',
+  },
+
+  yourCode: {
+    title: 'Ваш код',
+    drop: 'Необязательно: перетащите папку проекта, чтобы увидеть, что этот релиз изменит в нём',
+    folder: 'Папка',
+    clear: 'Очистить',
+    clearAria: 'Убрать ваш код',
+    note: 'Читается в этой вкладке: никуда не загружается и не попадает в ссылки.',
+    read: (n: number) =>
+      `${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })} кода`,
+    summary: (breaks: number, looks: number, files: number) =>
+      breaks + looks === 0
+        ? 'Ваш код не использует изменённые токены.'
+        : `В вашем коде ${[
+            breaks ? `сломается: ${count('ru', breaks, ruPlace)}` : '',
+            looks ? `будет выглядеть иначе: ${count('ru', looks, ruPlace)}` : '',
+          ]
+            .filter(Boolean)
+            .join(
+              '; ',
+            )} (${count('ru', files, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}).`,
+    rowTitle: (n: number) => `Используется в вашем коде: ${count('ru', n, ruPlace)}`,
+    inCode: (n: number, breaks: boolean) =>
+      `${breaks ? 'Сломается' : 'Изменится'} в вашем коде: ${count('ru', n, ruPlace)}`,
+    more: (n: number) => `и ещё ${num('ru', n)}`,
+    against: (label: string) => `Проверено по ${label} — версии, которую код использует сейчас.`,
+    onTokens: 'На токенах',
+    split: (fromTokens: number, byHand: number) =>
+      `${num('ru', fromTokens)} из токенов · ${num('ru', byHand)} вручную`,
+    handTitle: 'Вписано вручную',
+    closest: 'ближайшее',
+    usageTitle: 'Переменные, которые нужно обновить',
+    deprecated: (replacement?: string) => (replacement ? `устарел, используйте ${replacement}` : 'устарел'),
+    unknown: 'такого токена нет в этой версии',
+    skipped: (n: number) =>
+      `не удалось прочитать: ${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}`,
+    clean: 'Ничего не вписано вручную, устаревших переменных нет.',
   },
 
   levels: { major: 'Ломающие', minor: 'Минорные', patch: 'Патч', none: 'Без последствий' },

@@ -1,14 +1,15 @@
-import type { Changeset, Finding, Level } from '@dsgraph/core'
+import type { ChangeImpact, Changeset, Finding, Level } from '@dsgraph/core'
 import { formatChangeset, formatSource, groupFindings } from '@dsgraph/report'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Messages } from '../i18n/messages'
 import { useT } from '../i18n/react'
 import type { CardData } from '../lib/card'
 import { publishedNote, verdictReason } from '../lib/explain'
-import type { SideInfo, TokenGraph } from '../lib/types'
+import type { CodeReport, SideInfo, TokenGraph } from '../lib/types'
 import { colorPairs, contextAxes, inContext, LEVELS, typeOfChange, view } from '../lib/view'
 import { CardDialog } from './CardDialog'
 import { ChangeDetail, ChangeRow } from './ChangeList'
+import { CodeReportView } from './CodeReportView'
 
 export interface Result {
   changeset: Changeset
@@ -18,6 +19,8 @@ export interface Result {
   findings: Finding[]
   /** References of each side, for the graph in the detail pane. */
   graph?: { base: TokenGraph; head: TokenGraph }
+  /** The user's code against this comparison, when they added it. */
+  code?: CodeReport | undefined
   ms: number
 }
 
@@ -87,6 +90,10 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   const rows = useMemo(() => LEVELS.flatMap((l) => (l === 'none' && folded ? [] : v.byLevel[l])), [v, folded])
   const current = rows.find((c) => c.id === selected) ?? rows[0]
   const affectedOf = (id: string) => [...new Set((v.propagatedBy.get(id) ?? []).map((p) => p.target))]
+  const sitesBy = useMemo(
+    () => new Map<string, ChangeImpact>((result.code?.impact.changes ?? []).map((c) => [c.change, c])),
+    [result.code],
+  )
   // Impact per token in the selected context, to mark changed tokens in the graph.
   const changed = useMemo(() => {
     const m = new Map<string, Level>()
@@ -108,7 +115,12 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
     setStatus(s)
     setTimeout(() => setStatus((x) => (x === s ? null : x)), 1800)
   }
-  const markdown = () => formatChangeset(cs, { format: 'markdown', types: result.types })
+  const markdown = () =>
+    formatChangeset(cs, {
+      format: 'markdown',
+      types: result.types,
+      ...(result.code ? { impact: result.code.impact } : {}),
+    })
   const fileBase = `${result.base.label}--${result.head.label}`.replace(/[^\w.@-]+/g, '_')
   const copyMarkdown = async () => {
     await navigator.clipboard.writeText(markdown())
@@ -300,6 +312,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
                         change={c}
                         type={typeOfChange(c, result.types)}
                         affected={affectedOf(c.id).length}
+                        sites={sitesBy.get(c.id)}
                         selected={c.id === current?.id}
                         onSelect={() => setSelected(c.id)}
                       />
@@ -319,6 +332,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
                   context={context}
                   changed={changed}
                   onPick={pick}
+                  sites={sitesBy.get(current.id)}
                 />
               )}
             </aside>
@@ -366,6 +380,8 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
         </footer>
       </div>
 
+      {result.code && <CodeReportView report={result.code} label={result.base.label} />}
+
       <Findings findings={result.findings} label={result.head.label} />
 
       {card && <CardDialog data={cardData} fileName={`${fileBase}.png`} onClose={() => setCard(false)} />}
@@ -412,6 +428,15 @@ export function Verdict({ result }: { result: Result }) {
         </p>
       )}
       {!empty && <p className="verdict__reason">{verdictReason(cs, t)}</p>}
+      {result.code && (
+        <p className={`verdict__code${result.code.impact.breaks ? ' verdict__code--breaks' : ''}`}>
+          {t.yourCode.summary(
+            result.code.impact.breaks,
+            result.code.impact.looksDifferent,
+            result.code.impact.files.length,
+          )}
+        </p>
+      )}
       {note && <p className={`verdict__note verdict__note--${note.tone}`}>{note.text}</p>}
     </header>
   )

@@ -1,4 +1,4 @@
-import type { Change, Level } from '@dsgraph/core'
+import type { Change, ChangeImpact, Level } from '@dsgraph/core'
 import { formatDelta, formatValue } from '@dsgraph/report'
 import type { Messages } from '../i18n/messages'
 import { useT } from '../i18n/react'
@@ -99,11 +99,13 @@ interface RowProps {
   change: Change
   type: string | null
   affected: number
+  /** Places in the user's code this change reaches. */
+  sites?: ChangeImpact | undefined
   selected: boolean
   onSelect: () => void
 }
 
-export function ChangeRow({ change: c, type, affected, selected, onSelect }: RowProps) {
+export function ChangeRow({ change: c, type, affected, sites, selected, onSelect }: RowProps) {
   const t = useT()
   const delta = typeof c.delta?.deltaEOK === 'number' ? `ΔE ${c.delta.deltaEOK.toLocaleString(t.lang)}` : ''
   return (
@@ -138,6 +140,14 @@ export function ChangeRow({ change: c, type, affected, selected, onSelect }: Row
         {affected > 0 && (
           <span className="tag" title={t.change.alsoChanges(affected)}>
             +{affected}
+          </span>
+        )}
+        {sites && (
+          <span
+            className={`tag tag--code${sites.effect === 'breaks' ? ' tag--danger' : ''}`}
+            title={t.yourCode.rowTitle(sites.sites.length)}
+          >
+            {'</>'} {sites.sites.length}
           </span>
         )}
         {delta && <span className="acc-text">{delta}</span>}
@@ -205,6 +215,8 @@ interface DetailProps {
   context?: Record<string, string>
   changed?: Map<string, Level>
   onPick?: ((id: string) => void) | undefined
+  /** Places in the user's code this change reaches. */
+  sites?: ChangeImpact | undefined
 }
 
 export function ChangeDetail({
@@ -216,6 +228,7 @@ export function ChangeDetail({
   context = {},
   changed = new Map(),
   onPick,
+  sites,
 }: DetailProps) {
   const t = useT()
   const m = t.change.meta
@@ -275,6 +288,24 @@ export function ChangeDetail({
           </div>
         ))}
       </dl>
+      {sites && (
+        <section className="affected affected--code">
+          <h4 className={sites.effect === 'breaks' ? 'is-danger' : undefined}>
+            {t.yourCode.inCode(sites.sites.length, sites.effect === 'breaks')}
+          </h4>
+          <ul>
+            {sites.sites.slice(0, 50).map((s) => (
+              <li key={`${s.file}:${s.line}:${s.column}:${s.text ?? s.name}`}>
+                <code>
+                  {s.file}:{s.line}
+                </code>{' '}
+                <code className="muted">{s.text ?? `var(${s.name})`}</code>
+              </li>
+            ))}
+            {sites.sites.length > 50 && <li className="muted">{t.yourCode.more(sites.sites.length - 50)}</li>}
+          </ul>
+        </section>
+      )}
       {sideGraph && linked && (
         <section className="affected">
           <h4>{t.change.graphTitle}</h4>

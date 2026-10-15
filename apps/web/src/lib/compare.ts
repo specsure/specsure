@@ -12,7 +12,16 @@ import {
 import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
-import type { GraphNode, RunRequest, RunResponse, SideInfo, SideInput, Stage, TokenGraph } from './types'
+import type {
+  CodeReport,
+  GraphNode,
+  RunRequest,
+  RunResponse,
+  SideInfo,
+  SideInput,
+  Stage,
+  TokenGraph,
+} from './types'
 import { cssColor, isColor } from './view'
 
 const CSS = /\.css$/i
@@ -144,6 +153,12 @@ export async function compare(
     progress('comparing')
     const changeset = await diff(b, h)
     const findings = await check(h)
+    let code: CodeReport | undefined
+    if (req.code?.length) {
+      progress('code')
+      const { checkCode } = await import('./code')
+      code = await checkCode(req.code, b, h, changeset)
+    }
     const types = new Map<string, string | null>()
     for (const t of [...b.tokens(), ...h.tokens()]) types.set(t.id, t.type)
     return {
@@ -155,6 +170,7 @@ export async function compare(
       head: info(h, labelOf(head, h)),
       findings,
       graph: { base: graphOf(b), head: graphOf(h) },
+      ...(code ? { code } : {}),
       ms: Math.round(performance.now() - started),
     }
   } catch (err) {

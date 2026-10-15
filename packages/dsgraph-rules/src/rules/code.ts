@@ -191,7 +191,7 @@ export const deprecatedUsage: Rule = {
       report({
         message: `"${u.text ?? u.name}" is deprecated${replacement ? `; use "${replacement}"` : ''}`,
         nodes: [t.id],
-        evidence: { reason: t.deprecated.reason, replacement, property: u.property },
+        evidence: { name: u.text ?? u.name, reason: t.deprecated.reason, replacement, property: u.property },
         loc: locOf(u),
       })
     }
@@ -212,7 +212,7 @@ export const unknownToken: Rule = {
       report({
         message: `"${u.text ?? u.name}" is not a token${u.fallback ? `; the fallback "${u.fallback}" is used instead` : ''}`,
         nodes: [],
-        evidence: { property: u.property, fallback: u.fallback },
+        evidence: { name: u.text ?? u.name, property: u.property, fallback: u.fallback },
         loc: locOf(u),
       })
     }

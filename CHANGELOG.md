@@ -3,6 +3,15 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+- Token Diff 1.1 on the site: an optional **Your code** row takes a project folder, read in the
+  browser. The result says how many places in the code break or look different, marks the changes
+  that reach the code, lists those places in each change's details and in the Markdown, and adds a
+  **Your code** window: how much of it is on tokens, values written by hand with what to write
+  instead, deprecated and unknown variables. The script parser loads only when code is added.
+- Usage findings carry the name as written (`evidence.name`).
+
 ## 0.5.0 — 2026-10-15
 
 dsgraph reads the whole front end, not only stylesheets: JSX and TSX, Tailwind classes, CSS-in-JS,

@@ -376,7 +376,7 @@ button.ghost:disabled {
   min-height: 40px;
 }
 .source__label {
-  width: 52px;
+  width: 64px;
   flex: none;
   color: var(--ink-3);
   font: var(--text-body);
@@ -1637,5 +1637,157 @@ a.launcher__row:focus-visible .launcher__go {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* Your code: share on tokens, values written by hand, what breaks (home figure and Token Diff). */
+.code-figure__window {
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+.code-figure__meter {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-2) var(--space-2);
+}
+.code-figure__label {
+  color: var(--ink-2);
+  font: var(--text-body-strong);
+}
+.code-figure__pct {
+  color: var(--ink);
+  font: 600 20px / 24px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.code-figure__bar {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+.code-figure__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--success);
+}
+.code-figure__split {
+  grid-column: 1 / -1;
+  color: var(--ink-3);
+  font: var(--text-label);
+}
+.code-figure__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.code-figure__row {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-md);
+}
+.code-figure__where {
+  color: var(--ink-3);
+  font: var(--text-label);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.code-figure__fix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+.code-figure__was,
+.code-figure__use {
+  font: var(--text-code);
+  overflow-wrap: anywhere;
+}
+.code-figure__was {
+  color: var(--ink-2);
+}
+.code-figure__was--broken {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--danger) 60%, transparent);
+}
+.code-figure__use {
+  color: var(--ink);
+}
+.code-figure__arrow,
+.code-figure__note {
+  color: var(--ink-3);
+  font: var(--text-label);
+}
+@media (max-width: 560px) {
+  .code-figure__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.code-report__title {
+  margin: 0;
+  padding: var(--space-2) var(--space-2) 0;
+  color: var(--ink);
+  font: var(--text-body-strong);
+}
+.code-report__clean {
+  margin: 0;
+  padding: var(--space-2);
+  color: var(--ink-2);
+  font: var(--text-body);
+}
+.code-report__section--warn {
+  color: var(--warning);
+}
+.source--code .source__files .muted {
+  text-wrap: pretty;
+}
+.verdict__code {
+  max-width: 640px;
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+  font: 500 14px / 20px var(--font-ui);
+}
+.verdict__code--breaks {
+  color: var(--danger);
+}
+.tag--code {
+  font-family: var(--font-mono);
+}
+.affected--code h4.is-danger {
+  color: var(--danger);
+}
+.affected--code li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+/* Paths in a project are long: one column for all rows, as wide as the longest path up to 45%. */
+.code-report .code-figure__rows {
+  display: grid;
+  grid-template-columns: fit-content(45%) minmax(0, 1fr);
+}
+.code-report .code-figure__row {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+.code-report .code-figure__where {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 560px) {
+  .code-report .code-figure__rows {
+    display: block;
+  }
+  .code-report .code-figure__row {
+    grid-template-columns: 1fr;
   }
 }
