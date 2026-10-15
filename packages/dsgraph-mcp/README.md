@@ -30,7 +30,7 @@ The argument is the default source: a folder or file, `npm:@scope/tokens@2` or `
 
 | Tool | What it answers |
 |---|---|
-| `find_token` | Which token holds this color, size, duration or font weight? Exact matches first, semantic tokens before the primitives they point to; otherwise the closest values (colors by ΔE, sizes in px across px and rem) |
+| `find_token` | Which token holds this color, size, duration or font weight? Exact matches first: with `property` (`color`, `background-color`, `border-color`), the tokens made for it, then semantic tokens before the primitives they point to; otherwise the closest values (colors by ΔE, sizes in px across px and rem) |
 | `get_token` | One token: its value in every theme, the references it takes the value from, the tokens that use it, description, deprecation, file |
 | `search_tokens` | Tokens by part of the name or a glob (`color.text.*`) and by type, with their values |
 | `describe_tokens` | An overview: tokens per type, themes and other modes, top-level groups, files |

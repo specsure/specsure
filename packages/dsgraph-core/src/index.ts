@@ -7,6 +7,7 @@ export {
   formatCoverage,
   type NearestToken,
   nearestTokens,
+  roleOfProperty,
   type StyleLiteral,
   type TokenUse,
   VarMatcher,

@@ -92,6 +92,44 @@ describe('the spacing scale', () => {
   })
 })
 
+describe('the token for a color written by hand', () => {
+  it('is the one made for the property: text for color, background for background, border for border-color', async () => {
+    const blue = srgb(0.035, 0.412, 0.855)
+    const tree = {
+      base: { $type: 'color', blue: { $value: blue } },
+      // The control token is a component token with the longest chain: general tokens come first.
+      control: { $type: 'color', checked: { borderColor: { $value: '{borderColor.accent}' } } },
+      borderColor: { $type: 'color', accent: { $value: '{base.blue}' } },
+      fgColor: { $type: 'color', accent: { $value: '{base.blue}' } },
+      bgColor: { $type: 'color', accent: { $value: '{base.blue}' } },
+    }
+    const graph = DsGraph.from(
+      await buildSnapshot(systemFromDocuments([{ file: 't.tokens.json', tree }]), {
+        diagnostics: new DiagnosticBag(),
+      }),
+    )
+    const value = lit(0.035, 0.412, 0.855)
+    const fs = await check(graph, {}, [], {
+      code: {
+        files: ['a.css'],
+        skipped: [],
+        uses: [],
+        literals: [
+          { ...at(1), property: 'color', text: '#0969da', type: 'color', value },
+          { ...at(2), property: 'background-color', text: '#0969da', type: 'color', value },
+          { ...at(3), property: 'border-color', text: '#0969da', type: 'color', value },
+        ],
+      },
+    })
+    expect(
+      fs
+        .filter((f) => f.rule === 'style/hardcoded-color')
+        .map((f) => `${f.loc?.line} ${(f.evidence as { token: string }).token}`)
+        .sort(),
+    ).toEqual(['1 fgColor.accent', '2 bgColor.accent', '3 borderColor.accent'])
+  })
+})
+
 describe('rules on code', () => {
   it('stay silent without code', async () => {
     const fs = await check(await system())

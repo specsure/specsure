@@ -215,17 +215,61 @@ export interface NearestToken {
   exact: boolean
 }
 
+/** What a token is for, by words in its name: text, a background, a border or outline, a shadow. */
+const ROLES = {
+  text: /(^|\.)(fg|foreground|text|ink|content|on|link|icon)(\.|$)/,
+  background: /(^|\.)(bg|background|surface|canvas|fill|container|layer|backdrop)(\.|$)/,
+  border: /(^|\.)(border|stroke|outline|divider|separator|ring)(\.|$)/,
+  shadow: /(^|\.)(shadow|elevation)(\.|$)/,
+} as const
+type Role = keyof typeof ROLES
+
+/** The role a CSS property's value plays: `color` is text, `background-color` a background. */
+export function roleOfProperty(property: string): Role | undefined {
+  const p = property.toLowerCase()
+  if (/^(color|caret-color|-webkit-text-fill-color|text-decoration-color|text-emphasis-color)$/.test(p))
+    return 'text'
+  if (/^background(-color)?$|^(fill)$/.test(p)) return 'background'
+  if (
+    /^(border|outline|column-rule)(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?$|^stroke$/.test(
+      p,
+    )
+  )
+    return 'border'
+  if (/shadow$/.test(p)) return 'shadow'
+  return undefined
+}
+
+const segments = (id: string) => id.split('.').length
+
 /**
- * Tokens nearest to a value in one context. Deprecated ones go last; among equally close tokens,
- * the ones that reference another token (semantic tokens, which follow themes) come before the
- * primitives that hold the value.
+ * How well a token's name says it is made for the role: 2 when the name starts with it (`bgColor.*`,
+ * a general token), 1 when it says so further on (`selection.bgColor`), -1 when it names another
+ * role, else 0.
+ */
+function roleScore(id: string, role: Role | undefined): number {
+  if (!role) return 0
+  const name = normalizeName(id)
+  if (ROLES[role].test(name.split('.')[0]!)) return 2
+  if (ROLES[role].test(name)) return 1
+  return (Object.keys(ROLES) as Role[]).some((r) => r !== role && ROLES[r].test(name)) ? -1 : 0
+}
+
+/**
+ * Tokens nearest to a value in one context. Deprecated ones go last. Among exact matches, tokens
+ * made for the property's role come first (`fgColor.accent` for `color`, not `borderColor.accent`).
+ * Among equally close tokens, the ones that reference another token (semantic tokens, which follow
+ * themes) come before the primitives that hold the value; then general tokens before component ones
+ * (`fgColor.accent` before `button.outline.fgColor.rest`), and the one others build on first.
  */
 export function nearestTokens(
   graph: DsGraph,
   parsed: { type: string; value: unknown },
   input: Input,
   limit: number,
+  property?: string,
 ): NearestToken[] {
+  const role = property ? roleOfProperty(property) : undefined
   const types = COMPATIBLE[parsed.type] ?? [parsed.type]
   const out: NearestToken[] = []
   const depth = new Map<NearestToken, number>()
@@ -243,8 +287,11 @@ export function nearestTokens(
     .sort(
       (a, b) =>
         Number(a.token.deprecated !== null) - Number(b.token.deprecated !== null) ||
+        (a.exact && b.exact ? roleScore(b.token.id, role) - roleScore(a.token.id, role) : 0) ||
         a.distance - b.distance ||
-        depth.get(b)! - depth.get(a)! ||
+        Number(depth.get(b)! > 1) - Number(depth.get(a)! > 1) ||
+        segments(a.token.id) - segments(b.token.id) ||
+        depth.get(a)! - depth.get(b)! ||
         a.token.id.localeCompare(b.token.id),
     )
     .slice(0, limit)

@@ -4,6 +4,7 @@ import {
   type NearestToken,
   nearestTokens,
   normalizeName,
+  roleOfProperty,
   type StyleLiteral,
   type Token,
 } from '@dsgraph/core'
@@ -90,7 +91,13 @@ function scaleOf(graph: DsGraph, property: string, cache: Map<RegExp, Token[]>):
 }
 
 function nearestIn(graph: DsGraph, l: StyleLiteral, among?: Set<string>): NearestToken | undefined {
-  const all = nearestTokens(graph, { type: l.type, value: l.value }, graph.defaultInput(), among ? 10_000 : 1)
+  const all = nearestTokens(
+    graph,
+    { type: l.type, value: l.value },
+    graph.defaultInput(),
+    among ? 10_000 : 1,
+    l.property,
+  )
   return among ? all.find((m) => among.has(m.token.id)) : all[0]
 }
 
@@ -104,7 +111,8 @@ export const hardcodedColor: Rule = {
     const memo = new Map<string, NearestToken | undefined>()
     for (const l of code.literals) {
       if (l.type !== 'color' || skip(l)) continue
-      const key = l.text.toLowerCase()
+      // The same color may want different tokens: text for `color`, background for `background`.
+      const key = `${roleOfProperty(l.property) ?? ''}\u0000${l.text.toLowerCase()}`
       if (!memo.has(key)) memo.set(key, nearestIn(graph, l))
       const near = memo.get(key)
       if (!near) continue

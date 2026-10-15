@@ -122,13 +122,19 @@ export function createServer(opts: ServerOptions): McpServer {
           .enum(['color', 'dimension', 'duration', 'number', 'fontWeight', 'fontFamily', 'cubicBezier'])
           .optional()
           .describe('Token type, when the value alone is ambiguous'),
+        property: z
+          .string()
+          .optional()
+          .describe(
+            'The CSS property the value is for, e.g. "color", "background-color", "border-color". Pass it when you know it: tokens made for it come first (text tokens for color, background tokens for a background).',
+          ),
         context: CONTEXT,
         limit: z.number().int().min(1).max(25).optional().describe('How many tokens to return (default 5)'),
         source: SOURCE,
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ value, type, context, limit, source }) => {
+    async ({ value, type, property, context, limit, source }) => {
       const parsed = parseValue(value, type)
       if (!parsed)
         return failure(
@@ -138,7 +144,7 @@ export function createServer(opts: ServerOptions): McpServer {
       const input = inputOf(graph, context)
       // Tokens with the same value are one choice: grouped, so the list shows different values.
       const groups: Array<{ value: string; matches: ReturnType<typeof nearest> }> = []
-      for (const m of nearest(graph, parsed, input, 500)) {
+      for (const m of nearest(graph, parsed, input, 500, property)) {
         const key = formatValue(m.token.type, m.value)
         const g = groups.find((x) => x.value === key)
         if (g) g.matches.push(m)
