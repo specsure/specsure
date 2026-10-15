@@ -9,6 +9,7 @@ export {
   literalsIn,
   type StylesOptions,
   scanCssText,
+  scanSassText,
   scanStyles,
   varsIn,
 } from './styles.js'

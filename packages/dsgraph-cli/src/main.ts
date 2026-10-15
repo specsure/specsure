@@ -49,7 +49,7 @@ Options
       --max-warnings <n>          check: exit 1 when warnings exceed n
       --expand                    check: list every finding instead of collapsing repeated ones
       --code <dir>                your project: check its code against the tokens (check), or show
-                                  where the changes reach into it (diff). CSS, SCSS, CSS modules,
+                                  where the changes reach into it (diff). CSS, SCSS, Sass, CSS modules,
                                   JS/TS/JSX/TSX (style objects, CSS-in-JS, Tailwind classes),
                                   Vue, Svelte, Astro, HTML
   -h, --help                      show help

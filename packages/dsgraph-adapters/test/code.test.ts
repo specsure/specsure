@@ -162,6 +162,42 @@ describe('scanCode', () => {
   })
 })
 
+describe('Sass and decorators', () => {
+  const app = new MemorySource({
+    'app/menu.sass': [
+      '// Menu',
+      '.menu',
+      '  box-shadow: var(--shadow-floating-legacy)',
+      '  &:hover',
+      '    color: #333',
+      '  /* padding: var(--old-space)',
+      '     still a comment */',
+      '  :margin 12px',
+      '  $gap: var(--space-sm)',
+    ].join('\n'),
+    'app/menu.component.ts': [
+      "@Component({ selector: 'op-menu', styleUrls: ['./menu.sass'] })",
+      'export class MenuComponent {',
+      "  @Input() color = 'var(--fgColor-default)'",
+      '}',
+    ].join('\n'),
+  })
+
+  it('reads indented Sass line by line and TypeScript with decorators', async () => {
+    const index = await scanCode(app)
+    expect(index.skipped).toEqual([])
+    expect(index.uses.map((u) => `${u.file}:${u.line} ${u.name}`).sort()).toEqual([
+      'app/menu.component.ts:3 --fgColor-default',
+      'app/menu.sass:3 --shadow-floating-legacy',
+      'app/menu.sass:9 --space-sm',
+    ])
+    expect(index.literals.map((l) => `${l.file}:${l.line} ${l.property} ${l.text}`).sort()).toEqual([
+      'app/menu.sass:5 color #333',
+      'app/menu.sass:8 margin 12px',
+    ])
+  })
+})
+
 describe('Tailwind themes as tokens', () => {
   const graphOf = async (css: string) =>
     DsGraph.from(await scan(new MemorySource({ 'app/globals.css': css }), {}, { adapters: [cssTokens] }))

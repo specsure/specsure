@@ -19,7 +19,7 @@ export interface StylesOptions {
   exclude?: string[]
 }
 
-const DEFAULT_INCLUDE = ['**/*.css', '**/*.scss']
+const DEFAULT_INCLUDE = ['**/*.css', '**/*.scss', '**/*.sass']
 const DEFAULT_EXCLUDE = [
   '**/node_modules/**',
   '**/.git/**',
@@ -206,8 +206,49 @@ export function scanCssText(file: string, text: string, index: CodeIndex, opts: 
   })
 }
 
+// Indented Sass: a declaration is `property: value` (or the old `:property value`) on its own line.
+const SASS_DECL = /^\s*(--[\w-]+|\$?[a-z][\w-]*)\s*:\s+(.*?)\s*;?\s*$/i
+const SASS_OLD_DECL = /^\s*:([a-z][\w-]*)\s+(.*?)\s*$/i
+
 /**
- * Reads a project's style files (CSS, SCSS, CSS modules). `scanCode` reads scripts and markup too.
+ * Reads indented Sass (`.sass`): each declaration line is read as SCSS at its own line, so a line
+ * the reader cannot make sense of is skipped, not the file. Selectors are not kept.
+ */
+export function scanSassText(
+  file: string,
+  text: string,
+  index: CodeIndex,
+  opts: { line?: number } = {},
+): void {
+  const offset = (opts.line ?? 1) - 1
+  let comment = false
+  text.split('\n').forEach((raw, i) => {
+    let line = raw
+    if (comment) {
+      const end = line.indexOf('*/')
+      if (end < 0) return
+      comment = false
+      line = line.slice(end + 2)
+    }
+    line = line.replace(/\/\*.*?\*\//g, '')
+    const start = line.indexOf('/*')
+    if (start >= 0) {
+      comment = true
+      line = line.slice(0, start)
+    }
+    line = line.replace(/(^|\s)\/\/.*$/, '')
+    const m = SASS_DECL.exec(line) ?? SASS_OLD_DECL.exec(line)
+    if (!m?.[2]) return
+    try {
+      scanCssText(file, `${m[1]}: ${m[2]};`, index, { scss: true, declarations: true, line: i + 1 + offset })
+    } catch {
+      // Not a declaration after all.
+    }
+  })
+}
+
+/**
+ * Reads a project's style files (CSS, SCSS, Sass, CSS modules). `scanCode` reads scripts and markup too.
  */
 export async function scanStyles(source: Source, opts: StylesOptions = {}): Promise<CodeIndex> {
   const exclude = [...DEFAULT_EXCLUDE, ...(opts.exclude ?? [])]
@@ -218,7 +259,9 @@ export async function scanStyles(source: Source, opts: StylesOptions = {}): Prom
   const index: CodeIndex = { files: [], uses: [], literals: [], skipped: [] }
   for (const file of files) {
     try {
-      scanCssText(file, await source.readText(file), index, { scss: /\.scss$/i.test(file) })
+      const text = await source.readText(file)
+      if (/\.sass$/i.test(file)) scanSassText(file, text, index)
+      else scanCssText(file, text, index, { scss: /\.scss$/i.test(file) })
       index.files.push(file)
     } catch (e) {
       index.skipped.push({ file, message: (e as Error).message })

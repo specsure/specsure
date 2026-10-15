@@ -1,6 +1,6 @@
 import { type CodeIndex, matchGlob, prefetch, type Source } from '@dsgraph/core'
 import { scanScriptText } from './scripts.js'
-import { scanCssText } from './styles.js'
+import { scanCssText, scanSassText } from './styles.js'
 
 export interface CodeOptions {
   /** Globs of files to read; default every style, script and markup file. */
@@ -12,7 +12,7 @@ export interface CodeOptions {
 
 /** Every style, script and markup file. */
 export const CODE_INCLUDE = [
-  '**/*.{css,scss}',
+  '**/*.{css,scss,sass}',
   '**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}',
   '**/*.{vue,svelte,astro,html}',
 ]
@@ -76,7 +76,8 @@ export function scanMarkupText(file: string, text: string, index: CodeIndex): vo
   }
   for (const m of text.matchAll(/<style\b([^>]*)>([\s\S]*?)<\/style>/gi)) {
     const at = m.index + m[0].indexOf('>') + 1
-    scanCssText(file, m[2]!, index, { scss: /lang=["']?s[ac]ss/i.test(m[1]!), line: lineAt(text, at) })
+    if (/lang=["']?sass/i.test(m[1]!)) scanSassText(file, m[2]!, index, { line: lineAt(text, at) })
+    else scanCssText(file, m[2]!, index, { scss: /lang=["']?scss/i.test(m[1]!), line: lineAt(text, at) })
     blank(m.index, m.index + m[0].length)
   }
 
@@ -117,6 +118,7 @@ export function scanMarkupText(file: string, text: string, index: CodeIndex): vo
 /** Reads one file of any supported kind into an index. Throws when it does not parse. */
 export function scanFileText(file: string, text: string, index: CodeIndex): void {
   if (/\.s?css$/i.test(file)) scanCssText(file, text, index, { scss: /\.scss$/i.test(file) })
+  else if (/\.sass$/i.test(file)) scanSassText(file, text, index)
   else if (/\.(vue|svelte|astro|html?)$/i.test(file)) scanMarkupText(file, text, index)
   else
     scanScriptText(file, text, index, {

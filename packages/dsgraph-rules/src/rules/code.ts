@@ -70,18 +70,20 @@ const FAMILIES: Array<{ property: RegExp; names: RegExp; strict: boolean }> = [
   },
 ]
 
+const NOT_SPACING = /(^|\.)(line|letter|border|outline|breakpoint)(\.|$)/
+
 function scaleOf(graph: DsGraph, property: string, cache: Map<RegExp, Token[]>): Token[] {
   const family = FAMILIES.find((f) => f.property.test(property))!
   let tokens = cache.get(family.names)
   if (!tokens) {
     const all = graph.tokens({ type: 'dimension' })
-    const named = all.filter((t) => family.names.test(normalizeName(t.id)))
-    // Without spacing tokens, any dimension may be the scale, but not a radius or a font size.
-    const others = FAMILIES.filter((f) => f.strict).map((f) => f.names)
-    tokens =
-      named.length || family.strict
-        ? named
-        : all.filter((t) => !others.some((re) => re.test(normalizeName(t.id))))
+    // Spacing is never a radius, a font size, a line height or a border: `text.title.size` and
+    // `control.lineBoxHeight` carry spacing words but are not spacing.
+    const others = [...FAMILIES.filter((f) => f.strict).map((f) => f.names), NOT_SPACING]
+    const other = (t: Token) => !family.strict && others.some((re) => re.test(normalizeName(t.id)))
+    const named = all.filter((t) => family.names.test(normalizeName(t.id)) && !other(t))
+    // Without spacing tokens, any other dimension may be the scale.
+    tokens = named.length || family.strict ? named : all.filter((t) => !other(t))
     cache.set(family.names, tokens)
   }
   return tokens

@@ -185,7 +185,7 @@ const en = {
     groupProduct: 'Your product · optional',
     kinds: { files: 'Folder', github: 'GitHub' },
     drop: 'Drop the folder of an app that uses these tokens',
-    formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
+    formats: 'CSS, SCSS, Sass, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
     limited: (read: number, total: number) =>
       `${num('en', read)} of ${count('en', total, { one: 'file', other: 'files' })} of code read`,
     folder: 'Choose',
@@ -701,7 +701,7 @@ const ru: Messages = {
     groupProduct: 'Ваш продукт · необязательно',
     kinds: { files: 'Папка', github: 'GitHub' },
     drop: 'Перетащите папку приложения, которое использует эти токены',
-    formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
+    formats: 'CSS, SCSS, Sass, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
     limited: (read: number, total: number) =>
       `прочитано ${num('ru', read)} из ${count('ru', total, { one: 'файла', few: 'файлов', many: 'файлов', other: 'файлов' })} кода`,
     folder: 'Выбрать',

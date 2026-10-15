@@ -62,6 +62,36 @@ const lines = (fs: Awaited<ReturnType<typeof check>>, prefix: string) =>
     .map((f) => `${f.loc?.file}:${f.loc?.line} ${f.severity} ${f.message}`)
     .sort()
 
+describe('the spacing scale', () => {
+  it('leaves out font sizes, line heights and borders that carry spacing words', async () => {
+    const tree = {
+      text: { $type: 'dimension', subtitle: { size: { $value: px(20) } } },
+      control: {
+        $type: 'dimension',
+        medium: { lineBoxHeight: { $value: px(20) }, gap: { $value: px(12) } },
+      },
+      border: { $type: 'dimension', size: { thick: { $value: px(20) } } },
+      stack: { $type: 'dimension', gap: { large: { $value: px(24) } } },
+    }
+    const graph = DsGraph.from(
+      await buildSnapshot(systemFromDocuments([{ file: 't.tokens.json', tree }]), {
+        diagnostics: new DiagnosticBag(),
+      }),
+    )
+    const fs = await check(graph, {}, [], {
+      code: {
+        files: ['a.sass'],
+        skipped: [],
+        uses: [],
+        literals: [{ ...at(1), property: 'margin', text: '20px', type: 'dimension', value: px(20) }],
+      },
+    })
+    expect(
+      fs.filter((f) => f.rule === 'style/off-scale').map((f) => (f.evidence as { token: string }).token),
+    ).toEqual(['stack.gap.large'])
+  })
+})
+
 describe('rules on code', () => {
   it('stay silent without code', async () => {
     const fs = await check(await system())

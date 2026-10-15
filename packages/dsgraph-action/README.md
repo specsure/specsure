@@ -42,7 +42,7 @@ For a repository that publishes its tokens to npm, compare the pull request with
 
 ### With the code that uses the tokens
 
-When the tokens and an app live in one repository, point `code` at the app. The comment then lists, under each change, the places in its code that break or look different (CSS, SCSS, JSX/TSX with style objects, CSS-in-JS and Tailwind classes, Vue, Svelte, Astro, HTML), checks the files the pull request touches and says how much of the code is on tokens: colors and sizes written by hand, with the token to use, and design-system variables that are deprecated or gone.
+When the tokens and an app live in one repository, point `code` at the app. The comment then lists, under each change, the places in its code that break or look different (CSS, SCSS, Sass, JSX/TSX with style objects, CSS-in-JS and Tailwind classes, Vue, Svelte, Astro, HTML), checks the files the pull request touches and says how much of the code is on tokens: colors and sizes written by hand, with the token to use, and design-system variables that are deprecated or gone.
 
 ```yaml
       - uses: specsure/dsgraph-action@v1

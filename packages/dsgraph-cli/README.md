@@ -20,7 +20,7 @@ Sources: folders, single files (`.json`, `.tokens`, `.css`, `.resolver.json`), `
 
 ## Your code
 
-`--code <dir>` reads the project that uses the tokens: CSS, SCSS and CSS modules; JS, TS, JSX and TSX (style objects, CSS-in-JS, Tailwind classes in `className`, `cn()`, `clsx()`, `cva()`); Vue, Svelte, Astro and HTML:
+`--code <dir>` reads the project that uses the tokens: CSS, SCSS, Sass and CSS modules; JS, TS, JSX and TSX (style objects, CSS-in-JS, Tailwind classes in `className`, `cn()`, `clsx()`, `cva()`); Vue, Svelte, Astro and HTML:
 
 ```bash
 npx @dsgraph/cli diff npm:@acme/tokens@1 npm:@acme/tokens@2 --code ./src

@@ -20,7 +20,7 @@ const TOKENS: Profile = {
 }
 
 const CODE: Profile = {
-  file: /\.(css|scss|js|jsx|mjs|cjs|ts|tsx|mts|cts|vue|svelte|astro|html?)$/i,
+  file: /\.(css|scss|sass|js|jsx|mjs|cjs|ts|tsx|mts|cts|vue|svelte|astro|html?)$/i,
   skipDir:
     /^(node_modules|\.git|dist|build|out|\.next|\.nuxt|\.svelte-kit|\.astro|\.turbo|\.vercel|\.output|coverage|storybook-static|vendor)$/,
   maxBytes: 500_000,

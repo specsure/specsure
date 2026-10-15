@@ -83,7 +83,8 @@ export interface ScriptOptions {
  * Throws when the script does not parse.
  */
 export function scanScriptText(file: string, text: string, index: CodeIndex, opts: ScriptOptions = {}): void {
-  const plugins: Array<'jsx' | 'typescript'> = []
+  // Decorators (`@Component` in Angular, MobX, NestJS) are common in the wild; the legacy form is what TS writes.
+  const plugins: Array<'jsx' | 'typescript' | 'decorators-legacy'> = ['decorators-legacy']
   if (opts.jsx) plugins.push('jsx')
   if (opts.typescript) plugins.push('typescript')
   const ast = parse(text, { sourceType: 'unambiguous', errorRecovery: true, plugins }) as unknown as Node
