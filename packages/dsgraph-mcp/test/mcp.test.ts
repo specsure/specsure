@@ -105,9 +105,9 @@ describe('dsgraph MCP server', () => {
       css: '.card {\n  color: #3366ff;\n  padding: 15px;\n  margin: 16px;\n}',
     })
     expect(isError).toBe(false)
-    expect(text).toContain('Color "#3366ff" in color is written by hand; use "color-accent"')
-    expect(text).toContain('"15px" in padding is off the scale; closest is "space-md" (16px)')
-    expect(text).toContain('"16px" in margin is on the scale; use "space-md"')
+    expect(text).toContain('Color `#3366ff` in color is written by hand; use `color-accent`')
+    expect(text).toContain('`15px` in padding is off the scale; closest is `space-md` (16px)')
+    expect(text).toContain('`16px` in margin is on the scale; use `space-md`')
     expect((await call('check_styles', { css: '.a { color: var(--color-text) }' })).text).toMatch(
       /^No problems/,
     )
@@ -129,9 +129,9 @@ describe('dsgraph MCP server', () => {
     expect(text).toMatch(
       /^On tokens: 25% of the design values in the code \(1 from tokens, 3 written by hand\)\./,
     )
-    expect(text).toContain('"bg-[#3366ff]" writes a color by hand; use "bg-accent" (token "color-accent")')
+    expect(text).toContain('`bg-[#3366ff]` writes a color by hand; use `bg-accent` (token `color-accent`)')
     expect(text).toContain(
-      '"p-[15px]" is off the scale; closest is "p-(--space-md)" (token "space-md", 16px)',
+      '`p-[15px]` is off the scale; closest is `p-(--space-md)` (token `space-md`, 16px)',
     )
   })
 })

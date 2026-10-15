@@ -20,7 +20,7 @@ import { NodeFsSource } from '@dsgraph/sources/node'
 import { loadGraph } from './sources.js'
 import { installedVersion } from './upgrade.js'
 
-export const VERSION = '0.6.0'
+export const VERSION = '0.6.1'
 
 const HELP = `dsgraph ${VERSION} — design-token graph: scan, check and diff
 

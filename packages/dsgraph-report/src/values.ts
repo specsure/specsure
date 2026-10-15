@@ -107,10 +107,18 @@ export function formatDelta(delta: Record<string, unknown> | undefined): string 
   return parts.join(', ')
 }
 
+const SHA = /^[0-9a-f]{40}$/i
+/** A branch or tag with its commit, `main (7c970d9)`; a commit once and short. */
+const refOf = (ref: string | undefined, commit?: string): string =>
+  !ref
+    ? (commit?.slice(0, 7) ?? 'HEAD')
+    : SHA.test(ref)
+      ? ref.slice(0, 7)
+      : `${ref}${commit && commit !== ref ? ` (${commit.slice(0, 7)})` : ''}`
+
 export function formatSource(s: SourceMeta): string {
   if (s.kind === 'npm') return `npm:${s.package}@${s.version}`
-  if (s.kind === 'github')
-    return `github:${s.repo}${s.path ? `/${s.path}` : ''}@${s.ref}${s.commit ? ` (${s.commit.slice(0, 7)})` : ''}`
+  if (s.kind === 'github') return `github:${s.repo}${s.path ? `/${s.path}` : ''}@${refOf(s.ref, s.commit)}`
   if (s.path) return s.path
   return s.kind
 }

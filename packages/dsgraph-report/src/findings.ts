@@ -4,7 +4,6 @@ import { formatWhen } from './values.js'
 
 const ICON: Record<Severity, string> = { error: '✖', warning: '▲', info: '•' }
 
-/** Findings of one rule whose messages differ only in quoted values (`Color "…" is a string`). */
 /** `file:line` when a finding points into code, the file alone otherwise. */
 const where = (loc: NonNullable<Finding['loc']>): string => `${loc.file}${loc.line ? `:${loc.line}` : ''}`
 
@@ -52,6 +51,27 @@ function restoreShared(messages: string[]): string {
   })
 }
 
+/**
+ * The group's message with the quoted values that differ listed in their place, up to `max` of them:
+ * `"10px", "2px" in padding is off the scale`. Numbers that differ stay masked.
+ */
+function listed(g: FindingGroup, max = 3): string {
+  const messages = g.findings.map((f) => f.message)
+  const parts = messages.map((m) => m.match(VARIABLE) ?? [])
+  let i = 0
+  return messages[0]!.replace(VARIABLE, (q) => {
+    const k = i++
+    const values = [...new Set(parts.map((ps) => ps[k] ?? ''))]
+    if (values.length === 1) return q
+    if (!q.startsWith('"')) return mask(q)
+    return `${values.slice(0, max).join(', ')}${values.length > max ? ` and ${values.length - max} more` : ''}`
+  })
+}
+
+/** Markdown: quoted values as code, so a color alone in backticks gets GitHub's swatch. */
+const quotedAsCode = (s: string) => s.replace(/"([^"`]*)"/g, '`$1`')
+const quotedAsHtml = (s: string) => escapeHtml(s).replace(/"([^"]*)"/g, '<code>$1</code>')
+
 /** What tells one finding of a group from another: its token, else the quoted values of its message. */
 export function findingLabel(f: Finding): string {
   const subject = f.nodes[0] ?? f.message.match(QUOTED)?.join(' ') ?? f.message
@@ -92,7 +112,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
     if (!grouped) {
       const rows = findings.map(
         (f) =>
-          `| ${ICON[f.severity]} ${f.severity} | \`${f.rule}\` | ${cell(f.message)}${formatWhen(f.when)} | ${f.loc?.file ? `\`${where(f.loc)}\`` : ''} |`,
+          `| ${ICON[f.severity]} ${f.severity} | \`${f.rule}\` | ${cell(quotedAsCode(f.message))}${formatWhen(f.when)} | ${f.loc?.file ? `\`${where(f.loc)}\`` : ''} |`,
       )
       return `${head}| | Rule | Finding | File |\n|---|---|---|---|\n${rows.join('\n')}\n`
     }
@@ -100,7 +120,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
     const max = opts.maxListed ?? 50
     const rows = groups.map(
       (g) =>
-        `| ${ICON[g.severity]} ${g.severity} | \`${g.rule}\` | ${g.findings.length} | ${cell(g.pattern)}${g.findings.length === 1 ? formatWhen(g.findings[0]!.when) : ''} | ${g.findings.length === 1 && g.findings[0]!.loc?.file ? `\`${where(g.findings[0]!.loc)}\`` : g.file ? `\`${g.file}\`` : ''} |`,
+        `| ${ICON[g.severity]} ${g.severity} | \`${g.rule}\` | ${g.findings.length} | ${cell(quotedAsCode(listed(g)))}${g.findings.length === 1 ? formatWhen(g.findings[0]!.when) : ''} | ${g.findings.length === 1 && g.findings[0]!.loc?.file ? `\`${where(g.findings[0]!.loc)}\`` : g.file ? `\`${g.file}\`` : ''} |`,
     )
     const details = groups
       .filter((g) => g.findings.length > 1)
@@ -109,10 +129,10 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
           .slice(0, max)
           .map(
             (f) =>
-              `- ${cell(f.message)}${formatWhen(f.when)}${f.loc?.line ? ` — \`${where(f.loc)}\`` : f.nodes[0] ? ` — \`${f.nodes[0]}\`` : ''}`,
+              `- ${cell(quotedAsCode(f.message))}${formatWhen(f.when)}${f.loc?.line ? ` — \`${where(f.loc)}\`` : f.nodes[0] ? ` — \`${f.nodes[0]}\`` : ''}`,
           )
         if (g.findings.length > max) items.push(`- … and ${g.findings.length - max} more`)
-        return `<details><summary>${ICON[g.severity]} <code>${g.rule}</code> — ${g.findings.length} × ${escapeHtml(g.pattern)}</summary>\n\n${items.join('\n')}\n\n</details>`
+        return `<details><summary>${ICON[g.severity]} <code>${g.rule}</code> — ${g.findings.length} × ${quotedAsHtml(listed(g))}</summary>\n\n${items.join('\n')}\n\n</details>`
       })
     return `${head}| | Rule | Count | Finding | File |\n|---|---|---|---|---|\n${rows.join('\n')}\n${details.length ? `\n${details.join('\n\n')}\n` : ''}`
   }

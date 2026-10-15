@@ -5,6 +5,7 @@ import {
   colorSize,
   formatChangeset,
   formatFindings,
+  formatSource,
   formatValue,
   groupOf,
 } from '../src/index.js'
@@ -126,12 +127,40 @@ describe('findings', () => {
     ).toHaveLength(5)
     const md = formatFindings(findings, { format: 'markdown' })
     expect(md).toContain(
-      '| ▲ warning | `dtcg/legacy-syntax` | 5 | Color "…" is a string; use "object" | `a.tokens.json` |',
+      '| ▲ warning | `dtcg/legacy-syntax` | 5 | Color `#a`, `#b`, `#c` and 2 more is a string; use `object` | `a.tokens.json` |',
     )
     expect(md).toContain(
-      '<details><summary>▲ <code>dtcg/legacy-syntax</code> — 5 × Color "…" is a string; use "object"</summary>',
+      '<details><summary>▲ <code>dtcg/legacy-syntax</code> — 5 × Color <code>#a</code>, <code>#b</code>, <code>#c</code> and 2 more is a string; use <code>object</code></summary>',
     )
-    expect(md).toContain('- Color "#e" is a string; use "object" — `e`')
+    expect(md).toContain('- Color `#e` is a string; use `object` — `e`')
+  })
+})
+
+describe('markdown findings', () => {
+  it('lists the values that differ and puts quoted values in code', () => {
+    const off = (v: string, id: string) => ({
+      id,
+      rule: 'style/off-scale',
+      severity: 'warning' as const,
+      message: `"${v}" in padding is off the scale; closest is "space-small" (8px)`,
+      nodes: [],
+      loc: { file: 'badge.css', line: 4 },
+    })
+    const md = formatFindings([off('10px', 'a'), off('2px', 'b')], { format: 'markdown', heading: false })
+    expect(md).toContain(
+      '| 2 | `10px`, `2px` in padding is off the scale; closest is `space-small` (8px) | `badge.css` |',
+    )
+    expect(md).toContain('2 × <code>10px</code>, <code>2px</code> in padding is off the scale')
+  })
+
+  it('names a commit once and short', () => {
+    const sha = '7c970d928313aa3b75b819057ed3b90d4d6b2f7d'
+    expect(formatSource({ kind: 'github', repo: 'o/r', path: 'tokens', ref: sha, commit: sha })).toBe(
+      'github:o/r/tokens@7c970d9',
+    )
+    expect(formatSource({ kind: 'github', repo: 'o/r', ref: 'main', commit: sha })).toBe(
+      'github:o/r@main (7c970d9)',
+    )
   })
 })
 

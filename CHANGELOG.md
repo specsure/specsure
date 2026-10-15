@@ -3,6 +3,15 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## 0.6.1 — 2026-10-15
+
+- Markdown findings put quoted values in code, as the rest of the report does, so a color gets
+  GitHub's swatch: `#3366ff` instead of "#3366ff".
+- Repeated findings list the values that differ (`10px`, `2px` in padding is off the scale) instead
+  of "…".
+- A source pinned to a commit names it once and short: `github:owner/repo/tokens@7c970d9`.
+- GitHub Action v1.4.1 is built on it.
+
 ## 0.6.0 — 2026-10-15
 
 Reports read like a review: what the release means in words, changes grouped by what they do to the
