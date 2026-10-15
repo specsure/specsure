@@ -1978,3 +1978,31 @@ a.launcher__row:focus-visible .launcher__go {
     display: none;
   }
 }
+
+/* Inside an article the Your code window keeps its own look, not the prose lists and code pills. */
+.prose .code-report p,
+.prose .code-report ul {
+  margin: 0;
+  padding-left: 0;
+}
+.prose .code-report p.code-report__lead {
+  padding: 0 var(--space-2) var(--space-1);
+}
+.prose .code-report li + li {
+  margin-top: 0;
+}
+.prose .code-report code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font: var(--text-code);
+}
+.prose .code-report .code-figure__was {
+  color: var(--ink-2);
+}
+.prose .code-report .code-figure__was--broken {
+  color: var(--danger);
+}
+.prose .code-report .code-figure__use {
+  color: var(--ink);
+}

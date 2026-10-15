@@ -5,10 +5,12 @@ import type { Lang } from '../i18n'
 import { LangProvider, useT } from '../i18n/react'
 import { drawCard } from '../lib/card'
 import { compare } from '../lib/compare'
-import { EXAMPLE, LEGACY_EXAMPLE } from '../lib/example'
+import { EXAMPLE, EXAMPLE_APP, LEGACY_EXAMPLE } from '../lib/example'
 import type { RunRequest } from '../lib/types'
 import { colorPairs, LEVELS, typeOfChange, view } from '../lib/view'
 import { ChangeDetail, ChangeRow } from './ChangeList'
+import { CodeField } from './CodeField'
+import { CodeReportView } from './CodeReportView'
 import { GraphView } from './GraphView'
 import { Findings, type Result, Results } from './Results'
 import { SidePicker } from './SidePicker'
@@ -29,6 +31,7 @@ export type FigureName =
   | 'checks'
   | 'markdown'
   | 'card'
+  | 'code'
 
 const cache = new Map<string, Promise<Result>>()
 
@@ -49,6 +52,14 @@ const example = () =>
     base: { kind: 'files', files: EXAMPLE.base },
     head: { kind: 'files', files: EXAMPLE.head },
     include: '',
+  })
+/** The example with the small app from the home page as its code. */
+const withApp = () =>
+  run('example-app', {
+    base: { kind: 'files', files: EXAMPLE.base },
+    head: { kind: 'files', files: EXAMPLE.head },
+    include: '',
+    code: { kind: 'files', files: EXAMPLE_APP },
   })
 const legacy = () =>
   run('legacy', {
@@ -88,7 +99,9 @@ export default function LiveFigure({
 
 function Figure({ name, caption }: { name: FigureName; caption?: string | undefined }) {
   const t = useT()
-  const { result, error } = useResult(name === 'checks' ? legacy : example)
+  const { result, error } = useResult(
+    name === 'checks' ? legacy : name === 'inputs' || name === 'code' ? withApp : example,
+  )
   let body: ReactNode = <div className="figure__loading">{t.figure.running}</div>
   if (error) body = <div className="figure__loading">{error}</div>
   else if (result) body = <Body name={name} result={result} />
@@ -110,6 +123,7 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
     case 'inputs':
       return (
         <div className="window inputs">
+          <div className="inputs__group">{t.yourCode.groupTokens}</div>
           <SidePicker
             side="base"
             value={{ kind: 'files', files: EXAMPLE.base }}
@@ -122,6 +136,20 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
             onChange={noop}
             info={result.head}
           />
+          <div className="inputs__group inputs__group--product inputs__toggle" aria-expanded="true">
+            <span>{t.yourCode.groupProduct}</span>
+            <svg className="inputs__chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <path
+                d="M4.5 3 7.5 6l-3 3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <CodeField value={{ kind: 'files', files: EXAMPLE_APP }} onChange={noop} report={result.code} />
           <footer className="actionbar">
             <span className="actionbar__status" />
             <span className="ghost-label">{t.figure.compare}</span>
@@ -207,6 +235,8 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
       )
     case 'card':
       return <Card result={result} />
+    case 'code':
+      return result.code ? <CodeReportView report={result.code} label={result.base.label} /> : null
   }
 }
 
