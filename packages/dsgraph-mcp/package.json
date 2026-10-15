@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/mcp",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "MCP server for design tokens: find the token for a value, read a token with its references, compare versions, run checks. DTCG, token JSON and CSS; folders, npm and GitHub.",
   "license": "MIT",
   "type": "module",
@@ -36,12 +36,12 @@
     "node": ">=20.19"
   },
   "dependencies": {
-    "@dsgraph/adapters": "0.6.1",
-    "@dsgraph/cli": "0.6.1",
-    "@dsgraph/core": "0.6.1",
-    "@dsgraph/report": "0.6.1",
-    "@dsgraph/rules": "0.6.1",
-    "@dsgraph/sources": "0.6.1",
+    "@dsgraph/adapters": "0.6.2",
+    "@dsgraph/cli": "0.6.2",
+    "@dsgraph/core": "0.6.2",
+    "@dsgraph/report": "0.6.2",
+    "@dsgraph/rules": "0.6.2",
+    "@dsgraph/sources": "0.6.2",
     "@modelcontextprotocol/sdk": "1.31.0",
     "zod": "4.6.5"
   }

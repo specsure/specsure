@@ -3,6 +3,19 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## 0.6.2 — 2026-10-15
+
+Fixes found by running a real release (Primer 11.7) over a real app (OpenProject).
+
+- Code: indented Sass (`.sass`, and `<style lang="sass">`) is read line by line; TypeScript and
+  JavaScript with decorators (`@Component` in Angular) parse instead of being skipped.
+- Shadow layers keep an opacity given next to their color (`{ color: "{gray.12}", alpha: 0.04 }`),
+  read leniently.
+- HSL and HWB colors print as sRGB: `#25292e`, not `#25292e (hsl)`; translucent ones as `rgb(… / 4%)`.
+- The spacing scale leaves out font sizes, line heights and borders: `margin: 20px` is no longer
+  pointed to `text.subtitle.size`.
+- GitHub Action v1.4.2 is built on it.
+
 ## 0.6.1 — 2026-10-15
 
 - Markdown findings put quoted values in code, as the rest of the report does, so a color gets

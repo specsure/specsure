@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/schema",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Types, JSON Schemas and canonical serialization for dsgraph snapshots and changesets.",
   "license": "MIT",
   "type": "module",

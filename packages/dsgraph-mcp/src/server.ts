@@ -70,7 +70,7 @@ function describeValue(graph: DsGraph, t: Token, input: Input): string {
 
 /** The MCP server: read-only tools over a design system's tokens, built on dsgraph. */
 export function createServer(opts: ServerOptions): McpServer {
-  const server = new McpServer({ name: 'dsgraph', version: opts.version ?? '0.6.1' })
+  const server = new McpServer({ name: 'dsgraph', version: opts.version ?? '0.6.2' })
   const config = opts.config ?? {}
   const cache = new Map<string, { graph: Promise<DsGraph>; at: number }>()
 
