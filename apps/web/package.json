@@ -17,6 +17,7 @@
     "@dsgraph/report": "0.6.3",
     "@dsgraph/rules": "0.6.3",
     "@dsgraph/sources": "0.6.3",
+    "@vercel/analytics": "2.0.1",
     "astro": "7.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0"
