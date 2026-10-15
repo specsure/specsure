@@ -3,7 +3,11 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.6.0 — 2026-10-15
+
+Reports read like a review: what the release means in words, changes grouped by what they do to the
+people who use the tokens, and the places in your code first. Token Diff takes your project's code,
+from a folder or a GitHub repository. GitHub Action v1.4.0 is built on it.
 
 - Token Diff 1.1 on the site: an optional **Your code** row takes a project folder, read in the
   browser. The result says how many places in the code break or look different, marks the changes
@@ -15,6 +19,7 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   shared; up to 1,500 files are read. The input window groups the design system and your product.
 - `scanCode` takes `maxFiles` and says when it read only part of the code (`limited`).
 - Usage findings carry the name as written (`evidence.name`).
+- `@dsgraph/report` exports `groupOf`, `GROUPS`, `colorDirection` and `colorSize`.
 - Reports read like a review: the release in words with one sentence on why, sections by meaning
   (Breaks, Looks different, New, Deprecated, Hard to notice), what to do for breaking changes, value
   changes as a table with the difference in words (lighter, noticeable), and In your code first.
