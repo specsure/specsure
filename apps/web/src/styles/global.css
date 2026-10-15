@@ -1336,8 +1336,24 @@ button.graph__node:hover {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
+/* Two windows side by side: the same height and top, not the stacked windows' gap above the second. */
+.figure__pair > .window + .window {
+  margin-top: 0;
+}
+.figure__pair .row {
+  gap: var(--space-2);
+}
 .figure__pair .row__subtitle {
   display: none;
+}
+.figure__pair .row__acc {
+  flex: 0 1 auto;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.figure__pair .acc-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .prose .figure__code {
   max-height: 360px;
