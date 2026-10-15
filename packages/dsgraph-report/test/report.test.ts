@@ -24,6 +24,9 @@ describe('values', () => {
     expect(formatValue('color', { space: 'srgb', components: [0, 0, 0], alpha: 0.5 })).toBe(
       'rgb(0 0 0 / 50%)',
     )
+    // HSL is sRGB written another way: no space name, translucent as rgb().
+    expect(formatValue('color', { space: 'hsl', components: [213.3, 10.8, 16.3], alpha: 1 })).toBe('#25292e')
+    expect(formatValue('color', { space: 'hsl', components: [0, 0, 0], alpha: 0.04 })).toBe('rgb(0 0 0 / 4%)')
     expect(formatValue('dimension', { value: 1.5, unit: 'rem' })).toBe('1.5rem')
     expect(
       formatValue('shadow', [

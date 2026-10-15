@@ -209,7 +209,7 @@ function shadow(raw: unknown, ctx: ValueContext): unknown[] | undefined {
   const out: unknown[] = []
   for (const layer of layers) {
     if (!isPlainObject(layer)) return invalid(ctx, 'dtcg/invalid-shadow', 'Each shadow must be an object')
-    const { inset, ...rest } = layer
+    const { inset, alpha, ...rest } = layer
     // A missing spread is common in the wild (build tool examples) and means 0.
     if (rest.spread === undefined && rest.blur !== undefined) {
       if (!lenient(ctx, 'dtcg/shadow-missing-spread', 'shadow is missing "spread"; read as 0'))
@@ -226,6 +226,15 @@ function shadow(raw: unknown, ctx: ValueContext): unknown[] | undefined {
     if (v === undefined) return undefined
     if (inset !== undefined && typeof inset !== 'boolean')
       return invalid(ctx, 'dtcg/invalid-shadow', 'inset must be a boolean')
+    // Some exports give a layer its opacity next to a shared color: `{ color: "{gray.12}", alpha: 0.04 }`.
+    if (alpha !== undefined) {
+      if (typeof alpha !== 'number' || alpha < 0 || alpha > 1)
+        return invalid(ctx, 'dtcg/invalid-shadow', 'alpha must be a number from 0 to 1')
+      if (!lenient(ctx, 'dtcg/legacy-syntax', 'shadow "alpha" is not DTCG; read as the color\'s alpha'))
+        return undefined
+      const color = (v as { color?: unknown }).color
+      if (isPlainObject(color)) (v as { color: unknown }).color = { ...color, alpha }
+    }
     out.push({ ...v, inset: inset === true })
   }
   return out

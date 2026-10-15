@@ -91,6 +91,22 @@ describe('values — format module types', () => {
     expect(v).toEqual([expect.objectContaining({ inset: false })])
   })
 
+  it("shadow: a layer alpha next to the color is read as the color's alpha, leniently", () => {
+    const layer = {
+      color: srgb(0, 0, 0),
+      alpha: 0.04,
+      offsetX: px(0),
+      offsetY: px(6),
+      blur: px(12),
+      spread: px(-3),
+    }
+    const c = ctx()
+    const v = canonicalValue('shadow', [layer], c) as Array<{ color: { alpha: number } }>
+    expect(v[0]!.color.alpha).toBe(0.04)
+    expect(c.diag.list().filter((d) => d.code === 'dtcg/invalid-shadow')).toEqual([])
+    expect(canonicalValue('shadow', [layer], ctx(true))).toBeUndefined()
+  })
+
   it('gradient: positions are clamped to [0, 1]', () => {
     const v = canonicalValue(
       'gradient',

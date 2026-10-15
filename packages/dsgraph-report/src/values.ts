@@ -18,6 +18,8 @@ export function formatValue(type: string | null, value: unknown): string {
   }
 }
 
+const SRGB = new Set(['srgb', 'hsl', 'hwb'])
+
 function formatTyped(type: string | null, value: unknown): string {
   if (value === null || value === undefined) return '—'
   switch (type) {
@@ -25,13 +27,15 @@ function formatTyped(type: string | null, value: unknown): string {
       if (!isObj(value) || !Array.isArray(value.components)) return plain(value)
       const c = value as unknown as ColorValue
       const hex = colorToHex(c)
-      // A translucent sRGB color reads best as CSS writes it: rgb(0 0 0 / 8%).
-      if (c.alpha < 1 && c.space === 'srgb') {
-        const [r, g, b] = c.components.map((x) => Math.round(Number(x) * 255))
+      // HSL and HWB are sRGB written another way: they print as sRGB does, without the space's name.
+      if (SRGB.has(c.space)) {
+        if (c.alpha >= 1) return hex
+        // A translucent sRGB color reads best as CSS writes it: rgb(0 0 0 / 8%).
+        const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16))
         return `rgb(${r} ${g} ${b} / ${Math.round(c.alpha * 100)}%)`
       }
       const alpha = c.alpha < 1 ? ` ${Math.round(c.alpha * 100)}%` : ''
-      return c.space === 'srgb' ? hex : `${hex}${alpha} (${c.space})`
+      return `${hex}${alpha} (${c.space})`
     }
     case 'dimension':
     case 'duration': {
