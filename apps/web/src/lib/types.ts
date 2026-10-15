@@ -77,7 +77,7 @@ export type RunResponse =
       side?: 'base' | 'head'
       error: string
       /** GitHub refused without a token: the repository may be private. */
-      hint?: 'private'
+      hint?: 'private' | 'reload'
     }
 
 /** Stage of a run; the page words it in its language. */

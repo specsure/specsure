@@ -446,13 +446,13 @@ input.accessory {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  padding: 0 0 var(--space-2) calc(52px + var(--space-3));
+  padding: 0 0 var(--space-2) calc(64px + var(--space-3));
 }
 .source__token .source__input {
   flex: 1 1 280px;
 }
 .source__meta {
-  padding: 0 0 var(--space-1) calc(52px + var(--space-3));
+  padding: 0 0 var(--space-1) calc(64px + var(--space-3));
   overflow: hidden;
   color: var(--ink-3);
   font: var(--text-label);
@@ -1790,4 +1790,40 @@ a.launcher__row:focus-visible .launcher__go {
   .code-report .code-figure__row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Groups of the input window: the design system compared, and the product that uses it. */
+.inputs__group {
+  padding: var(--space-3) var(--space-3) 0;
+  color: var(--ink-3);
+  font: var(--text-caption);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.inputs__group--product {
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-2);
+}
+.source--code .source__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--ink-3);
+}
+.source__formats {
+  color: var(--ink-2);
+  font: var(--text-code);
+}
+/* Two lines when empty (what to drop, which formats): the field grows instead of clipping. */
+.source--code .source__files {
+  height: auto;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.source--code .source__meta {
+  overflow: visible;
+  white-space: normal;
+  text-wrap: pretty;
 }

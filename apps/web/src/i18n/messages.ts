@@ -126,8 +126,8 @@ const en = {
   diffPage: {
     title: 'Token Diff · Specsure',
     description:
-      'Compare two versions of design tokens: what changed, what breaks and which semver bump it needs. DTCG, token JSON, CSS custom properties, npm packages and GitHub. Runs in your browser.',
-    lead: 'Compare two versions of design tokens: what was removed, renamed or changed in each theme, and the semver bump it needs. Files are read in your browser and never uploaded.',
+      'Compare two versions of design tokens: what changed, what breaks and which semver bump it needs, and what the change does to your code: CSS, JSX and TSX, Tailwind, Vue, Svelte. Runs in your browser.',
+    lead: 'Compare two versions of design tokens: what was removed, renamed or changed in each theme, and the semver bump it needs. Add your project to see what the change breaks in its code: CSS, JSX and TSX, Tailwind, Vue, Svelte, Astro. Everything is read in your browser and never uploaded.',
     how: 'How it works',
   },
 
@@ -159,7 +159,7 @@ const en = {
     files: (n: number) => count('en', n, { one: 'file', other: 'files' }),
     filesLabel: 'Files',
     filesAria: 'Token files',
-    filesPlaceholder: 'Auto: DTCG, token JSON or CSS',
+    filesPlaceholder: 'Token files. Auto: DTCG, token JSON or CSS',
     filesTitle: 'Globs, comma-separated, e.g. dist/tokens.css or tokens/**/*.json',
     example: 'Try an example',
     swap: 'Swap',
@@ -172,16 +172,21 @@ const en = {
     },
     failed: 'The comparison failed',
     privateHint: 'If the repository is private, add a GitHub token.',
+    reloadHint: 'The site was updated while this page was open. Reload the page to check your code.',
     shareTooBig: 'These files are too large for a link. Share the Markdown or the changeset JSON instead.',
   },
 
   yourCode: {
     title: 'Your code',
-    drop: 'Optional: drop your project folder to see what this release changes in it',
+    groupTokens: 'Design system',
+    groupProduct: 'Your product · optional',
+    drop: 'Drop the folder of an app that uses these tokens',
+    formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
     folder: 'Folder',
     clear: 'Clear',
     clearAria: 'Remove your code',
     note: 'Read in this tab: never uploaded and never put into links.',
+    hint: 'Shows what this release breaks in your code, how much of it is on tokens and what to write instead of values written by hand.',
     read: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} of code`,
     summary: (breaks: number, looks: number, files: number) =>
       breaks + looks === 0
@@ -603,8 +608,8 @@ const ru: Messages = {
   diffPage: {
     title: 'Token Diff · Specsure',
     description:
-      'Сравните две версии дизайн-токенов: что изменилось, что сломается и какую версию выпускать по semver. DTCG, JSON токенов, CSS-переменные, пакеты npm и GitHub. Работает в браузере.',
-    lead: 'Сравните две версии дизайн-токенов: что удалили, переименовали или изменили в каждой теме и какую версию нужно выпустить по semver. Файлы читаются в браузере и никуда не загружаются.',
+      'Сравните две версии дизайн-токенов: что изменилось, что сломается, какую версию выпускать по semver и что изменение сделает с вашим кодом: CSS, JSX и TSX, Tailwind, Vue, Svelte. Работает в браузере.',
+    lead: 'Сравните две версии дизайн-токенов: что удалили, переименовали или изменили в каждой теме и какую версию нужно выпустить по semver. Добавьте свой проект, чтобы увидеть, что изменение сломает в его коде: CSS, JSX и TSX, Tailwind, Vue, Svelte, Astro. Всё читается в браузере и никуда не загружается.',
     how: 'Как это работает',
   },
 
@@ -636,7 +641,7 @@ const ru: Messages = {
     files: (n: number) => count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' }),
     filesLabel: 'Файлы',
     filesAria: 'Файлы токенов',
-    filesPlaceholder: 'Авто: DTCG, JSON токенов или CSS',
+    filesPlaceholder: 'Файлы токенов. Авто: DTCG, JSON токенов или CSS',
     filesTitle: 'Маски через запятую, например dist/tokens.css или tokens/**/*.json',
     example: 'Пример',
     swap: 'Поменять местами',
@@ -649,16 +654,21 @@ const ru: Messages = {
     },
     failed: 'Сравнить не удалось',
     privateHint: 'Если репозиторий приватный, добавьте токен GitHub.',
+    reloadHint: 'Сайт обновился, пока страница была открыта. Перезагрузите её, чтобы проверить код.',
     shareTooBig: 'Файлы слишком большие для ссылки. Поделитесь отчётом в Markdown или JSON с изменениями.',
   },
 
   yourCode: {
     title: 'Ваш код',
-    drop: 'Необязательно: перетащите папку проекта, чтобы увидеть, что этот релиз изменит в нём',
+    groupTokens: 'Дизайн-система',
+    groupProduct: 'Ваш продукт · необязательно',
+    drop: 'Перетащите папку приложения, которое использует эти токены',
+    formats: 'CSS, SCSS, JSX, TSX, Tailwind, Vue, Svelte, Astro, HTML',
     folder: 'Папка',
     clear: 'Очистить',
     clearAria: 'Убрать ваш код',
     note: 'Читается в этой вкладке: никуда не загружается и не попадает в ссылки.',
+    hint: 'Покажем, что этот релиз сломает в вашем коде, какая доля значений на токенах и что написать вместо значений, вписанных вручную.',
     read: (n: number) =>
       `${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })} кода`,
     summary: (breaks: number, looks: number, files: number) =>

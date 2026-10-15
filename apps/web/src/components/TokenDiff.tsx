@@ -67,7 +67,12 @@ function App() {
         })
       } else {
         setResult(null)
-        const message = r.hint === 'private' ? `${r.error}. ${t.inputs.privateHint}` : r.error
+        const message =
+          r.hint === 'private'
+            ? `${r.error}. ${t.inputs.privateHint}`
+            : r.hint === 'reload'
+              ? t.inputs.reloadHint
+              : r.error
         setError(r.side ? { side: r.side, message } : { message })
       }
     }
@@ -208,6 +213,7 @@ function App() {
           run()
         }}
       >
+        <div className="inputs__group">{t.yourCode.groupTokens}</div>
         <SidePicker
           side="base"
           value={base}
@@ -226,7 +232,6 @@ function App() {
           githubToken={githubToken}
           onGithubToken={setGithubToken}
         />
-        <CodeField files={code} onChange={setCode} report={result?.code} />
         <div className="source source--glob">
           <div className="source__row">
             <span className="source__label">{t.inputs.filesLabel}</span>
@@ -241,6 +246,8 @@ function App() {
             />
           </div>
         </div>
+        <div className="inputs__group inputs__group--product">{t.yourCode.groupProduct}</div>
+        <CodeField files={code} onChange={setCode} report={result?.code} />
         <footer className="actionbar">
           <span className="actionbar__status">
             {error && !error.side ? (

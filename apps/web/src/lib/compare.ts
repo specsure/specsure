@@ -156,7 +156,10 @@ export async function compare(
     let code: CodeReport | undefined
     if (req.code?.length) {
       progress('code')
-      const { checkCode } = await import('./code')
+      // A tab opened before a new deploy asks for a chunk that is gone: say so instead of a 404.
+      const { checkCode } = await import('./code').catch(() => {
+        throw Object.assign(new Error('Could not load the code checker'), { hint: 'reload' })
+      })
       code = await checkCode(req.code, b, h, changeset)
     }
     const types = new Map<string, string | null>()
@@ -175,7 +178,7 @@ export async function compare(
     }
   } catch (err) {
     const r: RunResponse = { id, ok: false, error: (err as Error).message }
-    const { side, hint } = err as { side?: 'base' | 'head'; hint?: 'private' }
+    const { side, hint } = err as { side?: 'base' | 'head'; hint?: 'private' | 'reload' }
     if (side) r.side = side
     if (hint) r.hint = hint
     return r
