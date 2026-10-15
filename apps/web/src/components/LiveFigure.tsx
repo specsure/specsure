@@ -136,7 +136,7 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
             onChange={noop}
             info={result.head}
           />
-          <div className="inputs__group inputs__group--product inputs__toggle" aria-expanded="true">
+          <div className="inputs__group inputs__group--product inputs__toggle is-open">
             <span>{t.yourCode.groupProduct}</span>
             <svg className="inputs__chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
               <path

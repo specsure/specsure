@@ -1932,14 +1932,16 @@ a.launcher__row:focus-visible .launcher__go {
 .inputs__toggle:focus-visible {
   outline-offset: -2px;
 }
-.inputs__toggle[aria-expanded="true"] {
+.inputs__toggle[aria-expanded="true"],
+.inputs__toggle.is-open {
   padding-bottom: 0;
 }
 .inputs__chevron {
   flex: none;
   transition: transform var(--dur-fast) var(--ease-standard);
 }
-.inputs__toggle[aria-expanded="true"] .inputs__chevron {
+.inputs__toggle[aria-expanded="true"] .inputs__chevron,
+.inputs__toggle.is-open .inputs__chevron {
   transform: rotate(90deg);
 }
 .inputs__toggle-note {
