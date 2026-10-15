@@ -158,12 +158,26 @@ export function CodeReportView({ report }: { report: CodeReport; label: string }
   return (
     <section className="window code-report" aria-label={y.title}>
       <header className="code-report__head">
-        <h3 className="code-report__title">{y.title}</h3>
-        <span className="code-report__source">
-          {[report.label, report.limited ? y.limited(report.files, report.limited) : y.read(report.files)]
-            .filter(Boolean)
-            .join(' · ')}
-        </span>
+        <div className="code-report__name">
+          <h3 className="code-report__title">{y.title}</h3>
+          <span className="code-report__source">
+            {[report.label, report.limited ? y.limited(report.files, report.limited) : y.read(report.files)]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </div>
+        {pct !== null && (
+          <div className="code-report__coverage">
+            <span className="code-figure__label">{y.onTokens}</span>
+            <span className="code-report__pct">{pct}%</span>
+            <span className="code-figure__bar code-report__bar" aria-hidden="true">
+              <span style={{ width: `${pct}%` }} />
+            </span>
+            <span className="code-report__split">
+              {y.split(report.coverage.fromTokens, report.coverage.byHand)}
+            </span>
+          </div>
+        )}
       </header>
 
       {breaks.length > 0 && (
@@ -184,19 +198,6 @@ export function CodeReportView({ report }: { report: CodeReport; label: string }
           </summary>
           <ByFile rows={looks} more={y.more} />
         </details>
-      )}
-
-      {pct !== null && (
-        <div className="code-figure__meter code-report__meter">
-          <span className="code-figure__label">{y.onTokens}</span>
-          <span className="code-figure__pct">{pct}%</span>
-          <span className="code-figure__bar" aria-hidden="true">
-            <span style={{ width: `${pct}%` }} />
-          </span>
-          <span className="code-figure__split">
-            {y.split(report.coverage.fromTokens, report.coverage.byHand)}
-          </span>
-        </div>
       )}
 
       {hand.length > 0 && (

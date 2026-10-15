@@ -1739,9 +1739,44 @@ a.launcher__row:focus-visible .launcher__go {
 .code-report__head {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-1);
+}
+.code-report__name {
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 2px var(--space-3);
-  padding: var(--space-2) var(--space-2) 0;
+  min-width: 0;
+}
+/* The share on tokens sums up the window: a compact meter in its header, not a bar across the text. */
+.code-report__coverage {
+  display: grid;
+  grid-template-columns: auto auto 120px;
+  align-items: center;
+  gap: 2px var(--space-2);
+}
+.code-report__pct {
+  color: var(--ink);
+  font: var(--text-body-strong);
+  font-variant-numeric: tabular-nums;
+}
+.code-report__split {
+  grid-column: 1 / -1;
+  justify-self: end;
+  color: var(--ink-3);
+  font: var(--text-label);
+}
+@media (max-width: 560px) {
+  .code-report__coverage {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    width: 100%;
+  }
+  .code-report__split {
+    justify-self: start;
+  }
 }
 .code-report__title {
   margin: 0;
@@ -1753,9 +1788,6 @@ a.launcher__row:focus-visible .launcher__go {
   color: var(--ink-3);
   font: var(--text-label);
   overflow-wrap: anywhere;
-}
-.code-report__meter {
-  margin-top: var(--space-2);
 }
 .code-report__lead {
   margin: 0;
