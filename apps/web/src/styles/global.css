@@ -562,7 +562,8 @@ input.accessory {
   font: var(--text-label);
   font-weight: 500;
 }
-.list__section--major {
+.list__section--major,
+.list__section--breaks {
   color: var(--danger);
 }
 
@@ -1861,4 +1862,23 @@ a.launcher__row:focus-visible .launcher__go {
 }
 #your-code[hidden] {
   display: none;
+}
+
+/* On a phone the tags of a change (theme, in code, via references, lighter · noticeable) go under its name. */
+@media (max-width: 560px) {
+  .list .row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .list .row__acc {
+    flex-basis: calc(100% - 20px - var(--space-3));
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-left: calc(20px + var(--space-3));
+  }
+  .list .row__acc:empty {
+    display: none;
+  }
 }

@@ -49,7 +49,7 @@ Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets
 ## What you get
 
 - **A verdict:** breaking, minor, patch or no impact, with the counts behind it.
-- **Breaking changes first:** removed tokens, renames with a confidence score, type changes, tokens missing from a theme.
+- **What breaks comes first:** removed tokens, renames with a confidence score, type changes, tokens missing from a theme.
 - **Value changes per theme:** colors as swatches with ΔE, sizes with the difference in pixels, the alias each value came from.
 - **The blast radius:** for each changed token, the tokens that changed through references because of it, drawn as a graph.
 - **Checks on the new version:** broken references, alias cycles, legacy syntax, naming collisions, grouped so that 300 identical warnings take one line.
@@ -76,11 +76,11 @@ The verdict above the list is the highest impact of all changes. In the example 
 | Patch | Nothing a user would notice | Color change under ΔE 1, size change under half a pixel, alias retargeted to the same value |
 | No impact | Only how a value is written | `#ff0000` became `rgb(255 0 0)` |
 
-**Breaking changes come first.** A removed token shows the value it had. A rename is detected from the same values in every theme and similar names; a confidence under 80% means “check this one”.
+**The list is grouped by what a change means for the people who use the tokens:** Breaks, Looks different, New, Deprecated, and Hard to notice, folded when there are many. **What breaks comes first.** A removed token shows the value it had. A rename is detected from the same values in every theme and similar names; a confidence under 80% means “check this one”.
 
 <LiveFigure client:only="react" name="breaking" caption="color-danger was removed; space-sm became space-small, with the same value in every theme." />
 
-**Value changes** show both values. For colors, ΔE is the distance in OKLab, scaled so that 1 is about the smallest difference people notice; under 1 counts as a patch. **Through aliases** means a token was not edited itself, but something it points to was.
+**Value changes** show both values and the difference in words: *lighter · noticeable*, *+2px*. For colors the words come from ΔE, the distance in OKLab, scaled so that 1 is about the smallest difference people notice; under 1 counts as a patch. **Through aliases** means a token was not edited itself, but something it points to was.
 
 <LiveFigure client:only="react" name="color" caption="color-blue-500 changed, and color-accent points to it, so it changed too without being edited." />
 

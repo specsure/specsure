@@ -15,6 +15,12 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   shared; up to 1,500 files are read. The input window groups the design system and your product.
 - `scanCode` takes `maxFiles` and says when it read only part of the code (`limited`).
 - Usage findings carry the name as written (`evidence.name`).
+- Reports read like a review: the release in words with one sentence on why, sections by meaning
+  (Breaks, Looks different, New, Deprecated, Hard to notice), what to do for breaking changes, value
+  changes as a table with the difference in words (lighter, noticeable), and In your code first.
+  Markdown keeps values alone in backticks so GitHub draws color swatches.
+- Token Diff lists changes by the same groups, words color differences (lighter · noticeable), and
+  says what tags mean (+2 via references, 1 in code); on phones the tags go under the token name.
 
 ## 0.5.0 — 2026-10-15
 

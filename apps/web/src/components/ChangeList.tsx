@@ -1,5 +1,5 @@
 import type { Change, ChangeImpact, Level } from '@dsgraph/core'
-import { formatDelta, formatValue } from '@dsgraph/report'
+import { colorDirection, colorSize, formatDelta, formatValue } from '@dsgraph/report'
 import type { Messages } from '../i18n/messages'
 import { useT } from '../i18n/react'
 import { appliesIn, deltaWords, meaningOf } from '../lib/explain'
@@ -105,9 +105,22 @@ interface RowProps {
   onSelect: () => void
 }
 
+const SIZE_INDEX = { invisible: 0, barely: 1, noticeable: 2, clear: 3, different: 4 } as const
+
+/** `lighter · noticeable` for a color change, in the page's language; the ΔE goes into the tooltip. */
+export function colorWords(c: Change, t: Messages): { text: string; title: string } | undefined {
+  if (typeof c.delta?.deltaEOK !== 'number') return undefined
+  const dir = colorDirection(c.before, c.after)
+  const size = t.change.deltaShort[SIZE_INDEX[colorSize(c.delta.deltaEOK)]]
+  return {
+    text: dir ? `${t.change.direction[dir]} · ${size}` : (size ?? ''),
+    title: `ΔE ${c.delta.deltaEOK.toLocaleString(t.lang)}`,
+  }
+}
+
 export function ChangeRow({ change: c, type, affected, sites, selected, onSelect }: RowProps) {
   const t = useT()
-  const delta = typeof c.delta?.deltaEOK === 'number' ? `ΔE ${c.delta.deltaEOK.toLocaleString(t.lang)}` : ''
+  const delta = colorWords(c, t)
   return (
     <div
       role="option"
@@ -139,7 +152,7 @@ export function ChangeRow({ change: c, type, affected, sites, selected, onSelect
           ))}
         {affected > 0 && (
           <span className="tag" title={t.change.alsoChanges(affected)}>
-            +{affected}
+            {t.change.viaRefs(affected)}
           </span>
         )}
         {sites && (
@@ -147,10 +160,14 @@ export function ChangeRow({ change: c, type, affected, sites, selected, onSelect
             className={`tag tag--code${sites.effect === 'breaks' ? ' tag--danger' : ''}`}
             title={t.yourCode.rowTitle(sites.sites.length)}
           >
-            {'</>'} {sites.sites.length}
+            {t.yourCode.inCodeShort(sites.sites.length)}
           </span>
         )}
-        {delta && <span className="acc-text">{delta}</span>}
+        {delta && (
+          <span className="acc-text" title={delta.title}>
+            {delta.text}
+          </span>
+        )}
       </span>
     </div>
   )
@@ -257,11 +274,15 @@ export function ChangeDetail({
         </code>
       )),
     ])
-  if (delta)
+  if (delta) {
+    const dir = colorDirection(c.before, c.after)
     meta.push([
       m.difference,
-      typeof c.delta?.deltaEOK === 'number' ? `${delta} · ${deltaWords(c.delta.deltaEOK, t)}` : delta,
+      typeof c.delta?.deltaEOK === 'number'
+        ? `${dir ? `${t.change.direction[dir]}, ` : ''}${deltaWords(c.delta.deltaEOK, t)} · ${delta}`
+        : delta,
     ])
+  }
   if (c.kind === 'token.deprecated') {
     const d = c.after as { replacement?: string; reason?: string } | undefined
     if (d?.replacement) meta.push([m.useInstead, <code key="r">{d.replacement}</code>])

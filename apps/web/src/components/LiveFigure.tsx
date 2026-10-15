@@ -143,7 +143,7 @@ function Body({ name, result }: { name: FigureName; result: Result }) {
       const v = view(cs, result.types, { context: {}, levels: ['major'], types: [], query: '' })
       return (
         <div className="window list list--static">
-          <div className="list__section list__section--major">{t.levels.major}</div>
+          <div className="list__section list__section--breaks">{t.groups.breaks}</div>
           {v.byLevel.major.map((c) => (
             <ChangeRow
               key={c.id}

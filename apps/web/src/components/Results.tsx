@@ -6,7 +6,16 @@ import { useT } from '../i18n/react'
 import type { CardData } from '../lib/card'
 import { publishedNote, verdictReason } from '../lib/explain'
 import type { CodeReport, SideInfo, TokenGraph } from '../lib/types'
-import { colorPairs, contextAxes, inContext, LEVELS, typeOfChange, view } from '../lib/view'
+import {
+  type ChangeGroup,
+  colorPairs,
+  contextAxes,
+  GROUPS,
+  inContext,
+  LEVELS,
+  typeOfChange,
+  view,
+} from '../lib/view'
 import { CardDialog } from './CardDialog'
 import { ChangeDetail, ChangeRow } from './ChangeList'
 import { CodeReportView } from './CodeReportView'
@@ -63,7 +72,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   const t = useT()
   const r = t.results
   const cs = result.changeset
-  const [level, setLevel] = useState<Level | ''>('')
+  const [group, setGroup] = useState<ChangeGroup | ''>('')
   const [type, setType] = useState('')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
@@ -78,16 +87,20 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
     () =>
       view(cs, result.types, {
         context,
-        levels: level ? [level] : LEVELS,
+        levels: LEVELS,
+        groups: group ? [group] : [],
         types: type ? [type] : [],
         query,
       }),
-    [cs, result.types, context, level, type, query],
+    [cs, result.types, context, group, type, query],
   )
   // Many changes nobody sees (metadata, notation) hide the ones that matter: folded until asked.
-  const folded = !level && !query && !quiet && v.byLevel.none.length > QUIET_LIMIT
+  const folded = !group && !query && !quiet && v.byGroup.quiet.length > QUIET_LIMIT
   // Rows in display order: by impact, breaking first.
-  const rows = useMemo(() => LEVELS.flatMap((l) => (l === 'none' && folded ? [] : v.byLevel[l])), [v, folded])
+  const rows = useMemo(
+    () => GROUPS.flatMap((g) => (g === 'quiet' && folded ? [] : v.byGroup[g])),
+    [v, folded],
+  )
   const current = rows.find((c) => c.id === selected) ?? rows[0]
   const affectedOf = (id: string) => [...new Set((v.propagatedBy.get(id) ?? []).map((p) => p.target))]
   const sitesBy = useMemo(
@@ -258,13 +271,13 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
             <select
               className="accessory"
               aria-label={r.impactAria}
-              value={level}
-              onChange={(e) => setLevel(e.target.value as Level | '')}
+              value={group}
+              onChange={(e) => setGroup(e.target.value as ChangeGroup | '')}
             >
               <option value="">{r.anyImpact}</option>
-              {LEVELS.map((l) => (
-                <option key={l} value={l}>
-                  {t.levels[l]}
+              {GROUPS.filter((g) => v.byGroup[g].length || g === group).map((g) => (
+                <option key={g} value={g}>
+                  {t.groups[g]}
                 </option>
               ))}
             </select>
@@ -293,20 +306,20 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
         ) : (
           <div className="split">
             <div className="list" role="listbox" aria-label={r.listAria} tabIndex={0}>
-              {LEVELS.map((l) =>
-                v.byLevel[l].length ? (
+              {GROUPS.map((g) =>
+                v.byGroup[g].length ? (
                   // biome-ignore lint/a11y/useSemanticElements: a group of options inside a listbox, not a form fieldset
-                  <div key={l} role="group" aria-label={t.levels[l]}>
-                    <div className={`list__section list__section--${l}`}>
-                      {t.levels[l]}
-                      <span className="count">{v.byLevel[l].length}</span>
+                  <div key={g} role="group" aria-label={t.groups[g]}>
+                    <div className={`list__section list__section--${g}`}>
+                      {t.groups[g]}
+                      <span className="count">{v.byGroup[g].length}</span>
                     </div>
-                    {l === 'none' && folded ? (
+                    {g === 'quiet' && folded ? (
                       <button type="button" className="list__more" onClick={() => setQuiet(true)}>
-                        {r.showQuiet(v.byLevel.none.length)}
+                        {r.showQuiet(v.byGroup.quiet.length)}
                       </button>
                     ) : null}
-                    {(l === 'none' && folded ? [] : v.byLevel[l]).map((c) => (
+                    {(g === 'quiet' && folded ? [] : v.byGroup[g]).map((c) => (
                       <ChangeRow
                         key={c.id}
                         change={c}

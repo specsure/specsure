@@ -1,4 +1,5 @@
 import type { Change, Level } from '@dsgraph/core'
+import type { ChangeGroup, ColorDirection } from '@dsgraph/report'
 import { count, type Forms, type Lang, num, plural } from './index'
 
 /**
@@ -10,6 +11,8 @@ import { count, type Forms, type Lang, num, plural } from './index'
 
 type KindLabels = Record<Change['kind'], string>
 type LevelText = Record<Level, string>
+type GroupText = Record<ChangeGroup, string>
+type DirectionText = Record<ColorDirection, string>
 
 const en = {
   lang: 'en' as Lang,
@@ -204,6 +207,7 @@ const en = {
             .filter(Boolean)
             .join(', ')} (${count('en', files, { one: 'file', other: 'files' })}).`,
     rowTitle: (n: number) => `Used in ${count('en', n, { one: 'place', other: 'places' })} of your code`,
+    inCodeShort: (n: number) => `${num('en', n)} in code`,
     inCode: (n: number, breaks: boolean) =>
       `${breaks ? 'Breaks' : 'Changes'} in your code: ${count('en', n, { one: 'place', other: 'places' })}`,
     more: (n: number) => `and ${num('en', n)} more`,
@@ -221,6 +225,15 @@ const en = {
   },
 
   levels: { major: 'Breaking', minor: 'Minor', patch: 'Patch', none: 'No impact' } as LevelText,
+  /** Sections of the change list: what a change means for people who use the tokens. */
+  groups: {
+    breaks: 'Breaks',
+    looks: 'Looks different',
+    added: 'New',
+    deprecated: 'Deprecated',
+    other: 'Other changes',
+    quiet: 'Hard to notice',
+  } as GroupText,
   /** The level of one change, as a value in its details. */
   level: { major: 'Breaking', minor: 'Minor', patch: 'Patch', none: 'No impact' } as LevelText,
 
@@ -277,14 +290,15 @@ const en = {
     searchPlaceholder: 'Filter by token name',
     searchAria: 'Filter changes',
     every: (axis: string) => `Every ${axis}`,
-    impactAria: 'Impact',
-    anyImpact: 'Any impact',
+    impactAria: 'What changed',
+    anyImpact: 'Any change',
     typeAria: 'Type',
     anyType: 'Any type',
     same: 'Both versions resolve to the same tokens in every context.',
     noMatch: 'Nothing matches these filters.',
     listAria: 'Changes',
-    showQuiet: (n: number) => `Show ${num('en', n)} changes nobody sees: metadata, notation`,
+    showQuiet: (n: number) =>
+      `Show ${num('en', n)} changes that are hard to notice: tiny shifts, notation, metadata`,
     status: (n: number, ms: number, partial: boolean) =>
       `${count('en', n, { one: 'change', other: 'changes' })} · ${num('en', ms)} ms${partial ? ' · some context combinations were skipped' : ''}`,
     copied: 'Markdown copied',
@@ -376,6 +390,17 @@ const en = {
       'clearly visible',
       'a different color',
     ],
+    /** Short size words for a row: lighter · noticeable. */
+    deltaShort: ['invisible', 'barely visible', 'noticeable', 'clearly visible', 'very different'],
+    direction: {
+      lighter: 'lighter',
+      darker: 'darker',
+      'more-saturated': 'more saturated',
+      'less-saturated': 'less saturated',
+      hue: 'another hue',
+      alpha: 'another opacity',
+    } as DirectionText,
+    viaRefs: (n: number) => `+${num('en', n)} via references`,
   },
 
   graph: {
@@ -687,6 +712,7 @@ const ru: Messages = {
               '; ',
             )} (${count('ru', files, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}).`,
     rowTitle: (n: number) => `Используется в вашем коде: ${count('ru', n, ruPlace)}`,
+    inCodeShort: (n: number) => `${num('ru', n)} в коде`,
     inCode: (n: number, breaks: boolean) =>
       `${breaks ? 'Сломается' : 'Изменится'} в вашем коде: ${count('ru', n, ruPlace)}`,
     more: (n: number) => `и ещё ${num('ru', n)}`,
@@ -705,6 +731,14 @@ const ru: Messages = {
   },
 
   levels: { major: 'Ломающие', minor: 'Минорные', patch: 'Патч', none: 'Без последствий' },
+  groups: {
+    breaks: 'Сломается',
+    looks: 'Выглядит иначе',
+    added: 'Новое',
+    deprecated: 'Устарело',
+    other: 'Другие изменения',
+    quiet: 'Почти незаметно',
+  },
   level: { major: 'Ломающее', minor: 'Минорное', patch: 'Патч', none: 'Без последствий' },
 
   verdict: {
@@ -766,15 +800,15 @@ const ru: Messages = {
     searchAria: 'Фильтр изменений',
     every: (axis: string) =>
       axis === 'theme' ? 'Все темы' : axis === 'mode' ? 'Все режимы' : `${axis}: все`,
-    impactAria: 'Уровень',
-    anyImpact: 'Любой уровень',
+    impactAria: 'Что изменилось',
+    anyImpact: 'Любое изменение',
     typeAria: 'Тип',
     anyType: 'Любой тип',
     same: 'В обеих версиях одинаковые токены с одинаковыми значениями во всех контекстах.',
     noMatch: 'Под эти фильтры ничего не подходит.',
     listAria: 'Изменения',
     showQuiet: (n: number) =>
-      `Показать ${count('ru', n, ruChange)}, которых не видно: метаданные и форма записи`,
+      `Показать ${count('ru', n, ruChange)}, которые почти не видно: мелкие сдвиги, запись значений, метаданные`,
     status: (n: number, ms: number, partial: boolean) =>
       `${count('ru', n, ruChange)} · ${num('ru', ms)} мс${partial ? ' · часть сочетаний контекстов пропущена' : ''}`,
     copied: 'Markdown скопирован',
@@ -868,6 +902,16 @@ const ru: Messages = {
       extensions: 'Изменились только служебные метаданные инструментов. Разницы никто не увидит.',
     },
     delta: ['незаметно', 'едва заметно рядом', 'заметно рядом', 'хорошо заметно', 'другой цвет'],
+    deltaShort: ['незаметно', 'едва заметно', 'заметно', 'хорошо заметно', 'совсем другой'],
+    direction: {
+      lighter: 'светлее',
+      darker: 'темнее',
+      'more-saturated': 'насыщеннее',
+      'less-saturated': 'бледнее',
+      hue: 'другой оттенок',
+      alpha: 'другая прозрачность',
+    },
+    viaRefs: (n: number) => `+${num('ru', n)} по ссылкам`,
   },
 
   graph: {

@@ -1,4 +1,7 @@
 import { type Change, type Changeset, type ColorValue, colorToHex, type Level } from '@dsgraph/core'
+import { type ChangeGroup, GROUPS, groupOf } from '@dsgraph/report'
+
+export { type ChangeGroup, GROUPS, groupOf }
 
 export const LEVELS: Level[] = ['major', 'minor', 'patch', 'none']
 
@@ -17,6 +20,8 @@ export const inContext = (when: Change['when'], selected: Record<string, string>
 export interface Filter {
   context: Record<string, string>
   levels: Level[]
+  /** What the changes mean (breaks, looks different, new…); empty or left out = all. */
+  groups?: ChangeGroup[]
   /** Token types to show; empty = all. */
   types: string[]
   query: string
@@ -35,6 +40,8 @@ export interface View {
   /** Propagated changes by the id of the change that caused them, filtered by context. */
   propagatedBy: Map<string, Change[]>
   byLevel: Record<Level, Change[]>
+  /** The same changes by what they mean for people who use the tokens, as the list shows them. */
+  byGroup: Record<ChangeGroup, Change[]>
   /** Types present in the changeset, for the type filter. */
   types: string[]
 }
@@ -52,13 +59,16 @@ export function view(cs: Changeset, types: Map<string, string | null>, f: Filter
     if (t) present.add(t)
     if (!inContext(c.when, f.context)) return false
     if (!f.levels.includes(c.level)) return false
+    if (f.groups?.length && !f.groups.includes(groupOf(c))) return false
     if (f.types.length && !(t && f.types.includes(t))) return false
     if (q && !`${c.target} ${c.from ?? ''}`.toLowerCase().includes(q)) return false
     return true
   })
   const byLevel = { major: [], minor: [], patch: [], none: [] } as Record<Level, Change[]>
   for (const c of shown) byLevel[c.level].push(c)
-  return { shown, propagatedBy, byLevel, types: [...present].sort() }
+  const byGroup = Object.fromEntries(GROUPS.map((g) => [g, [] as Change[]])) as Record<ChangeGroup, Change[]>
+  for (const c of shown) byGroup[groupOf(c)].push(c)
+  return { shown, propagatedBy, byLevel, byGroup, types: [...present].sort() }
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object'
