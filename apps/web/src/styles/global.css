@@ -1804,8 +1804,49 @@ a.launcher__row:focus-visible .launcher__go {
   border-top: 1px solid var(--line);
   margin-top: var(--space-2);
 }
+/* The product group folds: its caption is the button, the chevron turns when it is open. */
+.inputs__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding-bottom: var(--space-3);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.inputs__toggle:hover,
+.inputs__toggle:focus-visible {
+  color: var(--ink-2);
+}
+.inputs__toggle[aria-expanded="true"] {
+  padding-bottom: 0;
+}
+.inputs__chevron {
+  flex: none;
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+.inputs__toggle[aria-expanded="true"] .inputs__chevron {
+  transform: rotate(90deg);
+}
+.inputs__toggle-note {
+  overflow: hidden;
+  color: var(--ink-2);
+  font: var(--text-label);
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
 .source--code .source__meta {
   overflow: visible;
   white-space: normal;
   text-wrap: pretty;
+}
+#your-code[hidden] {
+  display: none;
 }

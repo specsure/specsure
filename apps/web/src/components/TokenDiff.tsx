@@ -32,6 +32,12 @@ function App() {
   const [githubToken, setGithubToken] = useState('')
   /** The user's project, read in the browser; optional. */
   const [code, setCode] = useState<CodeInput>({ kind: 'files', files: [] })
+  const hasCode = code.kind === 'files' ? code.files.length > 0 : !!code.repo
+  /** The product group is folded until someone opens it or code arrives (an example, a link, a drop). */
+  const [productOpen, setProductOpen] = useState(false)
+  useEffect(() => {
+    if (hasCode) setProductOpen(true)
+  }, [hasCode])
   const [context, setContext] = useState<Record<string, string>>({})
   const [running, setRunning] = useState<Stage | 'start' | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -250,15 +256,42 @@ function App() {
             />
           </div>
         </div>
-        <div className="inputs__group inputs__group--product">{t.yourCode.groupProduct}</div>
-        <CodeField
-          value={code}
-          onChange={setCode}
-          report={result?.code}
-          error={error?.side === 'code' ? error.message : undefined}
-          githubToken={githubToken}
-          onGithubToken={setGithubToken}
-        />
+        <button
+          type="button"
+          className="inputs__group inputs__group--product inputs__toggle"
+          aria-expanded={productOpen}
+          aria-controls="your-code"
+          onClick={() => setProductOpen((o) => !o)}
+        >
+          <span>{t.yourCode.groupProduct}</span>
+          <svg className="inputs__chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path
+              d="M4.5 3 7.5 6l-3 3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {!productOpen && hasCode && (
+            <span className="inputs__toggle-note">
+              {code.kind === 'files'
+                ? t.yourCode.read(code.files.length)
+                : `${code.repo}${code.root ? `/${code.root}` : ''}`}
+            </span>
+          )}
+        </button>
+        <div id="your-code" hidden={!productOpen}>
+          <CodeField
+            value={code}
+            onChange={setCode}
+            report={result?.code}
+            error={error?.side === 'code' ? error.message : undefined}
+            githubToken={githubToken}
+            onGithubToken={setGithubToken}
+          />
+        </div>
         <footer className="actionbar">
           <span className="actionbar__status">
             {error && !error.side ? (
