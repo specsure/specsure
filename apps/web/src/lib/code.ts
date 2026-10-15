@@ -10,6 +10,7 @@ import {
 } from '@dsgraph/core'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
+import { refLabel } from './ref'
 import type { CodeInput, CodeReport } from './types'
 
 /** Most files read from a repository: enough for an app, not a whole monorepo download. */
@@ -52,7 +53,7 @@ export async function checkCode(
   if (code.limited) report.limited = code.limited
   if (input.kind === 'github') {
     const meta = await source.meta()
-    report.label = `${input.repo}${input.root ? `/${input.root}` : ''}@${input.ref || 'HEAD'}${meta.commit ? ` (${meta.commit.slice(0, 7)})` : ''}`
+    report.label = `${input.repo}${input.root ? `/${input.root}` : ''}@${refLabel(input.ref || undefined, meta.commit)}`
   }
   return report
 }

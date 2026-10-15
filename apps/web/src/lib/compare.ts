@@ -12,6 +12,7 @@ import {
 import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { MemorySource, remoteSource } from '@dsgraph/sources'
+import { refLabel } from './ref'
 import type {
   CodeReport,
   GraphNode,
@@ -122,7 +123,7 @@ export function graphOf(g: DsGraph): TokenGraph {
 const labelOf = (side: SideInput, g: DsGraph): string => {
   const s = g.snapshot.source
   if (s.kind === 'npm') return `${s.package}@${s.version}`
-  if (s.kind === 'github') return `${s.repo}@${s.ref}${s.commit ? ` (${s.commit.slice(0, 7)})` : ''}`
+  if (s.kind === 'github') return `${s.repo}@${refLabel(s.ref, s.commit)}`
   return side.kind === 'files'
     ? side.files.length === 1
       ? side.files[0]!.path
