@@ -61,6 +61,63 @@ export const EXAMPLE: { base: DroppedFile[]; head: DroppedFile[] } = {
   head: [{ path: 'tokens.css', text: v2 }],
 }
 
+/**
+ * A small app on the example's first version, as a designer builds it in code with Tailwind 4:
+ * classes on tokens, a few values written by hand, a style object. For the home page's code figure.
+ */
+export const EXAMPLE_APP: DroppedFile[] = [
+  {
+    path: 'components/Button.tsx',
+    text: `export function Button({ danger, children }) {
+  return (
+    <button
+      className={cn(
+        "rounded-md px-4 py-2 text-sm font-medium",
+        danger ? "bg-danger text-bg" : "bg-accent text-bg hover:bg-accent-hover",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+`,
+  },
+  {
+    path: 'components/Card.tsx',
+    text: `export function Card({ title, children }) {
+  return (
+    <section className="rounded-md bg-bg p-(--space-sm) shadow-card">
+      <h3 className="text-text font-semibold">{title}</h3>
+      {children}
+    </section>
+  )
+}
+`,
+  },
+  {
+    path: 'components/Badge.tsx',
+    text: `export function Badge({ children }) {
+  return (
+    <span className="rounded-[6px] bg-[#2563eb] px-[15px] text-bg">
+      {children}
+    </span>
+  )
+}
+`,
+  },
+  {
+    path: 'components/Banner.tsx',
+    text: `export function Banner({ children }) {
+  return (
+    <div style={{ background: '#f9fafb', color: '#111827', padding: 24 }}>
+      {children}
+    </div>
+  )
+}
+`,
+  },
+]
+
 /** A DTCG file written the pre-2025 way, for the guide's checks figure: legacy strings and a broken reference. */
 export const LEGACY_EXAMPLE: DroppedFile[] = [
   {

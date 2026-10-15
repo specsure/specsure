@@ -99,6 +99,8 @@ describe('VarMatcher', () => {
     expect(m.token('--ds-color-text')?.id).toBe('color.text')
     expect(m.token('--color-accent')?.id).toBe('color.accent')
     expect(m.token('--header-height')).toBeUndefined()
+    // One word does not stand for the end of a path: `text-sm` is not `space.sm`.
+    expect(m.tokenOfUse({ name: '--color-sm', candidates: ['--sm', '--text-sm'] })).toBeUndefined()
     expect(m.isSystemName('--ds-color-gone')).toBe(true)
     expect(m.isSystemName('--header-height')).toBe(false)
   })

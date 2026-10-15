@@ -50,9 +50,10 @@ const en = {
     lead: 'Open-source tools for design systems. No account and no server: they run in your browser, your CI or your terminal.',
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
-      cli: 'The same diff and checks in your terminal and CI: npx @dsgraph/cli diff',
-      action: 'A report on every pull request that touches tokens, and a failed check when it breaks',
-      mcp: 'Coding agents find the token for a color or size instead of hard-coding it',
+      cli: 'Diff and checks in your terminal and CI; upgrade‑check shows what a new version breaks in your code',
+      action:
+        'A report on every pull request: what a token change breaks in your code, and a failed check when it does',
+      mcp: 'Coding agents use your tokens instead of hard-coded values and check the code they write: Tailwind, JSX, CSS',
       engine: 'The open engine behind it: DTCG 2025.10, snapshots, diff, rules',
       figma: 'Check Figma variables and styles against your tokens, inside Figma',
       cliTitle: 'dsgraph CLI',
@@ -104,6 +105,22 @@ const en = {
     liveLead:
       'Not a screenshot: two versions of a small token file, compared by dsgraph in your browser as this page loaded.',
     liveOpen: 'Open it in Token Diff →',
+    codeTitle: 'Your code stays on the design system',
+    codeLead:
+      'For designers who build in code, on their own or with an agent. dsgraph reads CSS, JSX and TSX, Tailwind classes, Vue and Svelte: how much of it comes from tokens, which values are written by hand and what to write instead, and what the next version of the design system will break.',
+    codeOpen: 'Run it on your project →',
+    codeCaption:
+      'Four components of a small app on the example’s tokens, checked by dsgraph when this site was built. The same report comes from dsgraph check --code, the MCP server and the GitHub Action.',
+    code: {
+      onTokens: 'On tokens',
+      split: (fromTokens: number, byHand: number) =>
+        `${num('en', fromTokens)} from tokens · ${num('en', byHand)} written by hand`,
+      handTitle: 'Written by hand',
+      closest: 'closest',
+      breaksTitle: 'Breaks in the next version',
+      removed: 'token removed',
+      renamed: (to: string) => `renamed to ${to}`,
+    },
   },
 
   diffPage: {
@@ -466,10 +483,10 @@ const ru: Messages = {
     lead: 'Открытые инструменты для дизайн-систем. Без регистрации и без сервера: всё работает в браузере, в CI или в терминале.',
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
-      cli: 'То же сравнение и проверки в терминале и CI: npx @dsgraph/cli diff',
+      cli: 'Сравнение и проверки в терминале и CI; upgrade‑check покажет, что новая версия сломает в вашем коде',
       action:
-        'Отчёт в каждом pull request, где менялись токены, и проваленная проверка, если что-то ломается',
-      mcp: 'ИИ-агенты находят нужный токен по цвету или размеру, а не вписывают значение в код',
+        'Отчёт в каждом pull request: что изменение токенов сломает в вашем коде, и проваленная проверка, если ломает',
+      mcp: 'ИИ-агенты берут ваши токены вместо вписанных значений и проверяют написанный код: Tailwind, JSX, CSS',
       engine: 'Открытый движок, на котором всё построено: DTCG 2025.10, снимки, сравнение, правила',
       figma: 'Проверка переменных и стилей Figma по вашим токенам прямо в Figma',
       cliTitle: 'dsgraph CLI',
@@ -521,6 +538,22 @@ const ru: Messages = {
     liveLead:
       'Это не скриншот: две версии небольшого файла токенов, которые dsgraph сравнил в вашем браузере, пока загружалась страница.',
     liveOpen: 'Открыть в Token Diff →',
+    codeTitle: 'Ваш код остаётся в дизайн-системе',
+    codeLead:
+      'Для дизайнеров, которые собирают интерфейс в коде — сами или с агентом. dsgraph читает CSS, JSX и TSX, классы Tailwind, Vue и Svelte и показывает, какая доля значений взята из токенов, что вписано вручную и что написать вместо этого, а ещё — что сломает следующая версия дизайн-системы.',
+    codeOpen: 'Запустить на своём проекте →',
+    codeCaption:
+      'Четыре компонента небольшого приложения на токенах из примера. dsgraph проверил их при сборке этого сайта; тот же отчёт дают dsgraph check --code, MCP-сервер и GitHub Action.',
+    code: {
+      onTokens: 'На токенах',
+      split: (fromTokens: number, byHand: number) =>
+        `${num('ru', fromTokens)} из токенов · ${num('ru', byHand)} вручную`,
+      handTitle: 'Вписано вручную',
+      closest: 'ближайшее',
+      breaksTitle: 'Сломается в следующей версии',
+      removed: 'токен удалён',
+      renamed: (to: string) => `переименован в ${to}`,
+    },
   },
 
   diffPage: {

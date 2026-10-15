@@ -1,4 +1,5 @@
 ---
+import CodeFigure from '../components/CodeFigure.astro'
 import LiveFigure from '../components/LiveFigure'
 import { type Lang, localePath } from '../i18n'
 import { messages } from '../i18n/messages'
@@ -194,6 +195,15 @@ const highlight = (code: string) =>
       <a class="home-section__link" href={`${href('/tools/diff')}?example`}>{h.liveOpen}</a>
     </header>
     <LiveFigure client:only="react" name="result" lang={lang} />
+  </section>
+
+  <section class="home-section" aria-labelledby="code">
+    <header class="home-section__head">
+      <h2 id="code">{h.codeTitle}</h2>
+      <p>{h.codeLead}</p>
+      <a class="home-section__link" href={`${href('/tools/diff/guide')}#${lang === 'ru' ? 'в-вашем-приложении' : 'in-your-app'}`}>{h.codeOpen}</a>
+    </header>
+    <CodeFigure lang={lang} caption={h.codeCaption} />
   </section>
 
   <script>

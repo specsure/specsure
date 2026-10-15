@@ -1,0 +1,205 @@
+---
+/**
+ * The home page's code figure: a small app on the example's tokens, checked by the real engine when
+ * the site is built. Plain HTML, no script: how much of the code is on tokens, values written by
+ * hand with what to write instead, and what the example's next version breaks.
+ */
+import { cssTokens, scanCode } from '@dsgraph/adapters'
+import { coverageOf, DsGraph, diff, impactOf, scan, VarMatcher, varNames } from '@dsgraph/core'
+import { check } from '@dsgraph/rules'
+import { MemorySource } from '@dsgraph/sources'
+import type { Lang } from '../i18n'
+import { messages } from '../i18n/messages'
+import { EXAMPLE, EXAMPLE_APP } from '../lib/example'
+import type { DroppedFile } from '../lib/types'
+
+interface Props {
+  lang: Lang
+  caption: string
+}
+const { lang, caption } = Astro.props
+const t = messages[lang].home.code
+
+const source = (fs: DroppedFile[]) => new MemorySource(Object.fromEntries(fs.map((f) => [f.path, f.text])))
+const graphOf = async (fs: DroppedFile[]) =>
+  DsGraph.from(await scan(source(fs), {}, { adapters: [cssTokens] }))
+const [base, head] = await Promise.all([graphOf(EXAMPLE.base), graphOf(EXAMPLE.head)])
+const code = await scanCode(source(EXAMPLE_APP))
+const coverage = coverageOf(code, new VarMatcher(base, varNames(code)))
+const pct = Math.round((coverage.share ?? 0) * 100)
+
+const where = (loc?: { file?: string; line?: number }) =>
+  `${(loc?.file ?? '').replace(/^components\//, '')}:${loc?.line}`
+const asVar = (id: string) => (id.includes('.') ? id : `var(--${id})`)
+
+const hand = (await check(base, {}, [], { code }))
+  .filter((f) => f.rule.startsWith('style/'))
+  .map((f) => {
+    const e = f.evidence as {
+      source?: string
+      value: string
+      property: string
+      token: string
+      replacement: string
+      exact: boolean
+    }
+    return {
+      where: where(f.loc),
+      line: f.loc?.line ?? 0,
+      written: e.source ?? `${e.property}: ${e.value}`,
+      use: e.source ? e.replacement : asVar(e.token),
+      exact: e.exact,
+    }
+  })
+  .sort(
+    (a, b) => a.where.localeCompare(b.where, 'en', { numeric: true }) || a.written.localeCompare(b.written),
+  )
+
+const impact = impactOf(await diff(base, head), base, head, code)
+const breaks = impact.changes
+  .filter((c) => c.effect === 'breaks')
+  .flatMap((c) =>
+    c.sites.map((s) => ({
+      where: where(s),
+      written: s.text ?? `var(${s.name})`,
+      why: c.kind === 'token.removed' ? t.removed : t.renamed(c.target),
+    })),
+  )
+---
+
+<figure class="figure code-figure">
+  <div class="window code-figure__window">
+    <div class="code-figure__meter">
+      <span class="code-figure__label">{t.onTokens}</span>
+      <span class="code-figure__pct">{pct}%</span>
+      <span class="code-figure__bar" aria-hidden="true"><span style={`width: ${pct}%`}></span></span>
+      <span class="code-figure__split">{t.split(coverage.fromTokens, coverage.byHand)}</span>
+    </div>
+
+    <div class="list__section">{t.handTitle}</div>
+    <ul class="code-figure__rows">
+      {
+        hand.map((r) => (
+          <li class="code-figure__row">
+            <span class="code-figure__where">{r.where}</span>
+            <span class="code-figure__fix">
+              <code class="code-figure__was">{r.written}</code>
+              <span class="code-figure__arrow" aria-hidden="true">→</span>
+              <code class="code-figure__use">{r.use}</code>
+              {!r.exact && <span class="code-figure__note">{t.closest}</span>}
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="list__section list__section--major">{t.breaksTitle}</div>
+    <ul class="code-figure__rows">
+      {
+        breaks.map((r) => (
+          <li class="code-figure__row">
+            <span class="code-figure__where">{r.where}</span>
+            <span class="code-figure__fix">
+              <code class="code-figure__was code-figure__was--broken">{r.written}</code>
+              <span class="code-figure__note">{r.why}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <figcaption>{caption}</figcaption>
+</figure>
+
+<style>
+  .code-figure__window {
+    padding: var(--space-2) var(--space-2) var(--space-3);
+  }
+  .code-figure__meter {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-2) var(--space-2);
+  }
+  .code-figure__label {
+    color: var(--ink-2);
+    font: var(--text-body-strong);
+  }
+  .code-figure__pct {
+    color: var(--ink);
+    font: 600 20px / 24px var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+  .code-figure__bar {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hairline);
+    overflow: hidden;
+  }
+  .code-figure__bar > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: var(--success);
+  }
+  .code-figure__split {
+    grid-column: 1 / -1;
+    color: var(--ink-3);
+    font: var(--text-label);
+  }
+  .code-figure__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .code-figure__row {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: 6px var(--space-2);
+    border-radius: var(--radius-md);
+  }
+  .code-figure__where {
+    color: var(--ink-3);
+    font: var(--text-label);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+  .code-figure__fix {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    min-width: 0;
+  }
+  .code-figure__was,
+  .code-figure__use {
+    font: var(--text-code);
+    overflow-wrap: anywhere;
+  }
+  .code-figure__was {
+    color: var(--ink-2);
+  }
+  .code-figure__was--broken {
+    color: var(--danger);
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in oklch, var(--danger) 60%, transparent);
+  }
+  .code-figure__use {
+    color: var(--ink);
+  }
+  .code-figure__arrow,
+  .code-figure__note {
+    color: var(--ink-3);
+    font: var(--text-label);
+  }
+  @media (max-width: 560px) {
+    .code-figure__row {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+</style>

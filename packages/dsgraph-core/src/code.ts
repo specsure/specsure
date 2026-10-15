@@ -122,6 +122,8 @@ export class VarMatcher {
         }
       }
     }
+    // One word (`sm`, `primary`) is too common to stand for the end of a path.
+    if (!n.includes('.')) return undefined
     const tail = this.suffixes.get(n)
     return tail?.length === 1 ? tail[0] : undefined
   }
