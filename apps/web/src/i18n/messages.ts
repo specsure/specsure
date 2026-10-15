@@ -429,6 +429,8 @@ const en = {
     /** Plain-language titles; English shows the engine's own message instead. */
     titles: {} as Record<string, string>,
     help: {
+      'tokens/non-json':
+        'These files are JSON5 or JSONC: comments, unquoted keys or trailing commas. dsgraph reads them; the DTCG format and some tools expect plain JSON. Nothing to fix for the comparison.',
       'dtcg/legacy-syntax':
         'Written in an older style (a color or size as text). Most tools read it; the DTCG 2025.10 format asks for objects.',
       'dtcg/invalid-unit':
@@ -955,6 +957,7 @@ const ru: Messages = {
       count('ru', n, { one: 'заметка', few: 'заметки', many: 'заметок', other: 'заметки' }),
     andMore: (n: number) => `и ещё ${num('ru', n)}`,
     titles: {
+      'tokens/non-json': 'Файлы в JSON5 или JSONC',
       'dtcg/legacy-syntax': 'Значения в старом формате',
       'dtcg/invalid-unit': 'Единицы, отличные от px и rem',
       'dtcg/typography-missing-field': 'Текстовый стиль без одного из параметров',
@@ -974,6 +977,8 @@ const ru: Messages = {
       'layer/allowed-sources': 'Ссылка в чужой слой',
     },
     help: {
+      'tokens/non-json':
+        'Эти файлы в JSON5 или JSONC: с комментариями, ключами без кавычек или запятыми в конце. dsgraph их читает, но формат DTCG и часть инструментов ждут обычный JSON. Для сравнения ничего исправлять не нужно.',
       'dtcg/legacy-syntax':
         'Цвет или размер записан строкой, как раньше. Большинство инструментов это поймут, но формат DTCG 2025.10 требует объект.',
       'dtcg/invalid-unit':

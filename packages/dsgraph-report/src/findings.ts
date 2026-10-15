@@ -72,9 +72,9 @@ function listed(g: FindingGroup, max = 3): string {
 const quotedAsCode = (s: string) => s.replace(/"([^"`]*)"/g, '`$1`')
 const quotedAsHtml = (s: string) => escapeHtml(s).replace(/"([^"]*)"/g, '<code>$1</code>')
 
-/** What tells one finding of a group from another: its token, else the quoted values of its message. */
+/** What tells one finding of a group from another: its token, else the quoted values of its message, else its file. */
 export function findingLabel(f: Finding): string {
-  const subject = f.nodes[0] ?? f.message.match(QUOTED)?.join(' ') ?? f.message
+  const subject = f.nodes[0] ?? f.message.match(QUOTED)?.join(' ') ?? f.loc?.file ?? f.message
   return `${subject}${formatWhen(f.when)}`
 }
 
@@ -129,7 +129,7 @@ export function formatFindings(findings: readonly Finding[], opts: FindingsForma
           .slice(0, max)
           .map(
             (f) =>
-              `- ${cell(quotedAsCode(f.message))}${formatWhen(f.when)}${f.loc?.line ? ` — \`${where(f.loc)}\`` : f.nodes[0] ? ` — \`${f.nodes[0]}\`` : ''}`,
+              `- ${cell(quotedAsCode(f.message))}${formatWhen(f.when)}${f.loc?.line ? ` — \`${where(f.loc)}\`` : f.nodes[0] ? ` — \`${f.nodes[0]}\`` : f.loc?.file ? ` — \`${f.loc.file}\`` : ''}`,
           )
         if (g.findings.length > max) items.push(`- … and ${g.findings.length - max} more`)
         return `<details><summary>${ICON[g.severity]} <code>${g.rule}</code> — ${g.findings.length} × ${quotedAsHtml(listed(g))}</summary>\n\n${items.join('\n')}\n\n</details>`

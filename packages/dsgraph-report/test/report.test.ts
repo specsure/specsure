@@ -139,6 +139,24 @@ describe('findings', () => {
   })
 })
 
+describe('findings about whole files', () => {
+  it('name the file when there is no token', () => {
+    const f = (file: string) => ({
+      id: file,
+      rule: 'tokens/non-json',
+      severity: 'info' as const,
+      message: 'File uses JSONC or JSON5 syntax',
+      nodes: [],
+      loc: { file },
+    })
+    const text = formatFindings([f('src/a.json5'), f('src/b.json5')])
+    expect(text).toContain('2× File uses JSONC or JSON5 syntax')
+    expect(text).toContain('src/a.json5, src/b.json5')
+    const md = formatFindings([f('src/a.json5'), f('src/b.json5')], { format: 'markdown' })
+    expect(md).toContain('- File uses JSONC or JSON5 syntax — `src/b.json5`')
+  })
+})
+
 describe('markdown findings', () => {
   it('lists the values that differ and puts quoted values in code', () => {
     const off = (v: string, id: string) => ({

@@ -504,8 +504,9 @@ export function Findings({ findings, label, open }: { findings: Finding[]; label
             <ul className="finding__items">
               {g.findings.slice(0, 200).map((f) => (
                 <li key={f.id}>
-                  {f.nodes[0] && <code>{f.nodes[0]}</code>}
-                  <span>{f.message}</span>
+                  {/* A finding about a whole file names the file; the group's title already says what. */}
+                  {(f.nodes[0] ?? f.loc?.file) && <code>{f.nodes[0] ?? f.loc?.file}</code>}
+                  {(f.message !== g.pattern || !(f.nodes[0] ?? f.loc?.file)) && <span>{f.message}</span>}
                 </li>
               ))}
               {g.findings.length > 200 && (
