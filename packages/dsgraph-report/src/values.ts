@@ -25,8 +25,13 @@ function formatTyped(type: string | null, value: unknown): string {
       if (!isObj(value) || !Array.isArray(value.components)) return plain(value)
       const c = value as unknown as ColorValue
       const hex = colorToHex(c)
+      // A translucent sRGB color reads best as CSS writes it: rgb(0 0 0 / 8%).
+      if (c.alpha < 1 && c.space === 'srgb') {
+        const [r, g, b] = c.components.map((x) => Math.round(Number(x) * 255))
+        return `rgb(${r} ${g} ${b} / ${Math.round(c.alpha * 100)}%)`
+      }
       const alpha = c.alpha < 1 ? ` ${Math.round(c.alpha * 100)}%` : ''
-      return c.space === 'srgb' ? `${hex}${alpha}` : `${hex}${alpha} (${c.space})`
+      return c.space === 'srgb' ? hex : `${hex}${alpha} (${c.space})`
     }
     case 'dimension':
     case 'duration': {
@@ -38,16 +43,25 @@ function formatTyped(type: string | null, value: unknown): string {
     case 'cubicBezier':
       return `cubic-bezier(${(value as number[]).join(', ')})`
     case 'shadow':
+      // As CSS writes it: zeros without units, a zero spread left out.
       return (value as Array<Record<string, unknown>>)
-        .map((l) =>
-          [
+        .map((l) => {
+          const len = (k: string) => {
+            const d = l[k] as { value: number; unit: string } | undefined
+            return !d || d.value === 0 ? '0' : `${d.value}${d.unit}`
+          }
+          const spread = len('spread')
+          return [
             l.inset ? 'inset' : '',
-            ...['offsetX', 'offsetY', 'blur', 'spread'].map((k) => formatValue('dimension', l[k])),
+            len('offsetX'),
+            len('offsetY'),
+            len('blur'),
+            spread === '0' ? '' : spread,
             formatValue('color', l.color),
           ]
             .filter(Boolean)
-            .join(' '),
-        )
+            .join(' ')
+        })
         .join(', ')
     case 'border': {
       const b = value as Record<string, unknown>
@@ -96,7 +110,7 @@ export function formatDelta(delta: Record<string, unknown> | undefined): string 
 export function formatSource(s: SourceMeta): string {
   if (s.kind === 'npm') return `npm:${s.package}@${s.version}`
   if (s.kind === 'github')
-    return `github:${s.repo}@${s.ref}${s.commit ? ` (${s.commit.slice(0, 7)})` : ''}${s.path ? `/${s.path}` : ''}`
+    return `github:${s.repo}${s.path ? `/${s.path}` : ''}@${s.ref}${s.commit ? ` (${s.commit.slice(0, 7)})` : ''}`
   if (s.path) return s.path
   return s.kind
 }

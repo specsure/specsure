@@ -50,9 +50,10 @@ describe('dsgraph CLI', () => {
   it('diff: text output, suggested bump and --fail-on exit code', async () => {
     const r = await run('diff', 'v1', 'v2')
     expect(r.code).toBe(0)
-    expect(r.out).toContain('suggested bump: major')
-    expect(r.out).toContain('removed color.old')
-    expect(r.out).toContain('affects action.bg')
+    expect(r.out).toContain('dsgraph diff — Breaking release')
+    expect(r.out).toContain('suggested version: major')
+    expect(r.out).toContain('Removed color.old, it was #ffffff.')
+    expect(r.out).toContain('also changes action.bg')
     expect((await run('diff', 'v1', 'v2', '--fail-on', 'major')).code).toBe(1)
     expect((await run('diff', 'v1', 'v1', '--fail-on', 'patch')).code).toBe(0)
   })
@@ -86,10 +87,10 @@ describe('dsgraph CLI', () => {
 
   it('shows where a diff reaches into the code with --code', async () => {
     const r = await run('diff', 'v1', 'v2', '--code', 'app')
-    expect(r.out).toContain('In the code: 1 place breaks, 1 place looks different (1 file).')
-    expect(r.out).toMatch(/removed color\.old\n\s+breaks 1 place in the code: button\.css:3/)
+    expect(r.out).toContain('In your code\n\n1 place breaks, 1 place looks different (1 file).')
+    expect(r.out).toMatch(/button\.css:3\s+--color-old\s+breaks: color\.old was removed/)
     expect(r.out).toMatch(
-      /color\.brand: .*\n\s+affects action\.bg\n\s+changes 1 place in the code: button\.css:2/,
+      /button\.css:2\s+--action-bg\s+looks different: color\.brand changed \(used through action\.bg\)/,
     )
   })
 

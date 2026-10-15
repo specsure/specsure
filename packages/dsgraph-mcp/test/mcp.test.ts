@@ -95,8 +95,8 @@ describe('dsgraph MCP server', () => {
 
   it('compares versions and checks', async () => {
     const { text } = await call('compare_versions', { base: './previous' })
-    expect(text).toContain('suggested bump: major')
-    expect(text).toContain('space-small')
+    expect(text).toContain('## Breaking release')
+    expect(text).toContain('**Renamed** `space-sm` → `space-small`: replace the old name.')
     expect((await call('check_tokens')).text).toBeTruthy()
   })
 
@@ -116,10 +116,8 @@ describe('dsgraph MCP server', () => {
 
   it('shows where a new version reaches into the code', async () => {
     const { text } = await call('compare_versions', { base: './previous', code: 'src' })
-    expect(text).toContain('In the code: 1 place breaks, 1 place looks different (1 file).')
-    expect(text).toMatch(
-      /renamed `space-sm` → `space-small`.*\n\s+- breaks 1 place in the code: `button\.css:3`/,
-    )
+    expect(text).toContain('1 place breaks, 1 place looks different (1 file).')
+    expect(text).toContain('| `button.css:3` | `--space-sm` | breaks: renamed to `space-small` |')
   })
 
   it('checks a component with Tailwind classes and style objects, and says how much is on tokens', async () => {

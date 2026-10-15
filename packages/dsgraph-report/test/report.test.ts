@@ -1,6 +1,13 @@
 import { buildSnapshot, DiagnosticBag, DsGraph, diff, systemFromDocuments } from '@dsgraph/core'
 import { describe, expect, it } from 'vitest'
-import { formatChangeset, formatFindings, formatValue } from '../src/index.js'
+import {
+  colorDirection,
+  colorSize,
+  formatChangeset,
+  formatFindings,
+  formatValue,
+  groupOf,
+} from '../src/index.js'
 
 const srgb = (r: number, g: number, b: number) => ({ colorSpace: 'srgb', components: [r, g, b] })
 const g = async (tree: unknown) =>
@@ -13,7 +20,9 @@ const g = async (tree: unknown) =>
 
 describe('values', () => {
   it('formats colors, dimensions and shadows', () => {
-    expect(formatValue('color', { space: 'srgb', components: [0, 0, 0], alpha: 0.5 })).toBe('#000000 50%')
+    expect(formatValue('color', { space: 'srgb', components: [0, 0, 0], alpha: 0.5 })).toBe(
+      'rgb(0 0 0 / 50%)',
+    )
     expect(formatValue('dimension', { value: 1.5, unit: 'rem' })).toBe('1.5rem')
     expect(
       formatValue('shadow', [
@@ -26,12 +35,12 @@ describe('values', () => {
           inset: false,
         },
       ]),
-    ).toBe('0px 1px 2px 0px #000000')
+    ).toBe('0 1px 2px #000000')
   })
 })
 
 describe('changeset', () => {
-  it('groups by level and lists propagated changes under their cause', async () => {
+  it('groups by meaning, says why, and lists propagated changes under their cause', async () => {
     const base = await g({
       color: { $type: 'color', brand: { $value: srgb(0.18, 0.36, 1) }, old: { $value: srgb(1, 1, 1) } },
       action: { $type: 'color', bg: { $value: '{color.brand}' }, border: { $value: '{color.brand}' } },
@@ -43,18 +52,24 @@ describe('changeset', () => {
     const cs = await diff(base, head)
     const types = new Map(head.tokens().map((t) => [t.id, t.type]))
     const md = formatChangeset(cs, { format: 'markdown', types })
-    expect(md).toContain('## dsgraph diff — suggested bump: major')
-    expect(md).toContain('### Breaking (major) (1)')
-    expect(md).toContain('- removed `color.old`')
-    expect(md).toMatch(/- `color\.brand`: #2e5cff → #3366ff \(ΔE \d+(\.\d+)?\)/)
-    expect(md).toContain('  - affects `action.bg`, `action.border`')
-    expect(md).not.toMatch(/^- `action\.bg`/m)
+    expect(md).toContain('## Breaking release')
+    expect(md).toContain('`npm:@acme/tokens@1.0.0` → `npm:@acme/tokens@1.0.0` · suggested version: **major**')
+    expect(md).toContain(
+      '1 token was removed: code and designs that use it stop working until they are updated.',
+    )
+    expect(md).toContain('### Breaks (1)')
+    expect(md).toContain('- **Removed** `color.old`, it was `#ffffff`.')
+    expect(md).toContain('### Looks different (1)')
+    expect(md).toMatch(
+      /\| `color\.brand` \| `#2e5cff` \| `#3366ff` \| lighter, (barely visible|noticeable) \(ΔE [\d.]+\); also changes `action\.bg`, `action\.border` \|/,
+    )
+    expect(md).not.toMatch(/\| `action\.bg`/)
     expect(formatChangeset(cs)).toContain('1 removed · 1 changed (+2 through references)')
   })
 
   it('says when there are no changes', async () => {
     const a = await g({ n: { $type: 'number', $value: 1 } })
-    expect(formatChangeset(await diff(a, a))).toContain('no changes')
+    expect(formatChangeset(await diff(a, a))).toContain('No changes')
   })
 })
 
@@ -117,5 +132,36 @@ describe('findings', () => {
       '<details><summary>▲ <code>dtcg/legacy-syntax</code> — 5 × Color "…" is a string; use "object"</summary>',
     )
     expect(md).toContain('- Color "#e" is a string; use "object" — `e`')
+  })
+})
+
+describe('meaning', () => {
+  const c = (r: number, g: number, b: number, alpha = 1) => ({ space: 'srgb', components: [r, g, b], alpha })
+  it('says which way a color moved, by the largest part of the difference', () => {
+    expect(colorDirection(c(0.15, 0.39, 0.92), c(0.2, 0.4, 1))).toBe('lighter')
+    expect(colorDirection(c(0.07, 0.09, 0.15), c(0.04, 0.06, 0.1))).toBe('darker')
+    expect(colorDirection(c(0.5, 0.5, 0.5), c(0.6, 0.45, 0.45))).toBe('more-saturated')
+    expect(colorDirection(c(0.9, 0.2, 0.2), c(0.2, 0.75, 0.2))).toBe('hue')
+    expect(colorDirection(c(0, 0, 0, 0.08), c(0, 0, 0, 0.1))).toBe('alpha')
+    expect(colorDirection({ value: 1, unit: 'px' }, { value: 2, unit: 'px' })).toBeUndefined()
+  })
+
+  it('words how visible a difference is', () => {
+    expect([0.5, 1.5, 3, 7, 20].map(colorSize)).toEqual([
+      'invisible',
+      'barely',
+      'noticeable',
+      'clear',
+      'different',
+    ])
+  })
+
+  it('groups changes by what they mean for people who use the tokens', () => {
+    const ch = (kind: string, level: string) => ({ kind, level }) as Parameters<typeof groupOf>[0]
+    expect(groupOf(ch('token.removed', 'major'))).toBe('breaks')
+    expect(groupOf(ch('token.value-changed', 'minor'))).toBe('looks')
+    expect(groupOf(ch('token.added', 'minor'))).toBe('added')
+    expect(groupOf(ch('token.deprecated', 'minor'))).toBe('deprecated')
+    expect(groupOf(ch('token.value-changed', 'patch'))).toBe('quiet')
   })
 })
