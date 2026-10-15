@@ -222,6 +222,16 @@ const en = {
     unknown: 'not a token in this version',
     skipped: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} could not be read`,
     clean: 'Nothing written by hand and no outdated variables.',
+    breaksTitle: 'Breaks after the update',
+    looksTitle: 'Looks different after the update',
+    tokenRemoved: 'token removed',
+    renamedTo: (to: string) => `renamed, use ${to}`,
+    changed: (token: string, via?: string) => (via ? `${token} changed, through ${via}` : `${token} changed`),
+    handLead:
+      'Values written by hand do not follow the design system when it changes. Replace them with tokens.',
+    line: (n: number) => `line ${num('en', n)}`,
+    closestBy: (diff: string) => `closest, ${diff}`,
+    pxOff: (px: number) => `${num('en', px)}px off`,
   },
 
   levels: { major: 'Breaking', minor: 'Minor', patch: 'Patch', none: 'No impact' } as LevelText,
@@ -728,6 +738,16 @@ const ru: Messages = {
     skipped: (n: number) =>
       `не удалось прочитать: ${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}`,
     clean: 'Ничего не вписано вручную, устаревших переменных нет.',
+    breaksTitle: 'Сломается после обновления',
+    looksTitle: 'Будет выглядеть иначе',
+    tokenRemoved: 'токен удалён',
+    renamedTo: (to: string) => `переименован, используйте ${to}`,
+    changed: (token: string, via?: string) =>
+      via ? `изменился ${token}, через ${via}` : `изменился ${token}`,
+    handLead: 'Значения, вписанные вручную, не меняются вместе с дизайн-системой. Замените их токенами.',
+    line: (n: number) => `строка ${num('ru', n)}`,
+    closestBy: (diff: string) => `ближайшее, ${diff}`,
+    pxOff: (px: number) => `отличается на ${num('ru', px)}px`,
   },
 
   levels: { major: 'Ломающие', minor: 'Минорные', patch: 'Патч', none: 'Без последствий' },
