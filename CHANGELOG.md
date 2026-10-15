@@ -3,7 +3,11 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.5.0 — 2026-10-15
+
+dsgraph reads the whole front end, not only stylesheets: JSX and TSX, Tailwind classes, CSS-in-JS,
+Vue, Svelte and Astro. It says how much of the code is on tokens and, for a class written by hand,
+which class to use instead. GitHub Action v1.3.0 is built on it.
 
 ### The whole front end
 
@@ -20,7 +24,9 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - Coverage: how much of the code's design values come from tokens, in `dsgraph check --code`,
   `check_styles` and the Action comment.
 - Positions (`top`, `left`, `inset`) are no longer checked against the scale; radii and font sizes are
-  not suggested for spacing.
+  not suggested for spacing; a one-word name (`sm`) does not match the end of a token path.
+- Style findings carry `source`, `replacement` and `exact` in their evidence; `classFor` is exported
+  from `@dsgraph/rules`.
 
 ## 0.4.0 — 2026-10-15
 

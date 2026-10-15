@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "dsgraph CLI: scan, check and diff design tokens (DTCG 2025.10, CSS custom properties) from folders, npm and GitHub.",
   "license": "MIT",
   "type": "module",
@@ -37,10 +37,10 @@
     "node": ">=20.19"
   },
   "dependencies": {
-    "@dsgraph/adapters": "0.4.0",
-    "@dsgraph/core": "0.4.0",
-    "@dsgraph/report": "0.4.0",
-    "@dsgraph/rules": "0.4.0",
-    "@dsgraph/sources": "0.4.0"
+    "@dsgraph/adapters": "0.5.0",
+    "@dsgraph/core": "0.5.0",
+    "@dsgraph/report": "0.5.0",
+    "@dsgraph/rules": "0.5.0",
+    "@dsgraph/sources": "0.5.0"
   }
 }

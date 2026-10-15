@@ -4,7 +4,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 
 **dsgraph** turns a design system into a graph — tokens, contexts (themes, modes), and later code and Figma — and answers questions about it: what changed between two versions, what breaks, which tokens produce a value. Everything runs locally, in CI or in the browser. There is no server and no account.
 
-> Status: **0.4** — tokens and the styles that use them: diff with impact on your code, upgrade checks, checks, CLI, GitHub Action, MCP server and [Token Diff](https://specsure.vercel.app/tools/diff). APIs may still change before 1.0. See the [changelog](CHANGELOG.md).
+> Status: **0.5** — tokens and the code that uses them: diff with impact on your code, upgrade checks, checks, CLI, GitHub Action, MCP server and [Token Diff](https://specsure.vercel.app/tools/diff). APIs may still change before 1.0. See the [changelog](CHANGELOG.md).
 
 ## What works today
 
