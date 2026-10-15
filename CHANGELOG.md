@@ -3,6 +3,17 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## 0.6.3 — 2026-10-15
+
+- A color written by hand points to the token made for its property: text tokens for `color`,
+  background tokens for `background`, border tokens for `border-color`. Among exact matches, general
+  semantic tokens come before component ones (`fgColor.accent`, not `button.outline.fgColor.rest`).
+  `nearestTokens` takes the property; `roleOfProperty` is exported from `@dsgraph/core`.
+- MCP `find_token` takes `property`.
+- Findings about a whole file (such as JSON5 source files) name the file in text and Markdown
+  reports.
+- GitHub Action v1.4.3 is built on it.
+
 ## 0.6.2 — 2026-10-15
 
 Fixes found by running a real release (Primer 11.7) over a real app (OpenProject).
