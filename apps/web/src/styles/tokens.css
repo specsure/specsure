@@ -19,6 +19,9 @@
   --line: #222227;
   --line-strong: #36363d;
   --hairline: #ffffff17;
+  /* The hairline over the page background, opaque: outlines that sit on the animated backdrop
+     would show its dither through a translucent line. */
+  --edge: #222224;
   --highlight: #ffffff0d;
   --glass: #111113c2;
 
@@ -48,8 +51,8 @@
   --level-none: var(--ink-3);
 
   /* Elevation */
-  --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -12px #00000099;
-  --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #000000b3;
+  --shadow-panel: 0 0 0 1px var(--edge), 0 12px 40px -12px #00000099;
+  --shadow-popover: 0 0 0 1px var(--edge), 0 16px 40px -12px #000000b3;
 
   /* Type */
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
@@ -116,6 +119,7 @@
     --line: #e4e4e9;
     --line-strong: #cfcfd6;
     --hairline: #00000014;
+    --edge: #dfdfe2;
     --highlight: #ffffff;
     --glass: #ffffffc7;
     --ink: #18181b;
@@ -132,8 +136,8 @@
     --danger-soft: #cc2d3314;
     --warning-soft: #a35f0014;
     --success-soft: #16803f14;
-    --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -16px #00000029;
-    --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #00000038;
+    --shadow-panel: 0 0 0 1px var(--edge), 0 12px 40px -16px #00000029;
+    --shadow-popover: 0 0 0 1px var(--edge), 0 16px 40px -12px #00000038;
   }
 }
 
@@ -149,6 +153,7 @@
   --line: #e4e4e9;
   --line-strong: #cfcfd6;
   --hairline: #00000014;
+  --edge: #dfdfe2;
   --highlight: #ffffff;
   --glass: #ffffffc7;
   --ink: #18181b;
@@ -165,8 +170,8 @@
   --danger-soft: #cc2d3314;
   --warning-soft: #a35f0014;
   --success-soft: #16803f14;
-  --shadow-panel: 0 0 0 1px var(--hairline), 0 12px 40px -16px #00000029;
-  --shadow-popover: 0 0 0 1px var(--hairline), 0 16px 40px -12px #00000038;
+  --shadow-panel: 0 0 0 1px var(--edge), 0 12px 40px -16px #00000029;
+  --shadow-popover: 0 0 0 1px var(--edge), 0 16px 40px -12px #00000038;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -257,7 +257,7 @@ select {
   border-radius: var(--radius-lg);
   background: var(--raised);
   box-shadow:
-    0 0 0 1px var(--hairline),
+    0 0 0 1px var(--edge),
     inset 0 1px 0 var(--highlight),
     0 24px 48px -24px #00000080;
 }
@@ -1123,7 +1123,7 @@ button.graph__node:hover {
   aspect-ratio: 1200 / 630;
   margin: 0 var(--space-4);
   border-radius: var(--radius-md);
-  box-shadow: 0 0 0 1px var(--hairline);
+  box-shadow: 0 0 0 1px var(--edge);
 }
 
 /* About */
@@ -1271,7 +1271,7 @@ button.graph__node:hover {
   border-radius: var(--radius-md);
   /* biome-ignore lint/complexity/noImportantStyles: overrides the code highlighter's inline background */
   background: var(--raised) !important;
-  box-shadow: 0 0 0 1px var(--hairline);
+  box-shadow: 0 0 0 1px var(--edge);
 }
 .prose pre code {
   padding: 0;
@@ -1317,7 +1317,7 @@ button.graph__node:hover {
   min-height: 120px;
   border-radius: var(--radius-lg);
   background: var(--raised);
-  box-shadow: 0 0 0 1px var(--hairline);
+  box-shadow: 0 0 0 1px var(--edge);
   color: var(--ink-3);
 }
 .figure .verdict {
@@ -1325,7 +1325,7 @@ button.graph__node:hover {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-lg);
   background: var(--raised);
-  box-shadow: 0 0 0 1px var(--hairline);
+  box-shadow: 0 0 0 1px var(--edge);
 }
 .figure .results {
   margin-top: 0;
@@ -1549,7 +1549,7 @@ a.launcher__row:focus-visible .launcher__go {
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--raised);
-  box-shadow: 0 0 0 1px var(--hairline);
+  box-shadow: 0 0 0 1px var(--edge);
 }
 .format__name {
   font: var(--text-title-s);
