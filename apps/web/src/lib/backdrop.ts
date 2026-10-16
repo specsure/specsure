@@ -123,6 +123,7 @@ export function startBackdrop(canvas: HTMLCanvasElement, look: () => BackdropLoo
   gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS))
   gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return () => {}
+  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL's useProgram, not a React hook.
   gl.useProgram(prog)
   const buf = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, buf)
