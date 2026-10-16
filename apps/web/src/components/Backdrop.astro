@@ -1,0 +1,42 @@
+---
+/**
+ * The animated backdrop from the Specsure reel: fractal noise through two ordered dithers.
+ * The home page shows it as in the reel; other pages get a quieter version. Without WebGL2 the
+ * page keeps its plain background; with reduced motion it is a still frame.
+ */
+interface Props {
+  variant: 'full' | 'subtle'
+}
+const { variant } = Astro.props
+---
+
+<canvas class="backdrop" data-variant={variant} aria-hidden="true"></canvas>
+
+<script>
+  import { type BackdropLook, startBackdrop } from '../lib/backdrop'
+
+  // Colors measured against the reel's background; the light theme gets the same texture in its
+  // own neutrals, as a faint shade rather than dark dots.
+  const LOOKS: Record<'full' | 'subtle', Record<'dark' | 'light', BackdropLook>> = {
+    full: {
+      dark: { colorA: '#0f0f12', colorB: '#444554', contrast: 0.9, detail: 0.9, speed: 0.08, grain: 1, light: false },
+      light: { colorA: '#f2f2f5', colorB: '#dadae2', contrast: 0.9, detail: 0.9, speed: 0.08, grain: 1, light: true },
+    },
+    subtle: {
+      dark: { colorA: '#0e0e10', colorB: '#262730', contrast: 0.9, detail: 0.9, speed: 0.04, grain: 0.55, light: false },
+      light: { colorA: '#f2f2f5', colorB: '#e7e7ec', contrast: 0.9, detail: 0.9, speed: 0.04, grain: 0.6, light: true },
+    },
+  }
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas.backdrop')
+  if (canvas) {
+    const variant = canvas.dataset.variant === 'full' ? 'full' : 'subtle'
+    let theme: 'dark' | 'light' = 'dark'
+    const readTheme = () => {
+      theme = getComputedStyle(document.documentElement).colorScheme.includes('light') ? 'light' : 'dark'
+    }
+    readTheme()
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', readTheme)
+    new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    startBackdrop(canvas, () => LOOKS[variant][theme])
+  }
+</script>

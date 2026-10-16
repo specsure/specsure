@@ -19,6 +19,18 @@ body {
   min-height: 100vh;
 }
 
+/* The animated backdrop sits behind everything and never takes a click. Its dither cells are
+   whole CSS pixels, so it is scaled up without smoothing. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
 a {
   color: var(--ink);
   text-decoration: none;
