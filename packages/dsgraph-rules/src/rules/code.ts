@@ -1,11 +1,13 @@
 import {
   type DsGraph,
+  type Knowledge,
   matchGlob,
   type NearestToken,
   nearestTokens,
   normalizeName,
   roleOfProperty,
   type StyleLiteral,
+  styleContext,
   type Token,
 } from '@dsgraph/core'
 import type { Rule, RuleContext } from '../types.js'
@@ -90,13 +92,19 @@ function scaleOf(graph: DsGraph, property: string, cache: Map<RegExp, Token[]>):
   return tokens
 }
 
-function nearestIn(graph: DsGraph, l: StyleLiteral, among?: Set<string>): NearestToken | undefined {
+function nearestIn(
+  graph: DsGraph,
+  l: StyleLiteral,
+  knowledge: Knowledge | undefined,
+  among?: Set<string>,
+): NearestToken | undefined {
   const all = nearestTokens(
     graph,
     { type: l.type, value: l.value },
     graph.defaultInput(),
     among ? 10_000 : 1,
-    l.property,
+    styleContext(l, knowledge),
+    knowledge,
   )
   return among ? all.find((m) => among.has(m.token.id)) : all[0]
 }
@@ -105,15 +113,17 @@ export const hardcodedColor: Rule = {
   id: 'style/hardcoded-color',
   description: 'A color in a style is written by hand instead of taken from a token.',
   defaultSeverity: 'warning',
-  run({ graph, code, options, report }) {
+  run({ graph, code, options, knowledge, report }) {
     if (!code || graph.tokens({ type: 'color' }).length === 0) return
     const skip = excepted(options)
     const memo = new Map<string, NearestToken | undefined>()
     for (const l of code.literals) {
       if (l.type !== 'color' || skip(l)) continue
-      // The same color may want different tokens: text for `color`, background for `background`.
-      const key = `${roleOfProperty(l.property) ?? ''}\u0000${l.text.toLowerCase()}`
-      if (!memo.has(key)) memo.set(key, nearestIn(graph, l))
+      // The same color may want different tokens: text for `color`, background for `background`,
+      // the hover one in `:hover`, the button's own in `.button`.
+      const { states, components } = styleContext(l, knowledge)
+      const key = [roleOfProperty(l.property), states, components, l.text.toLowerCase()].join('\u0000')
+      if (!memo.has(key)) memo.set(key, nearestIn(graph, l, knowledge))
       const near = memo.get(key)
       if (!near) continue
       report({
@@ -147,14 +157,14 @@ export const offScale: Rule = {
   description:
     'A spacing, radius or font size in a style is written by hand: on the scale (use the token) or off it.',
   defaultSeverity: 'warning',
-  run({ graph, code, options, report }) {
+  run({ graph, code, options, knowledge, report }) {
     if (!code || graph.tokens({ type: 'dimension' }).length === 0) return
     const skip = excepted(options)
     const scales = new Map<RegExp, Token[]>()
     for (const l of code.literals) {
       if (l.type !== 'dimension' || skip(l)) continue
       const scale = scaleOf(graph, l.property, scales)
-      const near = nearestIn(graph, l, new Set(scale.map((t) => t.id)))
+      const near = nearestIn(graph, l, knowledge, new Set(scale.map((t) => t.id)))
       if (!near) continue
       // 999px, 9999px: a pill, not a step of the radius scale, unless the system has a token for it.
       if (!near.exact && /radius$/i.test(l.property) && pxOf(l.value) >= 100) continue

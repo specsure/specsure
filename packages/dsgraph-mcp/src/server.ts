@@ -11,9 +11,13 @@ import {
   formatCoverage,
   type Input,
   impactOf,
+  type Knowledge,
+  normalizeName,
+  type StyleContext,
   type Token,
   VarMatcher,
   varNames,
+  vocabularyOf,
 } from '@dsgraph/core'
 import { formatChangeset, formatFindings, formatValue, formatWhen } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
@@ -29,6 +33,8 @@ export interface ServerOptions {
   /** Folder that relative sources and `dsgraph.config.json` are resolved against. */
   cwd: string
   config?: Config
+  /** A knowledge pack: more words to read token names by (`loadKnowledge` in `@dsgraph/cli`). */
+  knowledge?: Knowledge
   version?: string
 }
 
@@ -128,13 +134,25 @@ export function createServer(opts: ServerOptions): McpServer {
           .describe(
             'The CSS property the value is for, e.g. "color", "background-color", "border-color". Pass it when you know it: tokens made for it come first (text tokens for color, background tokens for a background).',
           ),
+        state: z
+          .string()
+          .optional()
+          .describe(
+            'The state the style is for: "hover", "focus", "active", "disabled", "selected" or "visited" (a :hover rule, a hover: class). Tokens named for it come first; without it, tokens for a state go after the others.',
+          ),
+        component: z
+          .string()
+          .optional()
+          .describe(
+            'The component being styled, e.g. "Button" or "ActionList": tokens named for it come first (button.bgColor.rest before bgColor.accent).',
+          ),
         context: CONTEXT,
         limit: z.number().int().min(1).max(25).optional().describe('How many tokens to return (default 5)'),
         source: SOURCE,
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ value, type, property, context, limit, source }) => {
+    async ({ value, type, property, state, component, context, limit, source }) => {
       const parsed = parseValue(value, type)
       if (!parsed)
         return failure(
@@ -144,7 +162,22 @@ export function createServer(opts: ServerOptions): McpServer {
       const input = inputOf(graph, context)
       // Tokens with the same value are one choice: grouped, so the list shows different values.
       const groups: Array<{ value: string; matches: ReturnType<typeof nearest> }> = []
-      for (const m of nearest(graph, parsed, input, 500, property)) {
+      const near: StyleContext = {}
+      if (property) near.property = property
+      if (state?.trim()) {
+        // `focus-visible`, `:hover`, `pressed`: the first word the vocabulary knows names the state.
+        const states = vocabularyOf(opts.knowledge).states
+        const words = normalizeName(state.replace(/^:+/, '')).split('.')
+        near.states = [states.get(words.find((w) => states.has(w)) ?? '') ?? words[0]!]
+      }
+      if (component?.trim())
+        near.components = [
+          component
+            .trim()
+            .replace(/[\s._-]+/g, '')
+            .toLowerCase(),
+        ]
+      for (const m of nearest(graph, parsed, input, 500, near, opts.knowledge)) {
         const key = formatValue(m.token.type, m.value)
         const g = groups.find((x) => x.value === key)
         if (g) g.matches.push(m)
@@ -394,7 +427,7 @@ export function createServer(opts: ServerOptions): McpServer {
         if (code.skipped.length && !code.files.length)
           return failure(`Could not parse the code: ${code.skipped[0]!.message}`)
       }
-      const findings = (await check(graph, config, [], { code })).filter((f) =>
+      const findings = (await check(graph, config, [], { code, knowledge: opts.knowledge })).filter((f) =>
         /^(style|usage)\//.test(f.rule),
       )
       const coverage = formatCoverage(
@@ -418,7 +451,7 @@ export function createServer(opts: ServerOptions): McpServer {
     },
     async ({ source }) => {
       const graph = await graphOf(source)
-      const findings = await check(graph, config)
+      const findings = await check(graph, config, [], { knowledge: opts.knowledge })
       return text(findings.length ? formatFindings(findings, { format: 'markdown' }) : 'No problems found.')
     },
   )

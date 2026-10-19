@@ -4,6 +4,7 @@ import {
   canonicalize,
   type DsGraph,
   type Finding,
+  type Knowledge,
   type Severity,
   sha256Hex,
   VarMatcher,
@@ -79,7 +80,7 @@ export async function check(
   graph: DsGraph,
   config: Config = {},
   extraRules: readonly Rule[] = [],
-  opts: { code?: CodeIndex } = {},
+  opts: { code?: CodeIndex; knowledge?: Knowledge } = {},
 ): Promise<Finding[]> {
   const rules = [...RULES, ...extraRules]
   const settings = resolveSettings(config, rules)
@@ -106,6 +107,7 @@ export async function check(
       options: setting.options,
       config,
       ...(code && vars ? { code, vars } : {}),
+      ...(opts.knowledge ? { knowledge: opts.knowledge } : {}),
       report(r) {
         const f: Omit<Finding, 'id'> = {
           rule: rule.id,

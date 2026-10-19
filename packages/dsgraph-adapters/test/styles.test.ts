@@ -66,6 +66,27 @@ describe('scanStyles', () => {
     expect(index.literals.find((l) => l.text === '-16px')?.value).toEqual({ value: 16, unit: 'px' })
   })
 
+  it('resolves nested selectors, so states and components are seen', async () => {
+    const index = await scanStyles(
+      new MemorySource({
+        'src/button.scss': `
+.button, .link {
+  color: #111;
+  &:hover { color: #222; }
+  .icon { color: #333; }
+  @media (min-width: 40em) { &--large:focus { color: #444; } }
+}
+`,
+      }),
+    )
+    expect(index.literals.map((l) => `${l.text} ${l.selector}`)).toEqual([
+      '#111 .button, .link',
+      '#222 .button:hover, .link:hover',
+      '#333 .button .icon, .link .icon',
+      '#444 .button--large:focus, .link--large:focus',
+    ])
+  })
+
   it('keeps alpha inside gradients and skips urls', () => {
     expect(
       literalsIn('background', 'linear-gradient(#fff, rgb(0 0 0 / 50%)) , url(a.png)').map((l) => l.text),

@@ -137,6 +137,16 @@ describe('scanCode', () => {
     )
   })
 
+  it('keeps the nested selector of a CSS-in-JS template relative to the component', async () => {
+    const index = await scanCode(project)
+    const hover = index.uses.find(
+      (u) => u.file === 'components/card.styled.ts' && u.name === '--color-bg-hover',
+    )
+    expect(hover?.selector).toBe('&:hover')
+    const plain = index.literals.find((l) => l.file === 'components/card.styled.ts' && l.text === '#fafafa')
+    expect(plain?.selector).toBeUndefined()
+  })
+
   it('finds values written by hand everywhere, positions in style objects left out', async () => {
     const index = await scanCode(project)
     const literals = index.literals.map(

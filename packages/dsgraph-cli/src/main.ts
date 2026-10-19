@@ -17,6 +17,7 @@ import {
 import { type Format, formatChangeset, formatFindings } from '@dsgraph/report'
 import { check, countBySeverity } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
+import { loadKnowledge } from './knowledge.js'
 import { loadGraph } from './sources.js'
 import { installedVersion } from './upgrade.js'
 
@@ -54,6 +55,10 @@ Options
                                   Vue, Svelte, Astro, HTML
   -h, --help                      show help
   -v, --version                   show version
+
+Knowledge
+  check reads token names with @specsure/knowledge when it is installed. DSGRAPH_KNOWLEDGE=<file>
+  uses another pack, DSGRAPH_KNOWLEDGE=off none.
 `
 
 export interface Io {
@@ -64,6 +69,7 @@ export interface Io {
 
 const RANK: Record<Level, number> = { none: 0, patch: 1, minor: 2, major: 3 }
 
+export { KNOWLEDGE_PACKAGE, loadKnowledge } from './knowledge.js'
 export { loadGraph } from './sources.js'
 export {
   dependencyVersion,
@@ -173,14 +179,18 @@ export async function main(argv: string[], io: Io): Promise<number> {
     }
 
     if (command === 'check') {
-      const [graph, code] = await Promise.all([loadGraph(rest[0] ?? '.', config, io.cwd), readCode()])
+      const [graph, code, knowledge] = await Promise.all([
+        loadGraph(rest[0] ?? '.', config, io.cwd),
+        readCode(),
+        loadKnowledge(io.cwd),
+      ])
       const findings = await check(
         graph,
         values.strict
           ? { ...config, extends: [...(config.extends ?? ['recommended']), 'dtcg-strict'] }
           : config,
         [],
-        code ? { code } : {},
+        { ...(code ? { code } : {}), ...(knowledge ? { knowledge } : {}) },
       )
       let report = formatFindings(findings, { format, group: !values.expand })
       if (code && format !== 'json')

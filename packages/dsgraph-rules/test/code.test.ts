@@ -128,6 +128,99 @@ describe('the token for a color written by hand', () => {
         .sort(),
     ).toEqual(['1 fgColor.accent', '2 bgColor.accent', '3 borderColor.accent'])
   })
+
+  it("is the one for the state and the component: hover in :hover, the button's own in .button", async () => {
+    const blue = srgb(0.035, 0.412, 0.855)
+    const tree = {
+      base: { $type: 'color', blue: { $value: blue } },
+      fgColor: { $type: 'color', accent: { $value: '{base.blue}' } },
+      bgColor: { $type: 'color', accent: { $value: '{base.blue}' } },
+      control: { $type: 'color', bgColor: { hover: { $value: '{base.blue}' } } },
+      button: {
+        $type: 'color',
+        primary: { bgColor: { rest: { $value: '{base.blue}' }, hover: { $value: '{base.blue}' } } },
+      },
+    }
+    const graph = DsGraph.from(
+      await buildSnapshot(systemFromDocuments([{ file: 't.tokens.json', tree }]), {
+        diagnostics: new DiagnosticBag(),
+      }),
+    )
+    const value = lit(0.035, 0.412, 0.855)
+    const color = { text: '#0969da', type: 'color' as const, value }
+    const fs = await check(graph, {}, [], {
+      code: {
+        files: ['src/card.css', 'src/button.css', 'src/Button.tsx'],
+        skipped: [],
+        uses: [],
+        literals: [
+          { file: 'src/card.css', line: 1, column: 1, property: 'background', selector: '.card', ...color },
+          {
+            file: 'src/card.css',
+            line: 2,
+            column: 1,
+            property: 'background',
+            selector: '.card:hover',
+            ...color,
+          },
+          {
+            file: 'src/button.css',
+            line: 3,
+            column: 1,
+            property: 'background',
+            selector: '.button',
+            ...color,
+          },
+          {
+            file: 'src/button.css',
+            line: 4,
+            column: 1,
+            property: 'background',
+            selector: '.button:hover',
+            ...color,
+          },
+          {
+            file: 'src/button.css',
+            line: 5,
+            column: 1,
+            property: 'background',
+            selector: '.button:hover:not(:disabled)',
+            ...color,
+          },
+          {
+            file: 'src/button.css',
+            line: 6,
+            column: 1,
+            property: 'color',
+            selector: '.button:hover',
+            ...color,
+          },
+          {
+            file: 'src/Button.tsx',
+            line: 7,
+            column: 1,
+            property: 'background-color',
+            source: 'hover:bg-[#0969da]',
+            ...color,
+          },
+        ],
+      },
+    })
+    expect(
+      fs
+        .filter((f) => f.rule === 'style/hardcoded-color')
+        .map((f) => `${f.loc?.line} ${(f.evidence as { token: string }).token}`)
+        .sort(),
+    ).toEqual([
+      '1 bgColor.accent',
+      '2 control.bgColor.hover',
+      '3 button.primary.bgColor.rest',
+      '4 button.primary.bgColor.hover',
+      '5 button.primary.bgColor.hover',
+      '6 fgColor.accent',
+      '7 button.primary.bgColor.hover',
+    ])
+  })
 })
 
 describe('rules on code', () => {

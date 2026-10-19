@@ -3,6 +3,24 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+- A color written by hand points to the token for its state and component, not only its property:
+  `control.bgColor.hover` in a `:hover` rule or a `hover:` class, `button.primary.bgColor.rest` in
+  `.button` or `Button.tsx`. In a rule without a state, tokens named for hover, focus, disabled and
+  other states go after the rest, even with the same value. States come from the selector (`:not()`
+  left out) and a class's variants; components from the selector's classes (a BEM block) and the
+  file or folder name. `styleContext` is exported from `@dsgraph/core`; `nearestTokens` takes it.
+- Style scanning resolves nested selectors: `&:hover` inside `.button` is `.button:hover`, and in a
+  CSS-in-JS template it stays `&:hover`.
+- MCP `find_token` takes `state` and `component`.
+- Knowledge packs (`dsgraph/knowledge@1`): the words names are read by — roles, states, the resting
+  state, generic file and class names — are a vocabulary now, `DEFAULT_VOCABULARY` in
+  `@dsgraph/core`, neutral and small. A pack adds words to it, never replaces them. `nearestTokens`,
+  `styleContext` and `check` take a pack; `loadKnowledge` in `@dsgraph/cli` finds one for
+  `dsgraph check` and `dsgraph-mcp`: the file in `DSGRAPH_KNOWLEDGE` (`off` for none), or the
+  `@specsure/knowledge` package when it is installed.
+
 ## 0.6.3 — 2026-10-15
 
 - A color written by hand points to the token made for its property: text tokens for `color`,

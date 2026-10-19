@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
-import { loadConfig } from '@dsgraph/cli'
+import { loadConfig, loadKnowledge } from '@dsgraph/cli'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createServer } from './server.js'
 
@@ -15,6 +15,10 @@ Usage
 Options
   -c, --config <file>   dsgraph.config.json (default: ./dsgraph.config.json if present)
   -h, --help
+
+Knowledge
+  Reads @specsure/knowledge when it is installed; DSGRAPH_KNOWLEDGE=<file> uses
+  another pack, DSGRAPH_KNOWLEDGE=off none.
 
 Claude Code
   claude mcp add dsgraph -- npx -y @dsgraph/mcp ./tokens
@@ -33,5 +37,6 @@ const server = createServer({
   source: positionals[0] ?? process.env.DSGRAPH_SOURCE ?? '.',
   cwd,
   config: await loadConfig(values.config, cwd),
+  knowledge: await loadKnowledge(cwd),
 })
 await server.connect(new StdioServerTransport())

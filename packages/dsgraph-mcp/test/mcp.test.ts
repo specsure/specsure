@@ -33,6 +33,11 @@ beforeAll(async () => {
   await mkdir(join(dir, 'previous'))
   await writeFile(join(dir, 'tokens/tokens.css'), v2)
   await writeFile(join(dir, 'previous/tokens.css'), v1)
+  await mkdir(join(dir, 'states'))
+  await writeFile(
+    join(dir, 'states/tokens.css'),
+    ':root {\n  --blue: #0969da;\n  --bg-accent: var(--blue);\n  --control-bg-hover: var(--blue);\n  --button-bg-rest: var(--blue);\n  --button-bg-hover: var(--blue);\n}\n',
+  )
   await mkdir(join(dir, 'src'))
   await writeFile(
     join(dir, 'src/button.css'),
@@ -63,6 +68,19 @@ describe('dsgraph MCP server', () => {
     const { text } = await call('find_token', { value: '#3366ff' })
     expect(text).toContain('- #3366ff — exact: `color-accent` → color-blue-500, `color-blue-500`')
     expect(text).toContain('Use `color-accent` instead of the literal value, or another token')
+  })
+
+  it('puts tokens for the state and the component first', async () => {
+    const first = async (args: Record<string, unknown>) =>
+      /exact: `([\w-]+)`/.exec(
+        (await call('find_token', { value: '#0969da', property: 'background', source: './states', ...args }))
+          .text,
+      )?.[1]
+    expect(await first({})).toBe('bg-accent')
+    // Either hover token fits; the resting ones do not.
+    expect(await first({ state: 'hover' })).toMatch(/-hover$/)
+    expect(await first({ state: ':hover', component: 'Button' })).toBe('button-bg-hover')
+    expect(await first({ component: 'button' })).toBe('button-bg-rest')
   })
 
   it('reports the closest token when none matches, in px across units', async () => {

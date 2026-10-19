@@ -8,7 +8,9 @@ export {
   type NearestToken,
   nearestTokens,
   roleOfProperty,
+  type StyleContext,
   type StyleLiteral,
+  styleContext,
   type TokenUse,
   VarMatcher,
   valueDistance,
@@ -24,6 +26,15 @@ export { type ResolvedDoc, type ResolvedToken, resolveDoc } from './dtcg/resolve
 export { DsGraph, type TokenFilter } from './graph.js'
 export { type ChangeImpact, type Impact, type ImpactSite, impactOf } from './impact.js'
 export { parseJsonLenient } from './json.js'
+export {
+  type CompiledVocabulary,
+  DEFAULT_VOCABULARY,
+  type Knowledge,
+  type Role,
+  readKnowledge,
+  type Vocabulary,
+  vocabularyOf,
+} from './knowledge.js'
 export { NOT_TOKENS } from './not-tokens.js'
 export { cssVarToName, globToRegExp, matchGlob, matchPath, normalizeName, tokenId } from './path.js'
 export { getAt, parsePointer, toPointer } from './pointer.js'

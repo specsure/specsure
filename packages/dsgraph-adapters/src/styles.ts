@@ -152,12 +152,32 @@ export function literalsIn(
   return out
 }
 
-function selectorOf(decl: Declaration): string | undefined {
-  const parent = decl.parent
-  return parent && parent.type === 'rule' ? (parent as postcss.Rule).selector.replace(/\s+/g, ' ') : undefined
-}
-
 const WRAP = '.__dsgraph__'
+
+/**
+ * The full selector a declaration applies to, nesting resolved: `&:hover` inside `.button` is
+ * `.button:hover`. The wrapper of a declaration list (a `styled` template) is `&`, and a
+ * declaration right inside it has no selector.
+ */
+function selectorOf(decl: Declaration): string | undefined {
+  const rules: string[][] = []
+  for (let p = decl.parent; p && p.type !== 'root'; p = p.parent as typeof p)
+    if (p.type === 'rule') rules.unshift((p as postcss.Rule).selectors)
+  if (!rules.length) return undefined
+  let full = ['']
+  for (const selectors of rules) {
+    const next: string[] = []
+    for (const outer of full)
+      for (const raw of selectors) {
+        const inner = raw.trim()
+        next.push(!outer ? inner : inner.includes('&') ? inner.replaceAll('&', outer) : `${outer} ${inner}`)
+      }
+    // Lists inside lists multiply; a few are enough to tell states and components.
+    full = next.slice(0, 8)
+  }
+  const out = full.map((s) => s.replaceAll(WRAP, '&').replace(/\s+/g, ' ').trim()).join(', ')
+  return out === '&' ? undefined : out
+}
 
 export interface CssTextOptions {
   scss?: boolean
@@ -186,8 +206,7 @@ export function scanCssText(file: string, text: string, index: CodeIndex, opts: 
       line: (decl.source?.start?.line ?? 1) + offset,
       column: decl.source?.start?.column ?? 0,
     }
-    const sel = selectorOf(decl)
-    const selector = sel && !sel.includes(WRAP) ? sel : undefined
+    const selector = selectorOf(decl)
     const property = decl.prop
     for (const v of varsIn(decl.value)) {
       const use: TokenUse = { ...loc, name: v.name, property }

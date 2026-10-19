@@ -3,6 +3,7 @@ import type {
   Config,
   DsGraph,
   Finding,
+  Knowledge,
   Loc,
   Severity,
   Token,
@@ -18,6 +19,8 @@ export interface RuleContext {
   code?: CodeIndex
   /** Custom property names in the code to tokens; present with `code`. */
   vars?: VarMatcher
+  /** A knowledge pack, when one is installed: more words to read names by. */
+  knowledge?: Knowledge
   report(finding: {
     message: string
     nodes: string[]

@@ -1,5 +1,6 @@
 import { canonicalize, type Token } from '@dsgraph/schema'
 import type { DsGraph } from './graph.js'
+import { type CompiledVocabulary, type Knowledge, type Role, vocabularyOf } from './knowledge.js'
 import { normalizeName } from './path.js'
 import type { Input } from './resolver/system.js'
 import { type ColorValue, deltaEOK } from './values/color.js'
@@ -215,15 +216,6 @@ export interface NearestToken {
   exact: boolean
 }
 
-/** What a token is for, by words in its name: text, a background, a border or outline, a shadow. */
-const ROLES = {
-  text: /(^|\.)(fg|foreground|text|ink|content|on|link|icon)(\.|$)/,
-  background: /(^|\.)(bg|background|surface|canvas|fill|container|layer|backdrop)(\.|$)/,
-  border: /(^|\.)(border|stroke|outline|divider|separator|ring)(\.|$)/,
-  shadow: /(^|\.)(shadow|elevation)(\.|$)/,
-} as const
-type Role = keyof typeof ROLES
-
 /** The role a CSS property's value plays: `color` is text, `background-color` a background. */
 export function roleOfProperty(property: string): Role | undefined {
   const p = property.toLowerCase()
@@ -240,6 +232,112 @@ export function roleOfProperty(property: string): Role | undefined {
   return undefined
 }
 
+/**
+ * Where a value is written, as far as choosing a token goes: the CSS property, the states the rule
+ * applies in (`:hover` → `hover`) and the component it styles (`.button`, `Button.tsx`).
+ */
+export interface StyleContext {
+  property?: string
+  /** `hover`, `focus`, `active`, `disabled`, `selected`, `visited`; none for the resting state. */
+  states?: string[]
+  /** Names of the component the code styles, lower case, without separators: `button`, `actionlist`. */
+  components?: string[]
+}
+
+/** States in a selector; what `:not()` excludes does not count. */
+const SELECTOR_STATES: Array<[RegExp, string]> = [
+  [/:hover\b/, 'hover'],
+  [/:focus(-visible|-within)?\b/, 'focus'],
+  [/:active\b|\[aria-pressed(=["']?true["']?)?\]/, 'active'],
+  [/:disabled\b|\[disabled\]|\[aria-disabled(=["']?true["']?)?\]|\.is-disabled\b/, 'disabled'],
+  [
+    /:checked\b|\[aria-(selected|checked|current)(=["']?(true|page|step)["']?)?\]|\.is-(selected|checked)\b|\[data-state=["']?(checked|on|active)["']?\]/,
+    'selected',
+  ],
+  [/:visited\b/, 'visited'],
+]
+
+/** States of a utility class's variants: `hover:`, `group-focus-visible:`, `aria-disabled:`, `data-[state=checked]:`. */
+function variantStates(source: string): string[] {
+  const m = /^((?:[\w-]+(?:\[[^\]]*\])?:)*)/.exec(source)
+  const out = new Set<string>()
+  for (const v of (m?.[1] ?? '').split(':').filter(Boolean)) {
+    if (/hover/.test(v)) out.add('hover')
+    else if (/focus/.test(v)) out.add('focus')
+    else if (/(^|-)active$|pressed/.test(v)) out.add('active')
+    else if (/disabled/.test(v)) out.add('disabled')
+    else if (/checked|selected|current/.test(v)) out.add('selected')
+    else if (/visited/.test(v)) out.add('visited')
+  }
+  return [...out]
+}
+
+const compact = (name: string) => normalizeName(name).replace(/\./g, '')
+
+/**
+ * The context of a value written in code, for `nearestTokens`: states from the selector or a
+ * class's variants, components from the selector's classes (the block of a BEM class) and the file
+ * name (`Button.module.css`, `ActionList/Item.tsx`).
+ */
+export function styleContext(
+  at: { file: string; property: string; selector?: string; source?: string },
+  knowledge?: Knowledge,
+): StyleContext {
+  const v = vocabularyOf(knowledge)
+  const states = new Set<string>()
+  if (at.selector) {
+    const sel = at.selector.replace(/:not\([^)]*\)/g, '')
+    for (const [re, state] of SELECTOR_STATES) if (re.test(sel)) states.add(state)
+  }
+  if (at.source) for (const s of variantStates(at.source)) states.add(s)
+  const components = new Set<string>()
+  const add = (name: string, isClass: boolean) => {
+    const c = compact(name)
+    const words = normalizeName(name).split('.')
+    if (!c || v.generic.has(c) || /^\d/.test(c)) return
+    // A class that names a state or a role (`.is-active`, `.text`) is not a component.
+    if (words.some((w) => v.states.has(w) || v.rest.has(w)) || words[0] === 'is' || words[0] === 'has') return
+    if (isClass && Object.values(v.roles).some((re) => re.test(c))) return
+    components.add(c)
+  }
+  for (const cls of at.selector?.match(/\.-?[_a-zA-Z][\w-]*/g) ?? []) {
+    const name = cls.slice(1)
+    add(name.split(/__|--/)[0]!, true)
+    if (/__|--/.test(name)) add(name.replace(/--.*$/, ''), true)
+  }
+  const parts = at.file.split('/')
+  const base = parts.at(-1)!.replace(/(\.(module|styles?|stories|test|spec))*\.[\w]+$/i, '')
+  add(base, false)
+  // `Button/index.tsx`, `Button/styles.css`: the folder names the component.
+  if (parts.length > 1 && v.generic.has(compact(base))) add(parts.at(-2)!, false)
+  const ctx: StyleContext = { property: at.property }
+  if (states.size) ctx.states = [...states].sort()
+  if (components.size) ctx.components = [...components]
+  return ctx
+}
+
+/** How a token's name fits the code's states: 2 names the state, 1 says nothing, 0 names another state. */
+function stateScore(words: string[], states: string[], v: CompiledVocabulary): number {
+  const named = new Set(words.map((w) => v.states.get(w)).filter(Boolean))
+  if (states.length)
+    return states.some((s) => named.has(s)) ? 2 : named.size || words.some((w) => v.rest.has(w)) ? 0 : 1
+  // In the resting state, a token for hover or disabled is the wrong one even with the same value.
+  return named.size ? 0 : 1
+}
+
+/** Whether a token's name names one of the components: `button` in `button.primary.bgColor`. */
+function componentScore(words: string[], components: string[]): number {
+  if (!components.length) return 0
+  for (let i = 0; i < words.length; i++) {
+    let joined = ''
+    for (let j = i; j < Math.min(words.length, i + 4); j++) {
+      joined += words[j]
+      if (components.includes(joined)) return 1
+    }
+  }
+  return 0
+}
+
 const segments = (id: string) => id.split('.').length
 
 /**
@@ -247,29 +345,43 @@ const segments = (id: string) => id.split('.').length
  * a general token), 1 when it says so further on (`selection.bgColor`), -1 when it names another
  * role, else 0.
  */
-function roleScore(id: string, role: Role | undefined): number {
+function roleScore(id: string, role: Role | undefined, v: CompiledVocabulary): number {
   if (!role) return 0
   const name = normalizeName(id)
-  if (ROLES[role].test(name.split('.')[0]!)) return 2
-  if (ROLES[role].test(name)) return 1
-  return (Object.keys(ROLES) as Role[]).some((r) => r !== role && ROLES[r].test(name)) ? -1 : 0
+  const roles = v.roles
+  if (roles[role].test(name.split('.')[0]!)) return 2
+  if (roles[role].test(name)) return 1
+  return (Object.keys(roles) as Role[]).some((r) => r !== role && roles[r].test(name)) ? -1 : 0
 }
 
 /**
- * Tokens nearest to a value in one context. Deprecated ones go last. Among exact matches, tokens
- * made for the property's role come first (`fgColor.accent` for `color`, not `borderColor.accent`).
+ * Tokens nearest to a value in one context. Deprecated ones go last. Among exact matches, the name
+ * decides, in this order:
+ * - a token made for another role goes last (`borderColor.accent` for `color`);
+ * - the code's state: `control.bgColor.hover` in a `:hover` rule, and in a rule without one, not
+ *   a token for hover or disabled;
+ * - the code's component: `button.bgColor.rest` in `.button` or `Button.tsx`;
+ * - the property's role, as the first part of the name before deeper in it (`fgColor.accent`
+ *   before `selection.fgColor`).
  * Among equally close tokens, the ones that reference another token (semantic tokens, which follow
  * themes) come before the primitives that hold the value; then general tokens before component ones
  * (`fgColor.accent` before `button.outline.fgColor.rest`), and the one others build on first.
+ * `context` is a CSS property or a whole `StyleContext` (see `styleContext`); a knowledge pack adds
+ * to the words names are read by.
  */
 export function nearestTokens(
   graph: DsGraph,
   parsed: { type: string; value: unknown },
   input: Input,
   limit: number,
-  property?: string,
+  context?: string | StyleContext,
+  knowledge?: Knowledge,
 ): NearestToken[] {
-  const role = property ? roleOfProperty(property) : undefined
+  const v = vocabularyOf(knowledge)
+  const ctx: StyleContext = typeof context === 'string' ? { property: context } : (context ?? {})
+  const role = ctx.property ? roleOfProperty(ctx.property) : undefined
+  const states = ctx.states ?? []
+  const components = ctx.components ?? []
   const types = COMPATIBLE[parsed.type] ?? [parsed.type]
   const out: NearestToken[] = []
   const depth = new Map<NearestToken, number>()
@@ -283,11 +395,30 @@ export function nearestTokens(
     out.push(m)
     depth.set(m, graph.chain(token.id, input).length)
   }
+  // How a name fits the context, worked out once per exact match: [role ok, state, component, role].
+  const fits = new Map<NearestToken, number[]>()
+  const fit = (m: NearestToken) => {
+    let f = fits.get(m)
+    if (!f) {
+      const words = normalizeName(m.token.id).split('.')
+      const r = roleScore(m.token.id, role, v)
+      f = [r < 0 ? 0 : 1, stateScore(words, states, v), componentScore(words, components), r]
+      fits.set(m, f)
+    }
+    return f
+  }
+  const byFit = (a: NearestToken, b: NearestToken) => {
+    if (!a.exact || !b.exact) return 0
+    const fa = fit(a)
+    const fb = fit(b)
+    for (let i = 0; i < fa.length; i++) if (fa[i] !== fb[i]) return fb[i]! - fa[i]!
+    return 0
+  }
   return out
     .sort(
       (a, b) =>
         Number(a.token.deprecated !== null) - Number(b.token.deprecated !== null) ||
-        (a.exact && b.exact ? roleScore(b.token.id, role) - roleScore(a.token.id, role) : 0) ||
+        byFit(a, b) ||
         a.distance - b.distance ||
         Number(depth.get(b)! > 1) - Number(depth.get(a)! > 1) ||
         segments(a.token.id) - segments(b.token.id) ||
