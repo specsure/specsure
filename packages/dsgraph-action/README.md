@@ -108,4 +108,4 @@ GitHub gives workflows on forks a read-only token, so the comment cannot be writ
 
 ## Source
 
-This repository is generated from [`packages/dsgraph-action`](https://github.com/specsure/specsure/tree/main/packages/dsgraph-action) in `specsure/specsure`; open issues and pull requests there. MIT license.
+This repository is generated from [`packages/dsgraph-action`](https://github.com/specsure/specsure/tree/main/packages/dsgraph-action) in `specsure/specsure`; open issues and pull requests there. MIT license; the knowledge pack built into `dist/index.mjs` has its own license, [LICENSE-knowledge](LICENSE-knowledge).

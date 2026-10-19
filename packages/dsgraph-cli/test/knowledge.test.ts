@@ -14,9 +14,9 @@ describe('loadKnowledge', () => {
     await expect(loadKnowledge(dir, { DSGRAPH_KNOWLEDGE: 'bad.json' })).rejects.toThrow(/bad\.json/)
   })
 
-  it('is none when turned off or when no pack is installed', async () => {
+  it('finds the installed @specsure/knowledge, or none when turned off', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsgraph-knowledge-'))
+    expect((await loadKnowledge(dir, {}))?.schema).toBe('dsgraph/knowledge@1')
     expect(await loadKnowledge(dir, { DSGRAPH_KNOWLEDGE: 'off' })).toBeUndefined()
-    expect(await loadKnowledge(dir, {})).toBeUndefined()
   })
 })

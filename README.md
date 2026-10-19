@@ -84,4 +84,7 @@ Network tests (jsDelivr) are opt-in: `DSGRAPH_NETWORK_TESTS=1 npm test`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The CLI and the MCP server also install `@specsure/knowledge`, a knowledge pack: data
+that adds words dsgraph reads token names by (such as which words name a state). It has its own
+license, not MIT, and may be used with dsgraph. The engine works without it:
+`DSGRAPH_KNOWLEDGE=off`.

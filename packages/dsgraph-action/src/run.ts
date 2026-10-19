@@ -19,12 +19,14 @@ import {
   formatCoverage,
   impactOf,
   type Level,
+  readKnowledge,
   VarMatcher,
   varNames,
 } from '@dsgraph/core'
 import { formatChangeset, formatFindings } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { NodeFsSource } from '@dsgraph/sources/node'
+import pack from '@specsure/knowledge/knowledge.json' with { type: 'json' }
 
 /** Where the action reads its inputs and writes its results; `process.env` and the file system in production. */
 export interface Runtime {
@@ -36,6 +38,8 @@ export interface Runtime {
 }
 
 const RANK: Record<Level, number> = { none: 0, patch: 1, minor: 2, major: 3 }
+/** Specsure's knowledge pack, built into the action (its own license, LICENSE-knowledge). */
+const knowledge = readKnowledge(pack)
 export const MARKER = '<!-- dsgraph-action -->'
 
 const input = (rt: Runtime, name: string, fallback = ''): string =>
@@ -174,7 +178,7 @@ export async function run(rt: Runtime): Promise<number> {
     if (code && pr && token) {
       const changed = await changedFiles(rt, { repo, pr: pr.number, token })
       const styles = changed
-        ? (await check(head, config, [], { code })).filter(
+        ? (await check(head, config, [], { code, knowledge })).filter(
             (f) => /^(style|usage)\//.test(f.rule) && f.loc?.file && changed.has(f.loc.file),
           )
         : []
@@ -186,7 +190,7 @@ export async function run(rt: Runtime): Promise<number> {
     }
     // Checks on someone else's package are theirs to fix; with `package` they are off unless asked for.
     if (input(rt, 'checks', pkg ? 'false' : 'true') !== 'false') {
-      const findings = await check(head, config)
+      const findings = await check(head, config, [], { knowledge })
       if (findings.length)
         body += `\n<details><summary>Checks on the new version (${findings.length})</summary>\n\n${formatFindings(findings, { format: 'markdown' })}\n</details>\n`
     }

@@ -3,7 +3,7 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.7.0 — 2026-10-20
 
 - A color written by hand points to the token for its state and component, not only its property:
   `control.bgColor.hover` in a `:hover` rule or a `hover:` class, `button.primary.bgColor.rest` in
@@ -20,6 +20,10 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   `styleContext` and `check` take a pack; `loadKnowledge` in `@dsgraph/cli` finds one for
   `dsgraph check` and `dsgraph-mcp`: the file in `DSGRAPH_KNOWLEDGE` (`off` for none), or the
   `@specsure/knowledge` package when it is installed.
+- `@dsgraph/cli` (and through it `@dsgraph/mcp`) depends on `@specsure/knowledge`, Specsure's
+  knowledge pack. It is data under its own license, not MIT; `DSGRAPH_KNOWLEDGE=off` runs without it.
+- GitHub Action v1.5.0 is built on it, with the knowledge pack inside (license in
+  `LICENSE-knowledge`).
 
 ## 0.6.3 — 2026-10-15
 

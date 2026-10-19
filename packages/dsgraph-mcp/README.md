@@ -61,4 +61,6 @@ dimension 0.875rem in theme: default:
 No token matches exactly; the closest is `space-md`. Using a literal value here would bypass the design system.
 ```
 
+Reads token names with `@specsure/knowledge`, a knowledge pack installed with it (data under its own license, not MIT); `DSGRAPH_KNOWLEDGE=off` runs without it.
+
 Part of [dsgraph](https://github.com/specsure/specsure). MIT license.

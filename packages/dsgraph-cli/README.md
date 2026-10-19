@@ -47,3 +47,7 @@ Repeated findings are collapsed (`247× Color "…" is a string`, with the first
 Exit codes: `0` ok · `1` check found errors (or `--max-warnings` exceeded) / diff reached `--fail-on` · `2` usage or runtime error.
 
 Config: `dsgraph.config.json` (JSON Schema in `@dsgraph/schema/schemas/config.schema.json`).
+
+Knowledge: `dsgraph check` reads token names with `@specsure/knowledge`, a knowledge pack installed
+with the CLI (data under its own license, not MIT). `DSGRAPH_KNOWLEDGE=<file>` uses another pack,
+`DSGRAPH_KNOWLEDGE=off` none.
