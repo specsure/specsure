@@ -21,7 +21,7 @@ import { loadKnowledge } from './knowledge.js'
 import { loadGraph } from './sources.js'
 import { installedVersion } from './upgrade.js'
 
-export const VERSION = '0.7.0'
+export const VERSION = '0.8.0'
 
 const HELP = `dsgraph ${VERSION} — design-token graph: scan, check and diff
 

@@ -3,11 +3,11 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.8.0 — 2026-10-22
 
 - `@dsgraph/report` answers questions about one design system as data: `findToken`, `readToken`,
   `searchTokens`, `describeTokens` (with `stateOf`, `componentOf`, `similarIds`). The MCP server
-  words them for agents; Token Lookup on the site draws them.
+  words them for agents; Token Fix on the site draws them.
 - Choosing a token among equal ones counts the words of a name whatever separates them, so
   `control-bgColor-hover` is more general than `button-default-bgColor-hover` in CSS names too; and
   of tokens still equal, the one more tokens reference comes first (`fgColor-default` before
@@ -50,6 +50,7 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold
   values and how many take them from others; `search_tokens` finds a custom property
   (`--color-text`) and names written with other separators.
+- GitHub Action v1.6.0 is built on it.
 
 ## 0.7.0 — 2026-10-20
 
