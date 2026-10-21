@@ -1,13 +1,14 @@
 import { DsGraph, scan } from '@dsgraph/core'
 import { MemorySource } from '@dsgraph/sources'
 import { describe, expect, it } from 'vitest'
-import { convert } from '../src/convert'
-import type { RawExport } from '../src/raw'
+import type { FigmaExport } from '../src/figma.js'
+import { figmaTokens, fromFigmaRest } from '../src/figma.js'
+import { figmaVariables, jsonTokens } from '../src/index.js'
 
 const white = { r: 1, g: 1, b: 1, a: 1 }
 const ink = { r: 0.06, g: 0.09, b: 0.16, a: 1 }
 
-const file: RawExport = {
+const file: FigmaExport = {
   file: { name: 'Acme' },
   collections: [
     { id: 'c1', name: 'Primitives', modes: [{ id: 'm0', name: 'Value' }], defaultModeId: 'm0' },
@@ -202,7 +203,7 @@ const file: RawExport = {
 }
 
 describe('Figma variables and styles as DTCG', () => {
-  const out = convert(file)
+  const out = figmaTokens(file)
 
   it('writes a file per collection and mode, and a resolver with the modes as a modifier', () => {
     expect(Object.keys(out.files).sort()).toEqual([
@@ -307,5 +308,83 @@ describe('Figma variables and styles as DTCG', () => {
     expect(one.value('bg.default', { [theme.name]: 'Dark' })).toMatchObject({
       components: [0.06, 0.09, 0.16],
     })
+  })
+})
+
+describe("Figma's REST API response", () => {
+  const response = {
+    status: 200,
+    error: false,
+    meta: {
+      variableCollections: {
+        'VariableCollectionId:1': {
+          id: 'VariableCollectionId:1',
+          name: 'Theme',
+          modes: [
+            { modeId: '1:0', name: 'Light' },
+            { modeId: '1:1', name: 'Dark' },
+          ],
+          defaultModeId: '1:0',
+          remote: false,
+        },
+        'VariableCollectionId:9': {
+          id: 'VariableCollectionId:9',
+          name: 'Brand',
+          modes: [{ modeId: '9:0', name: 'Value' }],
+          defaultModeId: '9:0',
+          remote: true,
+        },
+      },
+      variables: {
+        'VariableID:1:1': {
+          id: 'VariableID:1:1',
+          name: 'bg/default',
+          variableCollectionId: 'VariableCollectionId:1',
+          resolvedType: 'COLOR',
+          valuesByMode: {
+            '1:0': { r: 1, g: 1, b: 1, a: 1 },
+            '1:1': { type: 'VARIABLE_ALIAS', id: 'VariableID:9:1' },
+          },
+          scopes: ['FRAME_FILL'],
+          codeSyntax: {},
+          description: '',
+        },
+        'VariableID:9:1': {
+          id: 'VariableID:9:1',
+          name: 'Ink',
+          variableCollectionId: 'VariableCollectionId:9',
+          resolvedType: 'COLOR',
+          valuesByMode: { '9:0': { r: 0, g: 0, b: 0, a: 1 } },
+          scopes: [],
+          remote: true,
+        },
+      },
+    },
+  }
+
+  it("is read as the file's collections, a library value written in place", async () => {
+    const raw = fromFigmaRest(response)!
+    expect(raw.collections.map((c) => c.name)).toEqual(['Theme'])
+    expect(raw.external['VariableID:9:1']).toMatchObject({ name: 'Ink', value: { r: 0, g: 0, b: 0 } })
+    const g = DsGraph.from(
+      await scan(
+        new MemorySource({ 'figma/variables.json': JSON.stringify(response) }),
+        {},
+        {
+          adapters: [figmaVariables, jsonTokens],
+        },
+      ),
+    )
+    expect(g.modifiers).toEqual([{ name: 'Theme', contexts: ['Light', 'Dark'], default: 'Light' }])
+    expect(g.value('bg.default', { Theme: 'Dark' })).toMatchObject({ components: [0, 0, 0] })
+    expect(g.token('bg.default')?.values.find((v) => v.when?.Theme === 'Dark')?.raw).toMatchObject({
+      hex: '#000000',
+    })
+  })
+
+  it('leaves other token files alone', async () => {
+    const tokens = new MemorySource({ 'tokens.json': JSON.stringify({ a: { $type: 'number', $value: 1 } }) })
+    expect(await figmaVariables.detect(tokens, {})).toEqual([])
+    expect(fromFigmaRest({ a: 1 })).toBeUndefined()
   })
 })

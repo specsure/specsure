@@ -1,4 +1,4 @@
-import { cssTokens, jsonTokens } from '@dsgraph/adapters'
+import { cssTokens, figmaVariables, jsonTokens } from '@dsgraph/adapters'
 import {
   type Config,
   DsGraph,
@@ -78,7 +78,7 @@ export async function load(side: SideInput, include: string, githubToken?: strin
       if (css.length) config.css = { include: css.map((f) => f.path) }
     }
   } else source = remoteSource(side, side.kind === 'github' && githubToken ? { token: githubToken } : {})
-  return DsGraph.from(await scan(source, config, { adapters: [jsonTokens, cssTokens] }))
+  return DsGraph.from(await scan(source, config, { adapters: [figmaVariables, jsonTokens, cssTokens] }))
 }
 
 function info(g: DsGraph, label: string): SideInfo {

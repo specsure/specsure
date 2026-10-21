@@ -12,5 +12,8 @@
   "devDependencies": {
     "@figma/plugin-typings": "1.142.0",
     "rolldown": "1.2.13"
+  },
+  "dependencies": {
+    "@dsgraph/adapters": "0.8.1"
   }
 }

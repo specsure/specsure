@@ -1,7 +1,7 @@
 {
   "name": "@dsgraph/adapters",
   "version": "0.8.1",
-  "description": "Token adapters for dsgraph: token-set and value/type JSON (sets, themes, math, color modifiers), CSS custom properties (themes by selectors and media queries).",
+  "description": "Token adapters for dsgraph: token-set and value/type JSON (sets, themes, math, color modifiers), CSS custom properties (themes by selectors and media queries), Figma variables (the REST API response).",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./figma": {
+      "types": "./dist/figma.d.ts",
+      "default": "./dist/figma.js"
     }
   },
   "files": [

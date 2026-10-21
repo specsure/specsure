@@ -13,6 +13,7 @@ export default defineConfig({
       { find: /^@dsgraph\/sources$/, replacement: src('dsgraph-sources') },
       { find: /^@dsgraph\/sources\/node$/, replacement: src('dsgraph-sources', 'node') },
       { find: /^@dsgraph\/adapters$/, replacement: src('dsgraph-adapters') },
+      { find: /^@dsgraph\/adapters\/figma$/, replacement: src('dsgraph-adapters', 'figma') },
       { find: /^@dsgraph\/rules$/, replacement: src('dsgraph-rules') },
       { find: /^@dsgraph\/report$/, replacement: src('dsgraph-report') },
     ],

@@ -1,4 +1,110 @@
-import type { RawColor, RawEasing, RawExport, RawTextStyle, RawValue, RawVariable } from './raw'
+/**
+ * A Figma file's variables and styles as DTCG 2025.10. The input is plain data, as the Figma plugin
+ * reads it or as Figma's REST API returns variables (`fromFigmaRest`); this module has no imports,
+ * so the plugin bundles it alone (`@dsgraph/adapters/figma`).
+ */
+
+export interface FigmaColor {
+  r: number
+  g: number
+  b: number
+  a?: number
+}
+
+/** An easing: one of Figma's named curves, a cubic Bézier, or a spring. */
+export interface FigmaEasing {
+  type: string
+  bezier?: { x1: number; y1: number; x2: number; y2: number }
+}
+
+/**
+ * A value in one mode: a color, a number, a string, a boolean, an easing, a reference to another
+ * variable, or a color composed of a color and an opacity, either of them a reference.
+ */
+export type FigmaValue =
+  | FigmaColor
+  | number
+  | string
+  | boolean
+  | { alias: string }
+  | { easing: FigmaEasing }
+  | { composed: { color: FigmaColor | { alias: string }; opacity: number | { alias: string } } }
+
+export interface FigmaCollection {
+  id: string
+  name: string
+  modes: Array<{ id: string; name: string }>
+  defaultModeId: string
+  hidden?: boolean
+}
+
+export interface FigmaVariable {
+  id: string
+  name: string
+  collectionId: string
+  type: 'COLOR' | 'FLOAT' | 'STRING' | 'BOOLEAN' | 'EASING' | 'TIMING'
+  description?: string
+  /** Where Figma offers it: `GAP`, `CORNER_RADIUS`, `FONT_WEIGHT`, `ALL_SCOPES`… */
+  scopes: string[]
+  /** How code names it, per platform: `{ WEB: 'var(--color-text)' }`. */
+  codeSyntax?: Record<string, string>
+  hiddenFromPublishing?: boolean
+  valuesByMode: Record<string, FigmaValue>
+}
+
+/** A variable from a library the file uses: its name and its value, for references that leave the file. */
+export interface FigmaLibraryVariable {
+  name: string
+  type: FigmaVariable['type']
+  scopes: string[]
+  value: FigmaValue
+}
+
+export interface FigmaPaint {
+  type: string
+  color?: FigmaColor
+  opacity?: number
+  /** The variable the color is bound to. */
+  variable?: string
+  stops?: Array<{ position: number; color: FigmaColor; variable?: string }>
+}
+
+export interface FigmaEffect {
+  type: string
+  color?: FigmaColor
+  offset?: { x: number; y: number }
+  radius?: number
+  spread?: number
+  visible?: boolean
+}
+
+export interface FigmaTextStyle {
+  id: string
+  name: string
+  description?: string
+  fontFamily: string
+  /** Figma's style name: `Semi Bold`, `Bold Italic`. */
+  fontStyle: string
+  fontSize: number
+  lineHeight: { unit: 'PIXELS' | 'PERCENT' | 'AUTO'; value?: number }
+  letterSpacing: { unit: 'PIXELS' | 'PERCENT'; value: number }
+  textCase?: string
+  textDecoration?: string
+  /** Variables bound to the style's fields: `fontSize`, `fontFamily`, `lineHeight`… */
+  bound?: Record<string, string>
+}
+
+export interface FigmaExport {
+  file: { name: string }
+  collections: FigmaCollection[]
+  variables: FigmaVariable[]
+  external: Record<string, FigmaLibraryVariable>
+  styles: {
+    paint: Array<{ id: string; name: string; description?: string; paints: FigmaPaint[] }>
+    text: FigmaTextStyle[]
+    effect: Array<{ id: string; name: string; description?: string; effects: FigmaEffect[] }>
+  }
+}
 
 /**
  * A Figma file's variables and styles as DTCG 2025.10. Two shapes of the same tokens:
@@ -8,9 +114,14 @@ import type { RawColor, RawEasing, RawExport, RawTextStyle, RawValue, RawVariabl
  * - `single`: one document, the modes of each token in `$extensions.mode`, for tools that read one file.
  * What has no DTCG type (booleans, plain strings) is left out and listed in `notes`.
  */
-export interface Converted {
+export interface FigmaTokens {
   files: Record<string, unknown>
   single: Record<string, unknown>
+  /** How the files make up the system: a set per collection with one mode, a modifier per collection with several. */
+  layout: Array<
+    | { kind: 'set'; name: string; file: string }
+    | { kind: 'modifier'; name: string; contexts: Array<{ name: string; file: string }>; default: string }
+  >
   notes: Array<{ name: string; message: string }>
   stats: { collections: number; variables: number; styles: number; skipped: number }
 }
@@ -52,7 +163,7 @@ const CURVES: Record<string, number[]> = {
   EASE_IN_AND_OUT: [0.42, 0, 0.58, 1],
 }
 
-function curve(e: RawEasing): number[] | undefined {
+function curve(e: FigmaEasing): number[] | undefined {
   if (e.bezier) return [e.bezier.x1, e.bezier.y1, e.bezier.x2, e.bezier.y2].map((n) => round(n))
   return CURVES[e.type]
 }
@@ -63,7 +174,7 @@ const hex2 = (v: number) =>
     .toString(16)
     .padStart(2, '0')
 
-function color(c: RawColor, opacity = 1): Doc {
+function color(c: FigmaColor, opacity = 1): Doc {
   const alpha = round((c.a ?? 1) * opacity)
   const out: Doc = { colorSpace: 'srgb', components: [round(c.r), round(c.g), round(c.b)] }
   if (alpha < 1) out.alpha = alpha
@@ -72,7 +183,7 @@ function color(c: RawColor, opacity = 1): Doc {
 }
 
 const isAlias = (v: unknown): v is { alias: string } => typeof v === 'object' && v !== null && 'alias' in v
-const isColor = (v: unknown): v is RawColor => typeof v === 'object' && v !== null && 'r' in v
+const isColor = (v: unknown): v is FigmaColor => typeof v === 'object' && v !== null && 'r' in v
 
 /** A token name in DTCG: `/` separates groups; `.`, `{`, `}` and a leading `$` are not allowed in names. */
 const pathOf = (name: string): string[] =>
@@ -94,14 +205,14 @@ function setAt(doc: Doc, path: string[], token: Doc): boolean {
   return true
 }
 
-export function convert(raw: RawExport): Converted {
-  const notes: Converted['notes'] = []
+export function figmaTokens(raw: FigmaExport): FigmaTokens {
+  const notes: FigmaTokens['notes'] = []
   const byId = new Map(raw.variables.map((v) => [v.id, v]))
   const collections = new Map(raw.collections.map((c) => [c.id, c]))
 
   // A variable's DTCG type: from Figma's type and scopes; a reference takes its target's type.
   const types = new Map<string, string | null>()
-  const typeOf = (v: RawVariable, seen = new Set<string>()): string | null => {
+  const typeOf = (v: FigmaVariable, seen = new Set<string>()): string | null => {
     if (types.has(v.id)) return types.get(v.id)!
     let t: string | null = null
     const target = Object.values(v.valuesByMode).find(isAlias)
@@ -126,7 +237,7 @@ export function convert(raw: RawExport): Converted {
     return t
   }
 
-  const literal = (type: string, value: RawValue): unknown => {
+  const literal = (type: string, value: FigmaValue): unknown => {
     if (type === 'color') return isColor(value) ? color(value) : undefined
     if (type === 'cubicBezier')
       return typeof value === 'object' && 'easing' in value ? curve(value.easing) : undefined
@@ -139,7 +250,7 @@ export function convert(raw: RawExport): Converted {
   }
 
   /** A variable's value in its collection's default mode, through references, for composed colors. */
-  const resolved = (id: string, seen = new Set<string>()): RawValue | undefined => {
+  const resolved = (id: string, seen = new Set<string>()): FigmaValue | undefined => {
     const v = byId.get(id)
     if (!v) return raw.external[id]?.value
     const col = collections.get(v.collectionId)
@@ -149,7 +260,7 @@ export function convert(raw: RawExport): Converted {
   const nameOf = (id: string) => byId.get(id)?.name ?? raw.external[id]?.name ?? id
 
   /** One mode's value: a reference to a variable of the file, or a literal (a library variable's value). */
-  const modeValue = (v: RawVariable, type: string, value: RawValue, ext: Doc): unknown => {
+  const modeValue = (v: FigmaVariable, type: string, value: FigmaValue, ext: Doc): unknown => {
     // A color and an opacity, either one a variable: DTCG has no reference with an alpha, so the value is written.
     if (typeof value === 'object' && 'composed' in value) {
       const { color: c, opacity: o } = value.composed
@@ -188,6 +299,7 @@ export function convert(raw: RawExport): Converted {
   const single: Doc = {}
   const resolver: Doc = { version: '2025.10', sets: {}, modifiers: {}, resolutionOrder: [] }
   const order = resolver.resolutionOrder as unknown[]
+  const layout: FigmaTokens['layout'] = []
   let count = 0
   let skipped = 0
 
@@ -237,6 +349,7 @@ export function convert(raw: RawExport): Converted {
       files[`${name}.tokens.json`] = docs.get(modes[0]!.id)
       ;(resolver.sets as Doc)[name] = { sources: [{ $ref: `${name}.tokens.json` }] }
       order.push({ $ref: `#/sets/${name}` })
+      layout.push({ kind: 'set', name, file: `${name}.tokens.json` })
     } else {
       const contexts: Doc = {}
       for (const m of modes) {
@@ -247,6 +360,12 @@ export function convert(raw: RawExport): Converted {
       const def = modes.find((m) => m.id === col.defaultModeId)?.name ?? modes[0]!.name
       ;(resolver.modifiers as Doc)[name] = { contexts, default: def }
       order.push({ $ref: `#/modifiers/${name}` })
+      layout.push({
+        kind: 'modifier',
+        name,
+        contexts: modes.map((m) => ({ name: m.name, file: `${name}/${fileName(m.name)}.tokens.json` })),
+        default: def,
+      })
     }
   }
 
@@ -255,6 +374,7 @@ export function convert(raw: RawExport): Converted {
     files['styles.tokens.json'] = styles.doc
     ;(resolver.sets as Doc).styles = { sources: [{ $ref: 'styles.tokens.json' }] }
     order.push({ $ref: '#/sets/styles' })
+    layout.push({ kind: 'set', name: 'styles', file: 'styles.tokens.json' })
     for (const [k, v] of Object.entries(styles.doc)) if (single[k] === undefined) single[k] = v
   }
   if (!Object.keys(resolver.modifiers as Doc).length) delete resolver.modifiers
@@ -263,6 +383,7 @@ export function convert(raw: RawExport): Converted {
   return {
     files,
     single,
+    layout,
     notes,
     stats: { collections: raw.collections.length, variables: count, styles: styles.count, skipped },
   }
@@ -270,10 +391,10 @@ export function convert(raw: RawExport): Converted {
 
 /** Styles under `styles`: paint styles as colors and gradients, text styles as typography, effect styles as shadows. */
 function convertStyles(
-  raw: RawExport,
-  byId: Map<string, RawVariable>,
-  typeOf: (v: RawVariable) => string | null,
-  notes: Converted['notes'],
+  raw: FigmaExport,
+  byId: Map<string, FigmaVariable>,
+  typeOf: (v: FigmaVariable) => string | null,
+  notes: FigmaTokens['notes'],
 ): { doc: Doc; count: number } {
   const doc: Doc = {}
   let count = 0
@@ -350,7 +471,10 @@ function convertStyles(
  * `normal`, about 1.2), letter spacing a length (a percentage is of the size); fields bound to
  * variables of the right type are references.
  */
-function typography(s: RawTextStyle, ref: (id: string | undefined, type: string) => string | undefined): Doc {
+function typography(
+  s: FigmaTextStyle,
+  ref: (id: string | undefined, type: string) => string | undefined,
+): Doc {
   const size = s.fontSize
   const weight = WEIGHTS.find(([re]) => re.test(s.fontStyle))?.[1] ?? 400
   const lineHeight =
@@ -369,4 +493,66 @@ function typography(s: RawTextStyle, ref: (id: string | undefined, type: string)
     letterSpacing: ref(b.letterSpacing, 'dimension') ?? { value: round(tracking), unit: 'px' },
     lineHeight,
   }
+}
+
+/** A value as Figma's REST API writes it: an alias is `{ type: 'VARIABLE_ALIAS', id }`. */
+function restValue(v: unknown): FigmaValue {
+  if (typeof v !== 'object' || v === null) return v as FigmaValue
+  const o = v as Record<string, unknown>
+  if (o.type === 'VARIABLE_ALIAS' && typeof o.id === 'string') return { alias: o.id }
+  return v as FigmaValue
+}
+
+/**
+ * The response of Figma's REST API for a file's variables (`GET /v1/files/:key/variables/local`)
+ * as the plugin reads a file: local variables, and the library ones they use as their values.
+ * Styles are not in that response.
+ */
+export function fromFigmaRest(response: unknown, name = 'Figma'): FigmaExport | undefined {
+  const meta = (response as { meta?: Record<string, unknown> } | null)?.meta
+  const vars = meta?.variables as Record<string, Record<string, unknown>> | undefined
+  const cols = meta?.variableCollections as Record<string, Record<string, unknown>> | undefined
+  if (!vars || !cols || typeof vars !== 'object' || typeof cols !== 'object') return undefined
+  const collections: FigmaCollection[] = Object.values(cols)
+    .filter((c) => !c.remote)
+    .map((c) => ({
+      id: String(c.id),
+      name: String(c.name),
+      modes: ((c.modes as Array<{ modeId: string; name: string }>) ?? []).map((m) => ({
+        id: m.modeId,
+        name: m.name,
+      })),
+      defaultModeId: String(c.defaultModeId),
+    }))
+  const local = new Set(collections.map((c) => c.id))
+  const variables: FigmaVariable[] = []
+  const external: Record<string, FigmaLibraryVariable> = {}
+  for (const v of Object.values(vars)) {
+    const valuesByMode = Object.fromEntries(
+      Object.entries((v.valuesByMode as Record<string, unknown>) ?? {}).map(([m, x]) => [m, restValue(x)]),
+    )
+    const base = {
+      name: String(v.name),
+      type: v.resolvedType as FigmaVariable['type'],
+      scopes: (v.scopes as string[]) ?? [],
+    }
+    if (local.has(String(v.variableCollectionId))) {
+      const out: FigmaVariable = {
+        ...base,
+        id: String(v.id),
+        collectionId: String(v.variableCollectionId),
+        valuesByMode,
+      }
+      if (v.description) out.description = String(v.description)
+      if (v.codeSyntax && Object.keys(v.codeSyntax as object).length)
+        out.codeSyntax = v.codeSyntax as Record<string, string>
+      if (v.hiddenFromPublishing) out.hiddenFromPublishing = true
+      variables.push(out)
+    } else {
+      const col = cols[String(v.variableCollectionId)]
+      const value = valuesByMode[String(col?.defaultModeId)] ?? Object.values(valuesByMode)[0]
+      if (value !== undefined) external[String(v.id)] = { ...base, value }
+    }
+  }
+  return { file: { name }, collections, variables, external, styles: { paint: [], text: [], effect: [] } }
 }

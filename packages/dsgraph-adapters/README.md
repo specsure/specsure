@@ -14,6 +14,8 @@ Token adapters for `@dsgraph/core`.
 
 It runs before plain DTCG files. Modes written per token in `$extensions.mode`, and mode files side by side (`Theme/Light.tokens.json`, `Theme/Dark.tokens.json`), as Figma variable exports write them, become modifiers in the core for every JSON source.
 
+`figmaVariables` reads Figma variables as Figma's REST API returns them (`GET /v1/files/:key/variables/local`, saved as a `.json` file): a collection with one mode becomes a set, one with several a modifier with its default mode; references are kept, a library variable's value is written in its place. The conversion itself is `figmaTokens` in `@dsgraph/adapters/figma`, a module with no imports that the Figma plugin bundles: a file's variables and styles (paint, text, effect) as DTCG files per collection and mode with a resolver, or as one file with modes per token. `fromFigmaRest` turns the REST response into its input.
+
 `cssTokens` reads CSS custom properties as tokens:
 
 - `:root`, `html`, `:host` → the base set
@@ -25,6 +27,6 @@ It runs before plain DTCG files. Modes written per token in `$extensions.mode`, 
 
 ```ts
 import { scan } from '@dsgraph/core'
-import { cssTokens, jsonTokens } from '@dsgraph/adapters'
-const snapshot = await scan(source, {}, { adapters: [jsonTokens, cssTokens] })
+import { cssTokens, figmaVariables, jsonTokens } from '@dsgraph/adapters'
+const snapshot = await scan(source, {}, { adapters: [figmaVariables, jsonTokens, cssTokens] })
 ```

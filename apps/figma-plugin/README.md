@@ -22,4 +22,4 @@ npm run build -w @specsure/figma-plugin
 
 In Figma desktop: Plugins → Development → Import plugin from manifest → `apps/figma-plugin/manifest.json`.
 
-The conversion (`src/convert.ts`) is plain TypeScript, tested without Figma: `npx vitest run apps/figma-plugin`. `src/gather.ts` is the only part that talks to the plugin API.
+The conversion is `figmaTokens` in [`@dsgraph/adapters/figma`](../../packages/dsgraph-adapters/src/figma.ts), the same one dsgraph uses to read Figma's REST API response; it is tested there without Figma. `src/gather.ts` is the only part that talks to the plugin API.

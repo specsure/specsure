@@ -1,7 +1,13 @@
-import type { RawExport, RawExternal, RawPaint, RawValue, RawVariable } from './raw'
+import type {
+  FigmaExport,
+  FigmaLibraryVariable,
+  FigmaPaint,
+  FigmaValue,
+  FigmaVariable,
+} from '@dsgraph/adapters/figma'
 
 /** A Figma value as plain data: an alias keeps the id of the variable it points to. */
-function plain(v: VariableValue): RawValue {
+function plain(v: VariableValue): FigmaValue {
   const rgba = (c: RGB | RGBA) => ({ r: c.r, g: c.g, b: c.b, a: 'a' in c ? c.a : 1 })
   const alias = (x: VariableAlias) => ({ alias: x.id })
   if (typeof v !== 'object' || v === null) return v
@@ -24,7 +30,7 @@ function plain(v: VariableValue): RawValue {
 }
 
 /** A library variable's value in its default mode, followed through aliases to the end. */
-async function libraryValue(variable: Variable, seen = new Set<string>()): Promise<RawValue | undefined> {
+async function libraryValue(variable: Variable, seen = new Set<string>()): Promise<FigmaValue | undefined> {
   const col = await figma.variables.getVariableCollectionByIdAsync(variable.variableCollectionId)
   const raw = variable.valuesByMode[col?.defaultModeId ?? Object.keys(variable.valuesByMode)[0]!]
   if (raw === undefined) return undefined
@@ -37,13 +43,13 @@ async function libraryValue(variable: Variable, seen = new Set<string>()): Promi
 }
 
 /** Everything the export needs from the open file. Reads only. */
-export async function gather(): Promise<RawExport> {
+export async function gather(): Promise<FigmaExport> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync()
   const variables = await figma.variables.getLocalVariablesAsync()
   const local = new Set(variables.map((v) => v.id))
 
-  const raw: RawVariable[] = variables.map((v) => {
-    const out: RawVariable = {
+  const raw: FigmaVariable[] = variables.map((v) => {
+    const out: FigmaVariable = {
       id: v.id,
       name: v.name,
       collectionId: v.variableCollectionId,
@@ -58,8 +64,8 @@ export async function gather(): Promise<RawExport> {
   })
 
   // Aliases to library variables: the value is written instead of a reference that would dangle.
-  const external: Record<string, RawExternal> = {}
-  const aliases = (x: RawValue): string[] =>
+  const external: Record<string, FigmaLibraryVariable> = {}
+  const aliases = (x: FigmaValue): string[] =>
     typeof x !== 'object' || x === null
       ? []
       : 'alias' in x
@@ -78,8 +84,8 @@ export async function gather(): Promise<RawExport> {
         external[id] = { name: lib.name, type: lib.resolvedType, scopes: [...lib.scopes], value }
     }
 
-  const paintOf = (p: Paint): RawPaint => {
-    const out: RawPaint = { type: p.type, opacity: p.opacity ?? 1 }
+  const paintOf = (p: Paint): FigmaPaint => {
+    const out: FigmaPaint = { type: p.type, opacity: p.opacity ?? 1 }
     if (p.type === 'SOLID') {
       out.color = { ...p.color, a: 1 }
       if (p.boundVariables?.color) out.variable = p.boundVariables.color.id

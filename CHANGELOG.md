@@ -14,6 +14,12 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   such a use with the system's token for it (`"var(--sp-accent)" is #2563eb in the code's own
   variables (lib/colors.css:3), not a token; use "color.accent"`), unless the chain leads to a token
   of the system; coverage counts it as written by hand. `foreignLiterals` in `@dsgraph/rules`.
+- Figma variables: `figmaVariables` in `@dsgraph/adapters` reads Figma's REST API response for a
+  file's variables (`GET /v1/files/:key/variables/local`, saved as `.json`) — collections with
+  modes become modifiers, references stay, library values are written in place; the CLI, MCP and
+  the site use it. The conversion, `figmaTokens` in `@dsgraph/adapters/figma` (a module with no
+  imports), also turns styles into tokens and writes DTCG files per collection and mode with a
+  resolver, or one file; the Figma plugin in `apps/figma-plugin` is built on it.
 - `$extensions.modes` that lists only the modes where a value differs (`{ "mobile": … }`) is read as
   modes too, the token's own value being the `default` context; `$extensions.mode` lists them all.
 - A shadow written as a CSS string (`"0 1px 2px rgba(16,16,14,.06)"`, `"none"`) is read, with a
