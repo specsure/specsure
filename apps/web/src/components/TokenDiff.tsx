@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
-import { LangProvider, useT } from '../i18n/react'
+import { localePath } from '../i18n'
+import { LangProvider, useLang, useT } from '../i18n/react'
 import { EXAMPLE, EXAMPLE_APP } from '../lib/example'
+import { type Handover, handTo } from '../lib/handover'
 import type { CodeInput, Progress, RunRequest, RunResponse, SideInput, Stage } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, readUrl, unpackFiles, writeUrl } from '../lib/url'
 import { CodeField } from './CodeField'
@@ -15,6 +17,29 @@ const ready = (s: SideInput): boolean =>
 
 /** The GitHub ref defaults to the default branch. */
 const normalize = (s: SideInput): SideInput => (s.kind === 'github' && !s.ref ? { ...s, ref: 'HEAD' } : s)
+
+/** After a comparison: the new version in Token Fix, with the app's code when it was added. */
+function ToFix({ ran, label }: { ran: RunRequest; label: string }) {
+  const t = useT()
+  const lang = useLang()
+  const n = t.diffNext
+  const open = () => {
+    const h: Handover = { source: ran.head, include: ran.include }
+    if (ran.code) h.code = ran.code
+    location.href = handTo(localePath(lang, '/tools/fix'), h).href
+  }
+  return (
+    <aside className="next-tool">
+      <div>
+        <p className="next-tool__title">{n.title}</p>
+        <p className="muted">{n.text(label, !!ran.code)}</p>
+      </div>
+      <button type="button" className="ghost ghost--strong" onClick={open}>
+        {n.open}
+      </button>
+    </aside>
+  )
+}
 
 export default function TokenDiff({ lang = 'en' }: { lang?: Lang }) {
   return (
@@ -324,6 +349,7 @@ function App() {
           onContext={setContext}
           share={canShare ? () => navigator.clipboard.writeText(location.href) : undefined}
           shareNote={canShare ? undefined : t.inputs.shareTooBig}
+          next={ran && <ToFix ran={ran} label={result.head.label} />}
         />
       )}
     </div>

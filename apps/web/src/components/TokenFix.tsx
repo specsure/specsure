@@ -6,6 +6,7 @@ import { localePath } from '../i18n'
 import { LangProvider, useLang, useT } from '../i18n/react'
 import { looksLikeCode } from '../lib/code-text'
 import { deltaWords } from '../lib/explain'
+import { takeHandover } from '../lib/handover'
 import { LOOKUP_EXAMPLE } from '../lib/lookup-example'
 import type {
   DemoAnswer,
@@ -124,6 +125,8 @@ function App() {
   const [query, setQuery] = useState('')
   const [token, setToken] = useState<string | undefined>()
   const [fragment, setFragment] = useState<string | null>(null)
+  /** The app's code handed over from Token Diff: the Code tab opens with it and checks it. */
+  const [handedCode, setHandedCode] = useState<CodeInput | undefined>()
   const initial = useRef<{ query: string; token?: string } | null>(null)
   const [tick, setTick] = useState(0)
   const autoOpen = useRef(false)
@@ -165,6 +168,16 @@ function App() {
     setInclude(s.include)
     setContext(s.context)
     initial.current = { query: s.query, ...(s.token ? { token: s.token } : {}) }
+    // From Token Diff: the new version and the app's code, left in this tab's storage.
+    const handed = url.searchParams.has('handover') ? takeHandover() : undefined
+    if (handed) {
+      setSource(handed.source)
+      setInclude(handed.include)
+      if (handed.code) setHandedCode(handed.code)
+      autoOpen.current = true
+      setTick((x) => x + 1)
+      return
+    }
     if (url.searchParams.has('example')) {
       setSource({ kind: 'files', files: LOOKUP_EXAMPLE })
       autoOpen.current = true
@@ -307,6 +320,7 @@ function App() {
           token={token}
           onToken={setToken}
           share={canShare ? () => navigator.clipboard.writeText(location.href) : undefined}
+          handedCode={handedCode}
         />
       )}
     </div>
@@ -325,6 +339,8 @@ interface BrowserProps {
   token: string | undefined
   onToken: (id: string | undefined) => void
   share: (() => Promise<void>) | undefined
+  /** Code handed over from Token Diff, checked as soon as the system is open. */
+  handedCode?: CodeInput | undefined
 }
 
 /** One shown row: a token, and for a value search, how close it is. */
@@ -344,6 +360,7 @@ function Browser({
   token,
   onToken,
   share,
+  handedCode,
 }: BrowserProps) {
   const t = useT()
   const l = t.lookup
@@ -357,10 +374,12 @@ function Browser({
   const [demo, setDemo] = useState<DemoAnswer | null>(null)
   const [overview, setOverview] = useState<Overview | null>(null)
   /** Every token as a list; otherwise an empty search shows the overview. A shared token link opens the list. */
-  const [view, setView] = useState<'overview' | 'all' | 'code'>(token ? 'all' : 'overview')
+  const [view, setView] = useState<'overview' | 'all' | 'code'>(
+    handedCode ? 'code' : token ? 'all' : 'overview',
+  )
   const catalog = view === 'all'
   const setCatalog = (on: boolean) => setView(on ? 'all' : 'overview')
-  const [project, setProject] = useState<CodeInput>({ kind: 'files', files: [] })
+  const [project, setProject] = useState<CodeInput>(handedCode ?? { kind: 'files', files: [] })
   const [githubToken, setGithubToken] = useState('')
   const openToken = (id: string) => {
     setCatalog(true)
@@ -682,6 +701,7 @@ function Browser({
             onGithubToken={setGithubToken}
             onPick={openToken}
             onCopied={(text) => flash(text)}
+            auto={!!handedCode}
           />
         ) : !query.trim() && !catalog ? (
           <div className="lookup__overview">
@@ -857,6 +877,7 @@ function ProjectPanel({
   onGithubToken,
   onPick,
   onCopied,
+  auto = false,
 }: {
   ask: ReturnType<typeof useLookup>
   value: CodeInput
@@ -865,6 +886,8 @@ function ProjectPanel({
   onGithubToken: (t: string) => void
   onPick: (id: string) => void
   onCopied: (status: string) => void
+  /** Check at once: the code came with the system. */
+  auto?: boolean
 }) {
   const t = useT()
   const l = t.lookup.code
@@ -889,6 +912,14 @@ function ProjectPanel({
       )
     else if (r.kind === 'project') setP(r.project)
   }
+  const started = useRef(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once, for code handed over with the system
+  useEffect(() => {
+    if (auto && !started.current) {
+      started.current = true
+      run()
+    }
+  }, [auto])
   const how = (g: ProjectAnswer['missing'][number]) =>
     g.deltaE !== undefined
       ? `${deltaWords(g.deltaE, t)} · ΔE ${g.deltaE}`

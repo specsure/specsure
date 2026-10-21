@@ -1,6 +1,6 @@
 import type { ChangeImpact, Changeset, Finding, Level } from '@dsgraph/core'
 import { formatChangeset, formatSource, groupFindings } from '@dsgraph/report'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { Messages } from '../i18n/messages'
 import { useT } from '../i18n/react'
 import type { CardData } from '../lib/card'
@@ -42,6 +42,8 @@ interface Props {
   shareNote?: string | undefined
   /** Page-wide shortcuts (⌘K, ⌘⇧C, /). Off where the results are an illustration. */
   shortcuts?: boolean
+  /** What to do next, shown under the verdict: Token Diff points to Token Fix. */
+  next?: ReactNode
 }
 
 const QUIET_LIMIT = 20
@@ -68,7 +70,7 @@ export const Keys = ({ keys }: { keys: string[] }) => (
   </span>
 )
 
-export function Results({ result, context, onContext, share, shareNote, shortcuts = true }: Props) {
+export function Results({ result, context, onContext, share, shareNote, shortcuts = true, next }: Props) {
   const t = useT()
   const r = t.results
   const cs = result.changeset
@@ -223,6 +225,7 @@ export function Results({ result, context, onContext, share, shareNote, shortcut
   return (
     <div className="results">
       <Verdict result={result} />
+      {next}
 
       {/* biome-ignore lint/a11y/noStaticElementInteractions: arrow keys for the listbox and the search field inside */}
       <div

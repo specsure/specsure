@@ -498,6 +498,13 @@ const en = {
 
   figure: { running: 'Running dsgraph…', compare: 'Compare', theme: 'theme' },
 
+  diffNext: {
+    title: 'Next: fix the code for this version',
+    text: (label: string, code: boolean) =>
+      `Open ${label} in Token Fix: what to use for what in it, ${code ? 'and your code checked against it' : 'and your code checked against it once you add it'}, value by value.`,
+    open: 'Open in Token Fix →',
+  },
+
   fixPage: {
     title: 'Token Fix · Specsure',
     description:
@@ -1268,6 +1275,13 @@ const ru: Messages = {
   },
 
   figure: { running: 'dsgraph считает…', compare: 'Сравнить', theme: 'theme' },
+
+  diffNext: {
+    title: 'Дальше: поправить код под эту версию',
+    text: (label: string, code: boolean) =>
+      `Откройте ${label} в Token Fix: что для чего в этой версии ${code ? 'и ваш код, проверенный по ней' : 'и ваш код, проверенный по ней, когда вы его добавите'} — значение за значением.`,
+    open: 'Открыть в Token Fix →',
+  },
 
   fixPage: {
     title: 'Token Fix · Specsure',
