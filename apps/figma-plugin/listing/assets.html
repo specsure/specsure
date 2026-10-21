@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Plugin listing assets</title>
+<!-- The icon (128×128, icon.png) and the cover (1920×1080, cover.png) for the Figma Community
+     page, from Specsure's mark and tokens. Each [data-asset] is a PNG of its own size: open this page in a browser and
+     screenshot the element (ui-dark.png is the plugin's UI, shot at 3x in its result state).
+     A cover's background is the site's own backdrop: see backdrop.ts. -->
+<style>
+  :root {
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  body { margin: 0; padding: 40px; background: #888; display: grid; gap: 40px; justify-items: start; font-family: var(--font-ui); }
+  .icons { display: flex; gap: 24px; }
+  [data-asset] { position: relative; overflow: hidden; flex: none; }
+  .dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.5px);
+    background-size: var(--grid, 10px) var(--grid, 10px);
+  }
+  .dark { --bg: #0c0c0e; --dot: #ffffff14; --ink: #ededf0; --ink-2: #a8a8b0; --ink-3: #8b8b94; --accent: #ff6363; --field: #1e1e22; --line: #222227; --raised: #18181b; }
+
+  /* Icons */
+  .icon { width: 128px; height: 128px; background: var(--bg); display: grid; place-items: center; }
+  .icon svg { position: relative; }
+  .icon.dark .dots { --grid: 8px; mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 75%); }
+
+  /* Covers */
+  .cover { width: 1920px; height: 1080px; background: var(--bg); color: var(--ink); }
+  /* The site's backdrop, drawn by its own shader (apps/web/src/lib/backdrop.ts) at the cover's size:
+     its dither cells are whole pixels, so it is never smoothed. */
+  .backdrop { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  /* One asset alone, at the top left: ?only=cover. */
+  body.only { padding: 0; background: none; }
+  /* A cover alone is drawn as the site looks on a 2x screen: a 960 by 540 page at 2x, so the
+     backdrop's dither cells are two pixels wide, as people see them on the site. */
+  body.only .cover.is-only { zoom: 0.5; }
+  body.only [data-asset]:not(.is-only), body.only .icons:not(:has(.is-only)) { display: none; }
+  .cover__text { position: absolute; left: 160px; top: 50%; transform: translateY(-50%); width: 900px; }
+  .wordmark { display: flex; align-items: center; gap: 20px; font: 600 44px / 1 var(--font-ui); letter-spacing: -0.01em; }
+  .cover h1 { margin: 64px 0 24px; font: 600 112px / 1.02 var(--font-ui); letter-spacing: -0.035em; }
+  .cover p { margin: 0; color: var(--ink-2); font: 400 36px / 1.35 var(--font-ui); max-width: 820px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 48px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 22px;
+    border-radius: 12px;
+    background: var(--field);
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    color: var(--ink);
+    font: 500 26px / 1 var(--font-ui);
+  }
+  .chip::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: var(--accent); }
+  .shot {
+    position: absolute;
+    right: 170px;
+    top: 50%;
+    width: 560px;
+    transform: translateY(-50%);
+    border-radius: 18px;
+    box-shadow: 0 0 0 2px var(--line), 0 60px 120px -40px #00000080;
+  }
+
+</style>
+</head>
+<body>
+<div class="icons">
+  <div class="icon dark" data-asset="icon">
+    <div class="dots"></div>
+    <svg aria-hidden="true" width="76" height="76" viewBox="0 0 32 32"><rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="#ededf0" /><rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="#ff6363" /></svg>
+  </div>
+</div>
+
+<div class="cover dark" data-asset="cover">
+  <canvas class="backdrop" data-theme="dark"></canvas>
+  <div class="cover__text">
+    <div class="wordmark">
+      <svg aria-hidden="true" width="56" height="56" viewBox="0 0 32 32"><rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" /><rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent)" /></svg>
+      Specsure
+    </div>
+    <h1>Export tokens</h1>
+    <p>Figma variables and styles as DTCG 2025.10 files, for Token Diff, Token Fix, the CLI and CI.</p>
+    <div class="chips">
+      <span class="chip">Collections and modes</span>
+      <span class="chip">Text, color, effect styles</span>
+      <span class="chip">Read only, offline</span>
+    </div>
+  </div>
+  <img class="shot" src="ui-dark.png" alt="" />
+</div>
+
+<script>
+  const only = new URLSearchParams(location.search).get('only')
+  if (only) {
+    document.body.classList.add('only')
+    document.querySelector(`[data-asset="${only}"]`)?.classList.add('is-only')
+  }
+</script>
+</body>
+</html>

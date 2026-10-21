@@ -24,4 +24,6 @@ In Figma desktop: Plugins → Development → Import plugin from manifest → `a
 
 The UI (`ui.html`) follows the site's tokens, light or dark with Figma's theme, and has three tabs: Export, Guide and About. To work on it without Figma, serve this folder over HTTP (`python3 -m http.server` in it) and open `preview.html`: the UI in the plugin's size, in every state and both themes.
 
+The Community page's icon and cover are in `listing/`: `icon.png` (128×128) and `cover.png` (1920×1080), drawn from `listing/assets.html` on the site's own backdrop (`listing/backdrop.ts`).
+
 The conversion is `figmaTokens` in [`@dsgraph/adapters/figma`](../../packages/dsgraph-adapters/src/figma.ts), the same one dsgraph uses to read Figma's REST API response; it is tested there without Figma. `src/gather.ts` is the only part that talks to the plugin API.
