@@ -1,0 +1,16 @@
+{
+  "name": "@specsure/figma-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Figma plugin: a file's variables and styles as DTCG tokens, a file per collection and mode with a resolver, or one file. Reads, never writes.",
+  "license": "MIT",
+  "scripts": {
+    "build": "rolldown -c rolldown.config.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "1.142.0",
+    "rolldown": "1.2.13"
+  }
+}
