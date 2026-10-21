@@ -1,5 +1,8 @@
 import {
   type DsGraph,
+  type InferredLayer,
+  inferLayers,
+  type LayerCrossing,
   nearestTokens,
   normalizeName,
   type StyleContext,
@@ -8,7 +11,7 @@ import {
 } from '@dsgraph/core'
 import { formatValue } from '@dsgraph/report'
 import { leadWord } from './lead-word'
-import type { Overview, OverviewToken, Trap, Use } from './lookup-types'
+import type { LayerSummary, Overview, OverviewToken, Trap, Use } from './lookup-types'
 import { cssColor, isColor } from './view'
 
 const USES: Array<{ use: Exclude<Use, 'shadow'>; property: string }> = [
@@ -136,6 +139,7 @@ export function overviewOf(g: DsGraph): Overview {
   traps.sort((a, b) => b.picks.length - a.picks.length || b.count - a.count || a.value.localeCompare(b.value))
 
   return {
+    layers: layersOf(g, used, show),
     uses,
     states,
     space,
@@ -143,5 +147,36 @@ export function overviewOf(g: DsGraph): Overview {
     traps: traps.slice(0, 6),
     trapCount: traps.length,
     checked: Math.min(30, shared.length),
+  }
+}
+
+const LAYER_ORDER: InferredLayer[] = ['palette', 'semantic', 'component', 'value']
+
+/** The layers with the tokens most of the system is built on first, and the references against them. */
+function layersOf(g: DsGraph, used: (t: Token) => number, show: (t: Token) => OverviewToken): LayerSummary {
+  const { tokens, crossings } = inferLayers(g)
+  const live = g.tokens().filter((t) => !t.deprecated)
+  const layers = LAYER_ORDER.map((layer) => {
+    const all = live
+      .filter((t) => tokens.get(t.id)?.layer === layer)
+      // A palette reads in the order of its ramps; the other layers, the most built on first.
+      .sort((a, b) =>
+        layer === 'palette' || layer === 'value'
+          ? a.id.localeCompare(b.id, 'en', { numeric: true })
+          : used(b) - used(a) || a.id.localeCompare(b.id),
+      )
+    return { layer, total: all.length, tokens: all.slice(0, 8).map(show) }
+  }).filter((x) => x.total > 0)
+  const by = new Set([...tokens.values()].map((x) => (x.by === 'references' ? 'references' : 'name')))
+  const kinds: Array<LayerCrossing['kind']> = ['skips-semantic', 'upward']
+  return {
+    layers,
+    by: by.size > 1 ? 'mixed' : by.has('name') ? 'name' : 'references',
+    crossings: kinds
+      .map((kind) => {
+        const from = [...new Set(crossings.filter((c) => c.kind === kind).map((c) => c.from))].sort()
+        return { kind, total: from.length, tokens: from.slice(0, 20) }
+      })
+      .filter((x) => x.total > 0),
   }
 }

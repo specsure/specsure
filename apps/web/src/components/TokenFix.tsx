@@ -1197,11 +1197,13 @@ function UseCard({
   title,
   total,
   tokens,
+  note,
   onPick,
 }: {
   title: string
   total: number
   tokens: OverviewToken[]
+  note?: string
   onPick: (id: string) => void
 }) {
   const l = useT().lookup.overview
@@ -1210,6 +1212,7 @@ function UseCard({
       <h4>
         {title} <span className="count">{total}</span>
       </h4>
+      {note && <p className="muted small">{note}</p>}
       <div className="lookup__chips">
         {tokens.map((x) => (
           <TokenChip key={x.id} token={x} onPick={onPick} />
@@ -1217,6 +1220,58 @@ function UseCard({
         {total > tokens.length && <span className="muted small">{l.more(total - tokens.length)}</span>}
       </div>
     </div>
+  )
+}
+
+/** The system's layers, named by it or read from references, and the references that go against them. */
+function LayersView({ layers: x, onPick }: { layers: Overview['layers']; onPick: (id: string) => void }) {
+  const l = useT().lookup.overview
+  if (!x.layers.length) return null
+  // Raw values only: nothing to say about layers but that there is one.
+  const single = x.layers.every((y) => y.layer === 'palette' || y.layer === 'value')
+  return (
+    <section className="lookup__block">
+      <h3>{l.layersTitle}</h3>
+      <p className="muted">{single ? l.layersSingle : l.layersLead[x.by]}</p>
+      <div className="lookup__uses">
+        {x.layers.map((y) => (
+          <UseCard
+            key={y.layer}
+            title={l.layer[y.layer]}
+            note={l.layerHelp[y.layer]}
+            total={y.total}
+            tokens={y.tokens}
+            onPick={onPick}
+          />
+        ))}
+      </div>
+      {x.crossings.length > 0 && (
+        <ul className="lookup__improve">
+          {x.crossings.map((c) => (
+            <li key={c.kind}>
+              <span className="icon icon--info" aria-hidden="true">
+                i
+              </span>
+              <div>
+                <p className="lookup__improve-title">
+                  {l.crossing[c.kind]}
+                  <span className="count">{c.total}</span>
+                </p>
+                <p className="muted small">{l.crossingHelp[c.kind]}</p>
+                <div className="lookup__chips">
+                  {c.tokens.slice(0, 8).map((id) => (
+                    <button key={id} type="button" className="lookup__chip" onClick={() => onPick(id)}>
+                      <code>{id}</code>
+                    </button>
+                  ))}
+                  {c.total > 8 && <span className="muted small">{l.more(c.total - 8)}</span>}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
@@ -1288,6 +1343,7 @@ function OverviewView({
         </section>
       )}
       {findings && <ImproveView findings={findings} onPick={onPick} />}
+      <LayersView layers={o.layers} onPick={onPick} />
       {(o.uses.length > 0 || o.states.length > 0) && (
         <section className="lookup__block">
           <h3>{l.usesTitle}</h3>
@@ -1566,6 +1622,14 @@ function TokenCardView({
             <code>var({row.css})</code>
           </dd>
         </div>
+        {tok?.layer && (
+          <div>
+            <dt>{c.layer}</dt>
+            <dd>
+              {c.layerOf[tok.layer.layer]} <span className="muted">· {c.layerBy[tok.layer.by]}</span>
+            </dd>
+          </div>
+        )}
         {tok && (
           <div>
             <dt>{c.values}</dt>

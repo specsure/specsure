@@ -18,7 +18,7 @@ import {
   literalInContext,
   unlinkedTypographyField,
 } from './rules/consistency.js'
-import { aliasDepth, allowedSources } from './rules/layers.js'
+import { aliasDepth, allowedSources, layerCrossing } from './rules/layers.js'
 import {
   contrastMatrix,
   deprecatedReference,
@@ -44,6 +44,7 @@ export const RULES: readonly Rule[] = [
   unlinkedTypographyField,
   aliasDepth,
   allowedSources,
+  layerCrossing,
   hardcodedColor,
   offScale,
   deprecatedUsage,

@@ -7,6 +7,9 @@
 /** What a color is for, by words in a token's name. */
 export type Role = 'text' | 'background' | 'border' | 'shadow'
 
+/** A layer of a design system: raw values, what they are for, one component's values. */
+export type LayerKind = 'palette' | 'semantic' | 'component'
+
 export interface Vocabulary {
   /** Words that name a role: `fg` and `text` for text, `bg` and `surface` for a background. */
   roles: Record<Role, string[]>
@@ -16,6 +19,8 @@ export interface Vocabulary {
   rest: string[]
   /** Words that mark the system's default of several equal tokens: `bg.default` before `bg.raised`. */
   defaults: string[]
+  /** Group, collection, file and configured layer names that say the layer: `primitives`, `md.sys`. */
+  layers: Record<LayerKind, string[]>
   /** File, folder and class names that say nothing about the component: `index`, `styles`, `root`. */
   generic: string[]
 }
@@ -31,6 +36,7 @@ export interface Knowledge {
     states?: Record<string, string>
     rest?: string[]
     defaults?: string[]
+    layers?: Partial<Record<LayerKind, string[]>>
     generic?: string[]
   }
 }
@@ -52,6 +58,22 @@ export const DEFAULT_VOCABULARY: Vocabulary = {
   },
   rest: ['rest'],
   defaults: ['default'],
+  layers: {
+    palette: [
+      'primitive',
+      'primitives',
+      'palette',
+      'palettes',
+      'ref',
+      'reference',
+      'core',
+      'global',
+      'foundation',
+      'foundations',
+    ],
+    semantic: ['semantic', 'semantics', 'sys', 'alias', 'aliases'],
+    component: ['component', 'components', 'comp', 'cmp'],
+  },
   generic: [
     'index',
     'style',
@@ -97,10 +119,12 @@ export interface CompiledVocabulary {
   states: Map<string, string>
   rest: Set<string>
   defaults: Set<string>
+  layers: Map<string, LayerKind>
   generic: Set<string>
 }
 
 const ROLES: Role[] = ['text', 'background', 'border', 'shadow']
+const LAYERS: LayerKind[] = ['palette', 'semantic', 'component']
 const literal = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const words = (list: string[]) => list.map((w) => w.toLowerCase())
 
@@ -112,6 +136,7 @@ function compile(v: Vocabulary): CompiledVocabulary {
     states: new Map(Object.entries(v.states).map(([w, s]) => [w.toLowerCase(), s])),
     rest: new Set(words(v.rest)),
     defaults: new Set(words(v.defaults)),
+    layers: new Map(LAYERS.flatMap((l) => words(v.layers[l]).map((w) => [w, l] as const))),
     generic: new Set(words(v.generic)),
   }
 }
@@ -125,7 +150,13 @@ export function readKnowledge(value: unknown): Knowledge {
   if (!k || typeof k !== 'object' || k.schema !== 'dsgraph/knowledge@1')
     throw new Error('Not a dsgraph knowledge pack: expected schema "dsgraph/knowledge@1"')
   const v = k.vocabulary ?? {}
-  const lists = [...Object.values(v.roles ?? {}), v.rest ?? [], v.defaults ?? [], v.generic ?? []]
+  const lists = [
+    ...Object.values(v.roles ?? {}),
+    v.rest ?? [],
+    v.defaults ?? [],
+    ...Object.values(v.layers ?? {}),
+    v.generic ?? [],
+  ]
   if (!lists.every((l) => Array.isArray(l) && l.every((w) => typeof w === 'string')))
     throw new Error('Knowledge pack: vocabulary lists must be arrays of words')
   if (!Object.values(v.states ?? {}).every((s) => typeof s === 'string'))
@@ -148,6 +179,9 @@ export function vocabularyOf(knowledge?: Knowledge): CompiledVocabulary {
       states: { ...d.states, ...add.states },
       rest: [...d.rest, ...(add.rest ?? [])],
       defaults: [...d.defaults, ...(add.defaults ?? [])],
+      layers: Object.fromEntries(
+        LAYERS.map((l) => [l, [...d.layers[l], ...(add.layers?.[l] ?? [])]]),
+      ) as Record<LayerKind, string[]>,
       generic: [...d.generic, ...(add.generic ?? [])],
     })
     compiled.set(knowledge, c)

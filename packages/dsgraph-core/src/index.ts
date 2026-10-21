@@ -30,11 +30,19 @@ export {
   type CompiledVocabulary,
   DEFAULT_VOCABULARY,
   type Knowledge,
+  type LayerKind,
   type Role,
   readKnowledge,
   type Vocabulary,
   vocabularyOf,
 } from './knowledge.js'
+export {
+  type InferredLayer,
+  inferLayers,
+  type LayerCrossing,
+  type Layers,
+  type TokenLayer,
+} from './layers.js'
 export { NOT_TOKENS } from './not-tokens.js'
 export { cssVarToName, globToRegExp, matchGlob, matchPath, normalizeName, tokenId } from './path.js'
 export { getAt, parsePointer, toPointer } from './pointer.js'

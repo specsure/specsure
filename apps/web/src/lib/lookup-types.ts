@@ -1,4 +1,4 @@
-import type { Finding, Token, When } from '@dsgraph/core'
+import type { Finding, InferredLayer, LayerCrossing, Token, TokenLayer, When } from '@dsgraph/core'
 import type { Description, FindResult } from '@dsgraph/report'
 import type { CodeInput, SideInput, TokenGraph } from './types'
 
@@ -29,6 +29,7 @@ export interface TokenCard {
   users: string[]
   allUsers: number
   sameValue: string[]
+  layer?: TokenLayer
 }
 
 /** A value search: what was asked, read as a value, and the tokens for it; null when it is not a value. */
@@ -77,8 +78,19 @@ export interface Trap {
   picks: Array<{ use: Exclude<Use, 'shadow'>; state?: string; token: string }>
 }
 
+/** The system's layers: from its own group, collection and file names, or read from references. */
+export interface LayerSummary {
+  /** The layers present, palette first. */
+  layers: Array<{ layer: InferredLayer; total: number; tokens: OverviewToken[] }>
+  /** What says so: the system's own names, its references only, or some of each. */
+  by: 'name' | 'references' | 'mixed'
+  /** References against the layers, by kind: the tokens they start from. */
+  crossings: Array<{ kind: LayerCrossing['kind']; total: number; tokens: string[] }>
+}
+
 /** How the system is meant to be used, read from its names and references. */
 export interface Overview {
+  layers: LayerSummary
   uses: Array<{ use: Use; tokens: OverviewToken[]; total: number }>
   states: Array<{ state: string; tokens: OverviewToken[]; total: number }>
   space: Array<OverviewToken & { px: number }>

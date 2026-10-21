@@ -1,5 +1,5 @@
 import type { DsGraph } from '@dsgraph/core'
-import { matchPath } from '@dsgraph/core'
+import { inferLayers, matchPath } from '@dsgraph/core'
 import type { Rule } from '../types.js'
 
 /** Whole-value alias targets of a token across all its contexts. */
@@ -67,5 +67,29 @@ export const allowedSources: Rule = {
           token: source,
         })
     }
+  },
+}
+
+/**
+ * References that go against the layers dsgraph reads from the system itself (`inferLayers`): a
+ * component that takes its value straight from the palette, past the semantic layer, or a lower
+ * layer that references a higher one. For systems that do not set `layers` in the config.
+ */
+export const layerCrossing: Rule = {
+  id: 'layer/crossing',
+  description:
+    'A reference goes against the layers read from the system: past the semantic layer, or upwards.',
+  defaultSeverity: 'off',
+  run({ graph, knowledge, report }) {
+    for (const c of inferLayers(graph, knowledge).crossings)
+      report({
+        message:
+          c.kind === 'skips-semantic'
+            ? `"${c.from}" (${c.fromLayer}) takes its value straight from "${c.to}" (${c.toLayer}), past the semantic layer`
+            : `"${c.from}" (${c.fromLayer}) references "${c.to}", a ${c.toLayer} token`,
+        nodes: [c.from, c.to],
+        evidence: { kind: c.kind, fromLayer: c.fromLayer, toLayer: c.toLayer },
+        token: graph.token(c.from)!,
+      })
   },
 }

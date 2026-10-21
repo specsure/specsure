@@ -1,5 +1,5 @@
 import { parseValue } from '@dsgraph/adapters'
-import type { DsGraph, StyleContext } from '@dsgraph/core'
+import { type DsGraph, inferLayers, type StyleContext } from '@dsgraph/core'
 import { describeTokens, findToken, formatValue, readToken, stateOf, suggestName } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { graphOf, labelOf, load } from './compare'
@@ -65,8 +65,10 @@ export function answer(
 export function card(g: DsGraph, id: string): TokenCard | null {
   const d = readToken(g, id)
   if (!d) return null
+  const layer = inferLayers(g).tokens.get(id)
   return {
     ...d,
+    ...(layer ? { layer } : {}),
     values: d.values.map((v) => {
       const swatch = swatchOf(v.value)
       return { when: v.when, text: v.text, via: v.via, ...(swatch ? { swatch } : {}) }

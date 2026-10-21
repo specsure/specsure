@@ -131,6 +131,19 @@ describe('built-in rules', () => {
     ])
   })
 
+  it('layer/crossing reports a component past the semantic layer, when turned on', async () => {
+    const g = await graphOf({
+      blue: { $type: 'color', 600: { $value: srgb(0, 0, 1) } },
+      bg: { $type: 'color', accent: { $value: '{blue.600}' } },
+      button: { $type: 'color', bg: { $value: '{blue.600}' }, text: { $value: '{bg.accent}' } },
+    })
+    expect(rulesOf(await check(g))).not.toContain('layer/crossing')
+    const fs = await check(g, { rules: { 'layer/crossing': 'info' } })
+    expect(fs.filter((f) => f.rule === 'layer/crossing').map((f) => f.message)).toEqual([
+      '"button.bg" (component) takes its value straight from "blue.600" (palette), past the semantic layer',
+    ])
+  })
+
   it('finding ids are stable', async () => {
     const g = await graphOf({ a: { $type: 'number', $value: '{missing}' } })
     expect((await check(g))[0]!.id).toBe((await check(g))[0]!.id)

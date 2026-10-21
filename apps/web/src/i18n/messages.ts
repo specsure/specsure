@@ -470,6 +470,8 @@ const en = {
       'a11y/contrast-matrix': 'Text and background pairs below the contrast you asked for.',
       'layer/alias-depth': 'A long chain of references, which is hard to follow.',
       'layer/allowed-sources': 'A token points into a layer it should not use.',
+      'layer/crossing':
+        'A reference against the layers read from the system: a component straight from the palette, or a lower layer from a higher one.',
     } as Record<string, string>,
   },
 
@@ -609,6 +611,39 @@ const en = {
         `A value between two steps is outside the system: instead of ${num('en', m)}px, take ${num('en', a)}px or ${num('en', b)}px.`,
       betweenPlain: 'A value between two steps is outside the system: take the nearest step.',
       more: (n: number) => `and ${num('en', n)} more`,
+      layersTitle: 'How the system is layered',
+      layersLead: {
+        name: 'The layers as the system names them: its groups, collections and files.',
+        references:
+          'Nothing in the files names the layers, so they are read from references and the shape of names. A guess: check it against how the team sees the system.',
+        mixed:
+          'Some layers are named in the system (groups, collections, files); the rest are read from references and names, a guess.',
+      },
+      layersSingle:
+        'One level: raw values only, with no semantic layer above them. Code takes the palette directly.',
+      layer: {
+        palette: 'Palette',
+        semantic: 'Semantic',
+        component: 'Components',
+        value: 'Standalone values',
+      },
+      layerHelp: {
+        palette: 'Raw values the other tokens take theirs from.',
+        semantic: 'What a value is for. Themes switch this layer.',
+        component: "One component's values, taken from the semantic layer.",
+        value:
+          'A value of their own that nothing references: code uses them directly, like spacing steps and shadows.',
+      },
+      crossing: {
+        'skips-semantic': 'Components that skip the semantic layer',
+        upward: 'References upwards',
+      },
+      crossingHelp: {
+        'skips-semantic':
+          'They take a value straight from the palette. Change what a purpose means (the accent background, say) and these components will not follow.',
+        upward:
+          'A lower layer takes its value from a higher one: the palette from a semantic token, a semantic token from a component. The layers depend on each other the wrong way round.',
+      },
     },
     code: {
       tab: 'Your code',
@@ -692,6 +727,18 @@ const en = {
       sameValue: 'Same value',
       file: 'File',
       inCss: 'In CSS',
+      layer: 'Layer',
+      layerOf: {
+        palette: 'Palette',
+        semantic: 'Semantic',
+        component: 'Component',
+        value: 'Standalone value',
+      },
+      layerBy: {
+        config: 'set in the config',
+        name: "by the system's names",
+        references: 'read from references, a guess',
+      },
       compare: 'Compare with another version →',
     },
   },
@@ -1199,6 +1246,7 @@ const ru: Messages = {
       'a11y/contrast-matrix': 'Недостаточный контраст',
       'layer/alias-depth': 'Слишком длинная цепочка ссылок',
       'layer/allowed-sources': 'Ссылка в чужой слой',
+      'layer/crossing': 'Ссылка в обход слоёв',
       'context/empty-value': 'Пустое значение в одном из режимов',
       'context/literal-value': 'Значение вписано вручную в одном из режимов',
       'description/value-mismatch': 'Описание расходится со значением',
@@ -1238,6 +1286,8 @@ const ru: Messages = {
       'a11y/contrast-matrix': 'Пары текста и фона с контрастом ниже заданного.',
       'layer/alias-depth': 'Слишком длинная цепочка ссылок, в ней трудно разобраться.',
       'layer/allowed-sources': 'Токен ссылается на слой, который ему использовать нельзя.',
+      'layer/crossing':
+        'Ссылка против слоёв, выведенных из самой системы: компонент берёт значение прямо из палитры или нижний слой — у верхнего.',
     },
   },
 
@@ -1389,6 +1439,39 @@ const ru: Messages = {
         `Значение между шагами — вне системы: вместо ${num('ru', m)}px возьмите ${num('ru', a)}px или ${num('ru', b)}px.`,
       betweenPlain: 'Значение между шагами — вне системы: берите ближайший шаг.',
       more: (n: number) => `и ещё ${num('ru', n)}`,
+      layersTitle: 'Как устроены слои',
+      layersLead: {
+        name: 'Слои так, как их называет сама система: группы, коллекции и файлы.',
+        references:
+          'В файлах слои не названы, поэтому они выведены из ссылок и формы имён. Это догадка: сверьте её с тем, как систему видит команда.',
+        mixed:
+          'Часть слоёв названа в самой системе (группы, коллекции, файлы), остальные выведены из ссылок и имён — это догадка.',
+      },
+      layersSingle:
+        'Одна ступень: только сырые значения, назначений над ними нет. Код берёт палитру напрямую.',
+      layer: {
+        palette: 'Палитра',
+        semantic: 'Назначения',
+        component: 'Компоненты',
+        value: 'Отдельные значения',
+      },
+      layerHelp: {
+        palette: 'Сырые значения, из которых берут свои остальные токены.',
+        semantic: 'Для чего значение. Темы переключают этот слой.',
+        component: 'Значения одного компонента, взятые из назначений.',
+        value:
+          'Своё значение, и никто на него не ссылается: код берёт их напрямую, как шаги отступов и тени.',
+      },
+      crossing: {
+        'skips-semantic': 'Компоненты в обход назначений',
+        upward: 'Ссылки снизу вверх',
+      },
+      crossingHelp: {
+        'skips-semantic':
+          'Берут значение прямо из палитры. Если поменять назначение (например, фон акцента), эти компоненты не изменятся вместе с ним.',
+        upward:
+          'Нижний слой берёт значение у верхнего: палитра — у назначения, назначение — у компонента. Слои зависят друг от друга в обратную сторону.',
+      },
     },
     code: {
       tab: 'Ваш код',
@@ -1473,6 +1556,14 @@ const ru: Messages = {
       sameValue: 'То же значение',
       file: 'Файл',
       inCss: 'В CSS',
+      layer: 'Слой',
+      layerOf: {
+        palette: 'Палитра',
+        semantic: 'Назначение',
+        component: 'Компонент',
+        value: 'Отдельное значение',
+      },
+      layerBy: { config: 'из настройки', name: 'по названиям в системе', references: 'по ссылкам — догадка' },
       compare: 'Сравнить с другой версией →',
     },
   },

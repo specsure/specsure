@@ -75,6 +75,20 @@ describe('Token Fix', () => {
     // No exact token: a name for a new one, from the system's own gray ramp.
     const off = await ask({ id: 5, kind: 'find', text: 'background: #e9eef5', context: {} })
     expect(off.ok && off.kind === 'find' && off.answer?.suggestion?.name).toBe('gray-150')
+    // The example's layers, read from its references: nothing in the file names them.
+    expect(o.layers.by).toBe('references')
+    expect(o.layers.layers.map((x) => `${x.layer} ${x.total}`)).toEqual([
+      'palette 16',
+      'semantic 19',
+      'component 4',
+      'value 10',
+    ])
+    expect(o.layers.crossings).toEqual([])
+    const card = await ask({ id: 6, kind: 'token', token: 'card-bg' })
+    expect(card.ok && card.kind === 'token' && card.card?.layer).toEqual({
+      layer: 'component',
+      by: 'references',
+    })
     const gray = o.traps.find((x) => x.value === '#f1f5f9')!
     expect(gray.picks.map((p) => `${p.state} ${p.token}`)).toEqual(['hover bg-hover', 'disabled bg-disabled'])
   })

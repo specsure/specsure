@@ -23,6 +23,15 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
     tracking % for typography) the value no longer has;
   - `typography/unlinked-field`: a typography field written by hand where most typography tokens
     take it from a token.
+- `inferLayers` in `@dsgraph/core`: every token's layer read from the system itself — palette,
+  semantic, component, or a standalone value nothing references. Layers set in the config win,
+  then the names of groups, collections and files (`Primitives`, `semantic`, `md.comp`); the rest
+  are read from references and the shape of names, and say so (`by: 'references'`). With them, the
+  references that go against the layers: a component that takes its value straight from the
+  palette, past the semantic layer, and a lower layer that references a higher one. The words are
+  in the vocabulary (`layers`), and a knowledge pack can add to them.
+- `layer/crossing` (off by default) reports those references, for systems that do not set
+  `layers` in the config.
 - The class that replaces an arbitrary Tailwind value uses a theme namespace only for the kind of
   value it holds: a color token `text-default` becomes `text-(--text-default)`, not the font-size
   class `text-default`; and `--bg-accent` becomes `bg-(--bg-accent)`, not `bg-bg-accent`.
