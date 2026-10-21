@@ -795,6 +795,21 @@ function UseCard({
   )
 }
 
+/**
+ * The rule of a scale, shown on its own steps: a value halfway between two neighbours with room
+ * between them (`14px` between 12 and 16) is the one people write by hand.
+ */
+function betweenNote(steps: number[], l: ReturnType<typeof useT>['lookup']['overview']): string {
+  // The pair nearest the sizes people type most (12–16px) makes the clearest example.
+  const pairs = steps
+    .slice(1)
+    .map((b, i) => [steps[i]!, b] as const)
+    .filter(([a, b]) => b - a >= 4 && Number.isInteger(a) && Number.isInteger(b))
+    .sort((x, y) => Math.abs(x[0] - 12) - Math.abs(y[0] - 12))
+  const pair = pairs[0]
+  return pair ? l.between(Math.round((pair[0] + pair[1]) / 2), pair[0], pair[1]) : l.betweenPlain
+}
+
 /** How the open system is meant to be used: where the same value means different tokens, and what is for what. */
 function OverviewView({ overview: o, onPick }: { overview: Overview; onPick: (id: string) => void }) {
   const t = useT()
@@ -861,6 +876,12 @@ function OverviewView({ overview: o, onPick }: { overview: Overview; onPick: (id
       )}
       {scales.length > 0 && (
         <section className="lookup__block">
+          <p className="muted">
+            {betweenNote(
+              scales[0]!.rows.map((x) => x.px),
+              l,
+            )}
+          </p>
           <div className="lookup__uses">
             {scales.map((sc) => {
               const max = Math.max(...sc.rows.map((x) => x.px))

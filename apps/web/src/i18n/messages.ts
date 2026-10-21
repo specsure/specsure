@@ -586,8 +586,11 @@ const en = {
       usesLead:
         'The tokens this design system made for each use. The ones most of the system is built on come first.',
       uses: { text: 'Text', background: 'Backgrounds', border: 'Borders', shadow: 'Shadows' },
-      space: 'Spacing',
-      radius: 'Radii',
+      space: 'Spacing steps',
+      radius: 'Radius steps',
+      between: (m: number, a: number, b: number) =>
+        `A value between two steps is outside the system: instead of ${num('en', m)}px, take ${num('en', a)}px or ${num('en', b)}px.`,
+      betweenPlain: 'A value between two steps is outside the system: take the nearest step.',
       more: (n: number) => `and ${num('en', n)} more`,
     },
     demo: {
@@ -1298,8 +1301,11 @@ const ru: Messages = {
       usesLead:
         'Токены, которые эта дизайн-система сделала для каждой цели. Первыми — те, на которых держится большая часть системы.',
       uses: { text: 'Текст', background: 'Фон', border: 'Рамки', shadow: 'Тени' },
-      space: 'Отступы',
-      radius: 'Скругления',
+      space: 'Шаги отступов',
+      radius: 'Шаги скруглений',
+      between: (m: number, a: number, b: number) =>
+        `Значение между шагами — вне системы: вместо ${num('ru', m)}px возьмите ${num('ru', a)}px или ${num('ru', b)}px.`,
+      betweenPlain: 'Значение между шагами — вне системы: берите ближайший шаг.',
       more: (n: number) => `и ещё ${num('ru', n)}`,
     },
     demo: {
