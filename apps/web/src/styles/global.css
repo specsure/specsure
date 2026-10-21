@@ -842,6 +842,44 @@ input.accessory {
   cursor: pointer;
 }
 
+.lookup__demo {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.lookup__demo-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.lookup__demo-head > div {
+  flex: 1;
+}
+.lookup__demo-head h3 {
+  margin: 0 0 var(--space-1);
+  font: var(--text-title-s);
+}
+.lookup__demo-head p {
+  margin: 0;
+  font: var(--text-body);
+}
+.lookup__demo-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.lookup__demo-pair figure {
+  min-width: 0;
+  margin: 0;
+}
+.lookup__demo-pair figcaption {
+  margin-bottom: var(--space-1);
+  color: var(--ink-3);
+  font: var(--text-label);
+}
+.lookup__demo .lookup__code {
+  margin: 0;
+}
 .lookup__snippet {
   padding: var(--space-2);
 }
@@ -1734,6 +1772,16 @@ a.launcher__row:focus-visible .launcher__go {
   .searchbar input[type="search"],
   .searchbar__field {
     flex-basis: calc(100% - 44px);
+  }
+  .lookup__demo-head {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .lookup__demo-head > div {
+    flex-basis: 100%;
+  }
+  .lookup__demo-pair {
+    grid-template-columns: 1fr;
   }
   /* The icon and the clear button share the first line with the field. */
   .searchbar--lookup .searchbar__field {

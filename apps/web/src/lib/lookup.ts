@@ -98,6 +98,10 @@ export function session() {
         return { id: req.id, ok: true, kind: 'find', answer: answer(graph, req.text, opts) }
       }
       if (req.kind === 'token') return { id: req.id, ok: true, kind: 'token', card: card(graph, req.token) }
+      if (req.kind === 'demo') {
+        const { demoSnippet } = await import('./snippet')
+        return { id: req.id, ok: true, kind: 'demo', demo: await demoSnippet(graph) }
+      }
       if (req.kind === 'snippet') {
         // The code parsers are large: loaded the first time someone pastes code.
         const { fixSnippet } = await import('./snippet')

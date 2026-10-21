@@ -8,6 +8,10 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - `@dsgraph/report` answers questions about one design system as data: `findToken`, `readToken`,
   `searchTokens`, `describeTokens` (with `stateOf`, `componentOf`, `similarIds`). The MCP server
   words them for agents; Token Lookup on the site draws them.
+- Choosing a token among equal ones counts the words of a name whatever separates them, so
+  `control-bgColor-hover` is more general than `button-default-bgColor-hover` in CSS names too; and
+  of tokens still equal, the one more tokens reference comes first (`fgColor-default` before
+  `fgColor-black`).
 - `parseValue` (a value as people type it, as a DTCG type and value) is exported from
   `@dsgraph/adapters`.
 - MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold

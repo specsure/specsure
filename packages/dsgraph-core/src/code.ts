@@ -338,7 +338,8 @@ function componentScore(words: string[], components: string[]): number {
   return 0
 }
 
-const segments = (id: string) => id.split('.').length
+/** Words in a name, whatever separates them: `bgColor.accent` and `bgColor-accent` both have three. */
+const segments = (id: string) => normalizeName(id).split('.').length
 
 /**
  * How well a token's name says it is made for the role: 2 when the name starts with it (`bgColor.*`,
@@ -365,7 +366,8 @@ function roleScore(id: string, role: Role | undefined, v: CompiledVocabulary): n
  *   before `selection.fgColor`).
  * Among equally close tokens, the ones that reference another token (semantic tokens, which follow
  * themes) come before the primitives that hold the value; then general tokens before component ones
- * (`fgColor.accent` before `button.outline.fgColor.rest`), and the one others build on first.
+ * (`fgColor.accent` before `button.outline.fgColor.rest`), the one others build on first, then the one
+ * more tokens reference.
  * `context` is a CSS property or a whole `StyleContext` (see `styleContext`); a knowledge pack adds
  * to the words names are read by.
  */
@@ -407,6 +409,16 @@ export function nearestTokens(
     }
     return f
   }
+  // Of equal tokens, the one more of the system is built on: `fgColor.default` before `fgColor.black`.
+  const used = new Map<NearestToken, number>()
+  const users = (m: NearestToken) => {
+    let n = used.get(m)
+    if (n === undefined) {
+      n = graph.dependents(m.token.id).length
+      used.set(m, n)
+    }
+    return n
+  }
   const byFit = (a: NearestToken, b: NearestToken) => {
     if (!a.exact || !b.exact) return 0
     const fa = fit(a)
@@ -423,6 +435,7 @@ export function nearestTokens(
         Number(depth.get(b)! > 1) - Number(depth.get(a)! > 1) ||
         segments(a.token.id) - segments(b.token.id) ||
         depth.get(a)! - depth.get(b)! ||
+        users(b) - users(a) ||
         a.token.id.localeCompare(b.token.id),
     )
     .slice(0, limit)

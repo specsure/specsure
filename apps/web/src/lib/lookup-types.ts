@@ -58,6 +58,12 @@ export interface SnippetAnswer {
   language: 'css' | 'tsx'
 }
 
+/** The page's own example: code written by hand with the open system's values, and the same on tokens. */
+export interface DemoAnswer {
+  input: string
+  output: string
+}
+
 export type LookupRequest =
   | { id: number; kind: 'open'; source: SideInput; include: string; githubToken?: string }
   | {
@@ -70,6 +76,7 @@ export type LookupRequest =
     }
   | { id: number; kind: 'token'; token: string }
   | { id: number; kind: 'snippet'; text: string }
+  | { id: number; kind: 'demo' }
   | { id: number; kind: 'health' }
 
 export type LookupResponse =
@@ -85,5 +92,6 @@ export type LookupResponse =
   | { id: number; ok: true; kind: 'find'; answer: ValueAnswer | null }
   | { id: number; ok: true; kind: 'token'; card: TokenCard | null }
   | { id: number; ok: true; kind: 'snippet'; snippet: SnippetAnswer }
+  | { id: number; ok: true; kind: 'demo'; demo: DemoAnswer | null }
   | { id: number; ok: true; kind: 'health'; findings: Finding[] }
   | { id: number; ok: false; error: string; hint?: 'private' }

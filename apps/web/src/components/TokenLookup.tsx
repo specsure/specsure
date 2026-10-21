@@ -7,6 +7,7 @@ import { looksLikeCode } from '../lib/code-text'
 import { EXAMPLE } from '../lib/example'
 import { deltaWords } from '../lib/explain'
 import type {
+  DemoAnswer,
   IndexRow,
   LookupRequest,
   LookupResponse,
@@ -335,6 +336,19 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
   const [state, setState] = useState('')
   const [answer, setAnswer] = useState<ValueAnswer | null>(null)
   const [snippet, setSnippet] = useState<SnippetAnswer | null>(null)
+  const [demo, setDemo] = useState<DemoAnswer | null>(null)
+  // The example is built once per system, from its own values.
+  useEffect(() => {
+    let live = true
+    setDemo(null)
+    if (!index.length) return
+    ask({ kind: 'demo' }).then((r) => {
+      if (live && r.ok && r.kind === 'demo') setDemo(r.demo)
+    })
+    return () => {
+      live = false
+    }
+  }, [ask, index])
   const isCode = looksLikeCode(query)
   const [all, setAll] = useState<Set<string>>(new Set())
   const [status, setStatus] = useState<string | null>(null)
@@ -593,6 +607,15 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
           )}
         </div>
 
+        {!query.trim() && demo && (
+          <DemoView
+            demo={demo}
+            onUse={() => {
+              onQuery(demo.input)
+              search.current?.focus()
+            }}
+          />
+        )}
         {isCode ? (
           snippet && (
             <SnippetView
@@ -692,6 +715,37 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
         </footer>
       </div>
     </div>
+  )
+}
+
+function DemoView({ demo, onUse }: { demo: DemoAnswer; onUse: () => void }) {
+  const l = useT().lookup.demo
+  return (
+    <section className="lookup__demo" aria-label={l.title}>
+      <div className="lookup__demo-head">
+        <div>
+          <h3>{l.title}</h3>
+          <p className="muted">{l.lead}</p>
+        </div>
+        <button type="button" className="ghost ghost--strong" onClick={onUse}>
+          {l.use}
+        </button>
+      </div>
+      <div className="lookup__demo-pair">
+        <figure>
+          <figcaption>{l.before}</figcaption>
+          <pre className="lookup__code">
+            <code>{demo.input}</code>
+          </pre>
+        </figure>
+        <figure>
+          <figcaption>{l.after}</figcaption>
+          <pre className="lookup__code">
+            <code>{demo.output}</code>
+          </pre>
+        </figure>
+      </div>
+    </section>
   )
 }
 

@@ -59,6 +59,38 @@ describe('query layer', () => {
     expect(searchTokens(g, { type: 'dimension' }).map((r) => r.text)).toEqual(['16px'])
   })
 
+  it('of equal tokens, puts the general one and the one more tokens build on first, in CSS names too', async () => {
+    const g = DsGraph.from(
+      await scan(
+        new MemorySource(
+          {
+            't.css': `:root {
+  --fgColor-black: #1f2328;
+  --fgColor-default: #1f2328;
+  --button-fgColor-default: #1f2328;
+  --link-fgColor: var(--fgColor-default);
+  --menu-fgColor: var(--fgColor-default);
+}`,
+          },
+          { kind: 'files', path: 't.css' },
+        ),
+        { css: { include: ['t.css'] } },
+        { adapters: [cssTokens] },
+      ),
+    )
+    const r = findToken(
+      g,
+      { type: 'color', value: { space: 'srgb', components: [0.122, 0.137, 0.157], alpha: 1 } },
+      {
+        context: 'color',
+      },
+    )
+    const ids = r.groups[0]!.tokens.map((t) => t.id)
+    // Aliases first; then fgColor-default (two references) before fgColor-black; the button's last of the general.
+    expect(ids.indexOf('fgColor-default')).toBeLessThan(ids.indexOf('fgColor-black'))
+    expect(ids.indexOf('fgColor-black')).toBeLessThan(ids.indexOf('button-fgColor-default'))
+  })
+
   it('describes the system and words states', async () => {
     const d = describeTokens(await graph())
     expect(d).toMatchObject({ tokens: 5, values: 3, aliases: 2, errors: 0 })

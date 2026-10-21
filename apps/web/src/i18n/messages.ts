@@ -62,7 +62,7 @@ const en = {
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
       lookup:
-        'One design system: the token for a color or size, what a token is in each theme, your code rewritten on tokens',
+        'Paste a color or a piece of code: the token meant for it, for a background or text, for hover, for this component',
       cli: 'Diff and checks in your terminal and CI; upgrade‑check shows what a new version breaks in your code',
       action:
         'A report on every pull request: what a token change breaks in your code, and a failed check when it does',
@@ -494,8 +494,8 @@ const en = {
   lookupPage: {
     title: 'Token Lookup · Specsure',
     description:
-      'Look up design tokens: the token for a color or size, what each token is, where its value comes from and who uses it, in every theme. npm, GitHub or your files, read in your browser.',
-    lead: 'Open a design system and ask it: which token is this color for a background, what is this token in the dark theme, where does its value come from. The same answers your coding agent gets from the MCP server. Everything is read in your browser.',
+      'Paste a color, a size or a piece of CSS, JSX or Tailwind and get the design token meant for it: for a background or text, for hover, for this component. Any design system from npm, GitHub or your files, read in your browser.',
+    lead: 'Paste a color, a size or a piece of code, and get the token your design system meant for it: for a background or text, for hover, for this component. Not just one with the same value. Code comes back rewritten on tokens. The same answers your coding agent gets from the MCP server; everything is read in your browser.',
     how: 'Connect an agent',
   },
 
@@ -566,6 +566,13 @@ const en = {
     linkCopied: 'Link copied',
     shareTooBig: 'These files are too large for a link.',
     example: 'Try an example',
+    demo: {
+      title: 'Try it with code',
+      lead: 'Paste CSS, JSX or Tailwind into the search. Here is how it goes with this design system’s own values:',
+      before: 'Written by hand',
+      after: 'On tokens',
+      use: 'Paste this example',
+    },
     snippet: {
       title: 'Your code on tokens',
       replaced: (n: number) =>
@@ -700,7 +707,7 @@ const ru: Messages = {
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
       lookup:
-        'Одна дизайн-система: какой токен у цвета или размера, чему равен токен в каждой теме, ваш код на токенах',
+        'Вставьте цвет или кусок кода — получите токен, задуманный для него: для фона или текста, для наведения, для компонента',
       cli: 'Сравнение и проверки в терминале и CI; upgrade‑check покажет, что новая версия сломает в вашем коде',
       action:
         'Отчёт в каждом pull request: что изменение токенов сломает в вашем коде, и проваленная проверка, если ломает',
@@ -1173,8 +1180,8 @@ const ru: Messages = {
   lookupPage: {
     title: 'Token Lookup · Specsure',
     description:
-      'Поиск по дизайн-токенам: какой токен у цвета или размера, что это за токен, откуда он берёт значение и кто его использует — в каждой теме. npm, GitHub или ваши файлы, всё читается в браузере.',
-    lead: 'Откройте дизайн-систему и спросите её: какой токен у этого цвета для фона, чему равен этот токен в тёмной теме, откуда он берёт значение. Это те же ответы, что ваш агент получает от MCP-сервера. Всё читается в браузере.',
+      'Вставьте цвет, размер или кусок CSS, JSX или Tailwind и получите дизайн-токен, задуманный именно для этого: для фона или текста, для наведения, для этого компонента. Любая дизайн-система из npm, GitHub или ваших файлов, всё читается в браузере.',
+    lead: 'Вставьте цвет, размер или кусок кода — и получите токен, который ваша дизайн-система задумала именно для этого: для фона или текста, для наведения, для этого компонента. А не просто совпадающий по значению. Код вернётся уже переписанным на токены. Это те же ответы, что ваш агент получает от MCP-сервера; всё читается в браузере.',
     how: 'Подключить агента',
   },
 
@@ -1246,6 +1253,13 @@ const ru: Messages = {
     linkCopied: 'Ссылка скопирована',
     shareTooBig: 'Файлы слишком большие для ссылки.',
     example: 'Пример',
+    demo: {
+      title: 'Попробуйте на коде',
+      lead: 'Вставьте в поиск CSS, JSX или Tailwind. Вот как это выглядит на значениях самой этой дизайн-системы:',
+      before: 'Вписано вручную',
+      after: 'На токенах',
+      use: 'Вставить этот пример',
+    },
     snippet: {
       title: 'Ваш код на токенах',
       replaced: (n: number) =>
