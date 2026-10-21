@@ -566,6 +566,28 @@ input.accessory {
   resize: none;
   outline: none;
 }
+.searchbar__field::placeholder {
+  color: var(--ink-3);
+}
+.searchbar--lookup {
+  align-items: flex-start;
+  padding-left: var(--space-3);
+}
+.searchbar--lookup > .accessory,
+.searchbar--lookup > .searchbar__clear {
+  margin-top: 4px;
+}
+.searchbar--lookup > .keys {
+  margin-top: 11px;
+}
+.searchbar__icon {
+  flex: none;
+  margin-top: 12px;
+  color: var(--ink-3);
+}
+.searchbar--lookup:focus-within .searchbar__icon {
+  color: var(--ink-2);
+}
 .searchbar__field:placeholder-shown {
   overflow: hidden;
   white-space: nowrap;
@@ -1715,6 +1737,13 @@ a.launcher__row:focus-visible .launcher__go {
   .searchbar input[type="search"],
   .searchbar__field {
     flex-basis: calc(100% - 44px);
+  }
+  .searchbar--lookup > .keys {
+    display: none;
+  }
+  /* The icon and the clear button share the first line with the field. */
+  .searchbar--lookup .searchbar__field {
+    flex-basis: calc(100% - 72px);
   }
   .split {
     grid-template-columns: 1fr;

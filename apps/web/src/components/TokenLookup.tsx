@@ -492,7 +492,11 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
           }
         }}
       >
-        <div className="searchbar">
+        <div className="searchbar searchbar--lookup">
+          <svg className="searchbar__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <path d="m10.25 10.25 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
           <textarea
             ref={search}
             className="searchbar__field"
@@ -507,6 +511,7 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
               onToken(undefined)
             }}
           />
+          {!query && <Keys keys={[MOD, 'K']} />}
           {query && (
             <button
               type="button"
