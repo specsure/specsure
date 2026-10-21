@@ -1,12 +1,15 @@
 import type { DroppedFile } from './types'
 
 /**
- * A small two-layer design system for Token Fix's example: a palette, semantic tokens for text,
- * backgrounds, borders and states, a few component tokens and a dark theme. The same blue is the
- * accent text, the accent background and the accent border, so the page has something to choose.
+ * A small three-layer design system for Token Fix's example: a palette of raw values, semantic tokens
+ * that say what a value is for (and that the dark theme redefines), and component tokens that take
+ * their values from the semantic ones only. The same blue is the accent text, the accent background
+ * and the accent border, so the page has something to choose.
  */
 const css = `:root {
+  /* Palette: raw values with no purpose. Code never references them. */
   --blue-50: #eff6ff;
+  --blue-400: #60a5fa;
   --blue-500: #3b82f6;
   --blue-600: #2563eb;
   --blue-700: #1d4ed8;
@@ -14,18 +17,24 @@ const css = `:root {
   --gray-50: #f8fafc;
   --gray-100: #f1f5f9;
   --gray-200: #e2e8f0;
+  --gray-400: #94a3b8;
   --gray-500: #64748b;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
   --gray-900: #0f172a;
   --red-50: #fef2f2;
   --red-600: #dc2626;
 
+  /* Semantic: what a value is for. Themes redefine this layer. */
   --text-default: var(--gray-900);
   --text-muted: var(--gray-500);
   --text-accent: var(--blue-600);
   --text-danger: var(--red-600);
   --text-on-accent: var(--gray-0);
 
+  /* The page, and the surfaces raised above it: cards, popovers. */
   --bg-default: var(--gray-0);
+  --bg-raised: var(--gray-0);
   --bg-subtle: var(--gray-50);
   --bg-accent: var(--blue-600);
   --bg-accent-hover: var(--blue-700);
@@ -40,11 +49,6 @@ const css = `:root {
   --border-focus: var(--blue-500);
   --border-danger: var(--red-600);
 
-  --button-bg: var(--bg-accent);
-  --button-bg-hover: var(--bg-accent-hover);
-  --button-text: var(--text-on-accent);
-  --card-bg: var(--bg-default);
-
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.12);
   --shadow-popover: 0 8px 24px rgba(15, 23, 42, 0.16);
   --space-1: 4px;
@@ -55,16 +59,24 @@ const css = `:root {
   --radius-sm: 4px;
   --radius-md: 8px;
   --font-body: Inter, system-ui, sans-serif;
+
+  /* Components: one component's values, taken from the semantic layer only. */
+  --button-bg: var(--bg-accent);
+  --button-bg-hover: var(--bg-accent-hover);
+  --button-text: var(--text-on-accent);
+  --card-bg: var(--bg-raised);
 }
 
+/* The dark theme redefines semantic tokens only, from the same palette. */
 [data-theme="dark"] {
   --text-default: var(--gray-50);
-  --text-muted: #94a3b8;
-  --text-accent: #60a5fa;
+  --text-muted: var(--gray-400);
+  --text-accent: var(--blue-400);
   --bg-default: var(--gray-900);
-  --bg-subtle: #1e293b;
-  --bg-hover: #1e293b;
-  --border-default: #334155;
+  --bg-raised: var(--gray-800);
+  --bg-subtle: var(--gray-800);
+  --bg-hover: var(--gray-700);
+  --border-default: var(--gray-700);
 }
 `
 

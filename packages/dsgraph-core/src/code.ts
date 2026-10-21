@@ -366,8 +366,8 @@ function roleScore(id: string, role: Role | undefined, v: CompiledVocabulary): n
  *   before `selection.fgColor`).
  * Among equally close tokens, the ones that reference another token (semantic tokens, which follow
  * themes) come before the primitives that hold the value; then general tokens before component ones
- * (`fgColor.accent` before `button.outline.fgColor.rest`), the one others build on first, then the one
- * more tokens reference.
+ * (`fgColor.accent` before `button.outline.fgColor.rest`), the one the system names its default
+ * (`bg.default` before `bg.raised`), the one others build on first, then the one more tokens reference.
  * `context` is a CSS property or a whole `StyleContext` (see `styleContext`); a knowledge pack adds
  * to the words names are read by.
  */
@@ -419,6 +419,13 @@ export function nearestTokens(
     }
     return n
   }
+  // The one the system names its default: `bg.default` before `bg.raised` of the same white.
+  const named = (m: NearestToken) =>
+    Number(
+      normalizeName(m.token.id)
+        .split('.')
+        .some((w) => v.defaults.has(w)),
+    )
   const byFit = (a: NearestToken, b: NearestToken) => {
     if (!a.exact || !b.exact) return 0
     const fa = fit(a)
@@ -434,6 +441,7 @@ export function nearestTokens(
         a.distance - b.distance ||
         Number(depth.get(b)! > 1) - Number(depth.get(a)! > 1) ||
         segments(a.token.id) - segments(b.token.id) ||
+        named(b) - named(a) ||
         depth.get(a)! - depth.get(b)! ||
         users(b) - users(a) ||
         a.token.id.localeCompare(b.token.id),

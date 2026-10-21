@@ -14,6 +14,8 @@ export interface Vocabulary {
   states: Record<string, string>
   /** Words that name the resting state: `button.bgColor.rest` is for no state. */
   rest: string[]
+  /** Words that mark the system's default of several equal tokens: `bg.default` before `bg.raised`. */
+  defaults: string[]
   /** File, folder and class names that say nothing about the component: `index`, `styles`, `root`. */
   generic: string[]
 }
@@ -28,6 +30,7 @@ export interface Knowledge {
     roles?: Partial<Record<Role, string[]>>
     states?: Record<string, string>
     rest?: string[]
+    defaults?: string[]
     generic?: string[]
   }
 }
@@ -48,6 +51,7 @@ export const DEFAULT_VOCABULARY: Vocabulary = {
     visited: 'visited',
   },
   rest: ['rest'],
+  defaults: ['default'],
   generic: [
     'index',
     'style',
@@ -92,6 +96,7 @@ export interface CompiledVocabulary {
   roles: Record<Role, RegExp>
   states: Map<string, string>
   rest: Set<string>
+  defaults: Set<string>
   generic: Set<string>
 }
 
@@ -106,6 +111,7 @@ function compile(v: Vocabulary): CompiledVocabulary {
     roles,
     states: new Map(Object.entries(v.states).map(([w, s]) => [w.toLowerCase(), s])),
     rest: new Set(words(v.rest)),
+    defaults: new Set(words(v.defaults)),
     generic: new Set(words(v.generic)),
   }
 }
@@ -119,7 +125,7 @@ export function readKnowledge(value: unknown): Knowledge {
   if (!k || typeof k !== 'object' || k.schema !== 'dsgraph/knowledge@1')
     throw new Error('Not a dsgraph knowledge pack: expected schema "dsgraph/knowledge@1"')
   const v = k.vocabulary ?? {}
-  const lists = [...Object.values(v.roles ?? {}), v.rest ?? [], v.generic ?? []]
+  const lists = [...Object.values(v.roles ?? {}), v.rest ?? [], v.defaults ?? [], v.generic ?? []]
   if (!lists.every((l) => Array.isArray(l) && l.every((w) => typeof w === 'string')))
     throw new Error('Knowledge pack: vocabulary lists must be arrays of words')
   if (!Object.values(v.states ?? {}).every((s) => typeof s === 'string'))
@@ -141,6 +147,7 @@ export function vocabularyOf(knowledge?: Knowledge): CompiledVocabulary {
       >,
       states: { ...d.states, ...add.states },
       rest: [...d.rest, ...(add.rest ?? [])],
+      defaults: [...d.defaults, ...(add.defaults ?? [])],
       generic: [...d.generic, ...(add.generic ?? [])],
     })
     compiled.set(knowledge, c)

@@ -11,7 +11,9 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - Choosing a token among equal ones counts the words of a name whatever separates them, so
   `control-bgColor-hover` is more general than `button-default-bgColor-hover` in CSS names too; and
   of tokens still equal, the one more tokens reference comes first (`fgColor-default` before
-  `fgColor-black`).
+  `fgColor-black`). Before that, the one the system names its default: `bg-default` before
+  `bg-raised` of the same white, whichever more tokens build on. The words are in the vocabulary
+  (`defaults`), and a knowledge pack can add to them.
 - New checks, found by reading a design system straight from Figma:
   - `context/empty-value`: a token set in one theme or mode and empty in another (0, `""`), as
     when a mode is added and its values never filled in;
