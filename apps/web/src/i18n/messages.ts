@@ -458,6 +458,14 @@ const en = {
         'A color ramp gets lighter where it should get darker (or the other way round).',
       'color/out-of-gamut': 'A color outside what most screens show; it will be clipped.',
       'color/hex-mismatch': 'The hex fallback does not match the color itself.',
+      'context/empty-value':
+        'A token is set in one theme or mode and empty in another (0 or nothing). Usually a mode added later whose values were never filled in.',
+      'context/literal-value':
+        'In every theme or mode but one, the token takes its value from another token; in that one it is written by hand and will not follow changes.',
+      'description/value-mismatch':
+        'The description states a number (a size, 16/25, a tracking %) that the value no longer has. One of them is out of date.',
+      'typography/unlinked-field':
+        'Most text styles take this part from a token; this one writes it by hand, so it will not follow when the token changes.',
       'token/deprecated-reference': 'Uses a deprecated token.',
       'naming/normalized-collision': 'Two names differ only in case or separators and will collide in code.',
       'a11y/contrast-matrix': 'Text and background pairs below the contrast you asked for.',
@@ -1139,6 +1147,10 @@ const ru: Messages = {
       'a11y/contrast-matrix': 'Недостаточный контраст',
       'layer/alias-depth': 'Слишком длинная цепочка ссылок',
       'layer/allowed-sources': 'Ссылка в чужой слой',
+      'context/empty-value': 'Пустое значение в одном из режимов',
+      'context/literal-value': 'Значение вписано вручную в одном из режимов',
+      'description/value-mismatch': 'Описание расходится со значением',
+      'typography/unlinked-field': 'Поле стиля не привязано к токену',
     },
     help: {
       'tokens/non-json':
@@ -1160,6 +1172,14 @@ const ru: Messages = {
       'color/out-of-gamut':
         'Цвет выходит за пределы того, что показывает большинство экранов, и будет обрезан.',
       'color/hex-mismatch': 'Запасной hex не совпадает с самим цветом.',
+      'context/empty-value':
+        'Токен задан в одной теме или режиме и пуст в другом (0 или ничего). Обычно это режим, добавленный позже, значения которого так и не заполнили.',
+      'context/literal-value':
+        'Во всех темах и режимах, кроме одного, токен берёт значение у другого токена, а в этом вписан вручную и не будет следовать изменениям.',
+      'description/value-mismatch':
+        'В описании указано число (размер, 16/25, трекинг в %), которого у значения уже нет. Что-то из двух устарело.',
+      'typography/unlinked-field':
+        'Большинство текстовых стилей берут это поле у токена, а этот вписывает его вручную и не изменится вместе с токеном.',
       'token/deprecated-reference': 'Использует устаревший токен.',
       'naming/normalized-collision':
         'Имена различаются только регистром или разделителями и совпадут в коде.',

@@ -12,6 +12,12 @@ import {
 } from '@dsgraph/core'
 import { PRESETS } from './presets.js'
 import { deprecatedUsage, hardcodedColor, offScale, unknownToken, unusedToken } from './rules/code.js'
+import {
+  descriptionMismatch,
+  emptyInContext,
+  literalInContext,
+  unlinkedTypographyField,
+} from './rules/consistency.js'
 import { aliasDepth, allowedSources } from './rules/layers.js'
 import {
   contrastMatrix,
@@ -32,6 +38,10 @@ export const RULES: readonly Rule[] = [
   nonMonotonicPalette,
   duplicateStops,
   contrastMatrix,
+  emptyInContext,
+  literalInContext,
+  descriptionMismatch,
+  unlinkedTypographyField,
   aliasDepth,
   allowedSources,
   hardcodedColor,

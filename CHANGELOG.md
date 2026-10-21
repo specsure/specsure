@@ -12,6 +12,15 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   `control-bgColor-hover` is more general than `button-default-bgColor-hover` in CSS names too; and
   of tokens still equal, the one more tokens reference comes first (`fgColor-default` before
   `fgColor-black`).
+- New checks, found by reading a design system straight from Figma:
+  - `context/empty-value`: a token set in one theme or mode and empty in another (0, `""`), as
+    when a mode is added and its values never filled in;
+  - `context/literal-value` (info): a value written by hand in one mode where every other mode
+    references a token;
+  - `description/value-mismatch`: a number in a description (`13 · …` for a size, `16/25` and a
+    tracking % for typography) the value no longer has;
+  - `typography/unlinked-field`: a typography field written by hand where most typography tokens
+    take it from a token.
 - `parseValue` (a value as people type it, as a DTCG type and value) is exported from
   `@dsgraph/adapters`.
 - MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold
