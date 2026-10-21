@@ -1894,19 +1894,12 @@ a.launcher__row:focus-visible {
   color: var(--ink-3);
   font: var(--text-body);
 }
-.launcher__row.is-soon .launcher__title {
-  color: var(--ink-2);
-}
-.launcher__go,
-.launcher__row.is-soon::after {
+.launcher__go {
   flex: none;
   width: 20px;
   color: var(--ink-3);
   font: var(--text-label);
   text-align: center;
-}
-.launcher__row.is-soon::after {
-  content: "";
 }
 .launcher__go {
   opacity: 0;

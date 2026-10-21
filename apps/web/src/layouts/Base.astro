@@ -17,16 +17,16 @@ const { title, description, path, lang = 'en' } = Astro.props
 const m = messages[lang]
 const other: Lang = lang === 'en' ? 'ru' : 'en'
 const href = (p: string) => localePath(lang, p)
+// The source is linked from About and the footer.
 const nav = [
-  { href: href('/tools/diff'), label: m.site.nav.diff, current: '/tools/diff' },
-  { href: href('/tools/fix'), label: m.site.nav.fix, current: '/tools/fix' },
-  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: '/tools/diff/guide', wide: true },
-  { href: href('/tools/mcp'), label: m.site.nav.mcp, current: '/tools/mcp' },
+  { href: href('/tools/diff'), label: m.site.nav.diff, current: ['/tools/diff'] },
+  { href: href('/tools/fix'), label: m.site.nav.fix, current: ['/tools/fix'] },
+  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: ['/tools/diff/guide'], wide: true },
+  { href: href('/tools/mcp'), label: m.site.nav.mcp, current: ['/tools/mcp'] },
   {
     href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
     label: m.site.nav.cli,
   },
-  { href: 'https://github.com/specsure/specsure', label: m.site.nav.github },
 ]
 const year = new Date().getFullYear()
 
@@ -93,7 +93,7 @@ const DETECT = `(() => {
           <a
             href={n.href}
             class={'wide' in n ? 'site-nav__wide' : undefined}
-            aria-current={n.current && path === n.current ? 'page' : undefined}
+            aria-current={n.current?.includes(path) ? 'page' : undefined}
           >
             {n.label.startsWith('Token ') ? (
               <>
