@@ -511,7 +511,6 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
               onToken(undefined)
             }}
           />
-          {!query && <Keys keys={[MOD, 'K']} />}
           {query && (
             <button
               type="button"
@@ -666,6 +665,17 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
                   : ''
                 : l.status(count, loaded.ms))}
           </span>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => {
+              search.current?.focus()
+              search.current?.select()
+            }}
+          >
+            {l.find} <Keys keys={[MOD, 'K']} />
+          </button>
+          <span className="actionbar__sep" />
           <button
             type="button"
             className="ghost"

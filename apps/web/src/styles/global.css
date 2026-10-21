@@ -577,9 +577,6 @@ input.accessory {
 .searchbar--lookup > .searchbar__clear {
   margin-top: 4px;
 }
-.searchbar--lookup > .keys {
-  margin-top: 11px;
-}
 .searchbar__icon {
   flex: none;
   margin-top: 12px;
@@ -1737,9 +1734,6 @@ a.launcher__row:focus-visible .launcher__go {
   .searchbar input[type="search"],
   .searchbar__field {
     flex-basis: calc(100% - 44px);
-  }
-  .searchbar--lookup > .keys {
-    display: none;
   }
   /* The icon and the clear button share the first line with the field. */
   .searchbar--lookup .searchbar__field {
