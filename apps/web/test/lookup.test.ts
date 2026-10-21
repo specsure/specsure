@@ -127,6 +127,23 @@ describe('Token Fix', () => {
     ])
   })
 
+  it("keeps the app's repository in the address, never a folder", () => {
+    const url = writeLookupUrl('/tools/fix', {
+      source: { kind: 'npm', pkg: '@scope/tokens', version: '1.2.0' },
+      include: '',
+      context: {},
+      query: '',
+      code: { kind: 'github', repo: 'acme/app', root: 'src', ref: 'main' },
+    })
+    expect(url).toBe('/tools/fix?pkg=@scope/tokens&v=1.2.0&code=github:acme/app/src@main')
+    expect(readLookupUrl(new URL(url, 'https://x.test')).code).toEqual({
+      kind: 'github',
+      repo: 'acme/app',
+      root: 'src',
+      ref: 'main',
+    })
+  })
+
   it('tells code from a name or a value', () => {
     expect(looksLikeCode('#3366ff')).toBe(false)
     expect(looksLikeCode('background: #fff')).toBe(false)

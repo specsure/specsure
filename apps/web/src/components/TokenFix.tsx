@@ -127,6 +127,8 @@ function App() {
   const [fragment, setFragment] = useState<string | null>(null)
   /** The app's code handed over from Token Diff: the Code tab opens with it and checks it. */
   const [handedCode, setHandedCode] = useState<CodeInput | undefined>()
+  /** The repository last checked in the Code tab: it goes into the address, a folder does not. */
+  const [checkedRepo, setCheckedRepo] = useState<Extract<CodeInput, { kind: 'github' }> | undefined>()
   const initial = useRef<{ query: string; token?: string } | null>(null)
   const [tick, setTick] = useState(0)
   const autoOpen = useRef(false)
@@ -185,6 +187,11 @@ function App() {
       return
     }
     if (s.source) setSource(s.source)
+    // A shared link with the app's repository: the Code tab opens and checks it.
+    if (s.code) {
+      setHandedCode(s.code)
+      setCheckedRepo(s.code)
+    }
     unpackFiles(url.hash)
       .then((packed) => {
         if (packed?.head) setSource({ kind: 'files', files: packed.head })
@@ -226,6 +233,7 @@ function App() {
       // Pasted code stays out of the address: the query goes to the server with the page request.
       query: looksLikeCode(query) ? '' : query,
       ...(token ? { token } : {}),
+      ...(checkedRepo ? { code: checkedRepo } : {}),
     }
     const write = (files: string) => {
       if (!live) return
@@ -241,7 +249,7 @@ function App() {
     return () => {
       live = false
     }
-  }, [loaded, context, query, token])
+  }, [loaded, context, query, token, checkedRepo])
 
   const example = () => {
     const s: SideInput = { kind: 'files', files: LOOKUP_EXAMPLE }
@@ -321,6 +329,7 @@ function App() {
           onToken={setToken}
           share={canShare ? () => navigator.clipboard.writeText(location.href) : undefined}
           handedCode={handedCode}
+          onChecked={(c) => setCheckedRepo(c.kind === 'github' ? c : undefined)}
         />
       )}
     </div>
@@ -339,8 +348,10 @@ interface BrowserProps {
   token: string | undefined
   onToken: (id: string | undefined) => void
   share: (() => Promise<void>) | undefined
-  /** Code handed over from Token Diff, checked as soon as the system is open. */
+  /** Code handed over from Token Diff or a link, checked as soon as the system is open. */
   handedCode?: CodeInput | undefined
+  /** The code the Code tab has just checked. */
+  onChecked: (c: CodeInput) => void
 }
 
 /** One shown row: a token, and for a value search, how close it is. */
@@ -361,6 +372,7 @@ function Browser({
   onToken,
   share,
   handedCode,
+  onChecked,
 }: BrowserProps) {
   const t = useT()
   const l = t.lookup
@@ -702,6 +714,7 @@ function Browser({
             onPick={openToken}
             onCopied={(text) => flash(text)}
             auto={!!handedCode}
+            onChecked={onChecked}
           />
         ) : !query.trim() && !catalog ? (
           <div className="lookup__overview">
@@ -877,6 +890,7 @@ function ProjectPanel({
   onGithubToken,
   onPick,
   onCopied,
+  onChecked,
   auto = false,
 }: {
   ask: ReturnType<typeof useLookup>
@@ -886,6 +900,7 @@ function ProjectPanel({
   onGithubToken: (t: string) => void
   onPick: (id: string) => void
   onCopied: (status: string) => void
+  onChecked: (c: CodeInput) => void
   /** Check at once: the code came with the system. */
   auto?: boolean
 }) {
@@ -910,7 +925,10 @@ function ProjectPanel({
             ? t.inputs.reloadHint
             : r.error,
       )
-    else if (r.kind === 'project') setP(r.project)
+    else if (r.kind === 'project') {
+      setP(r.project)
+      onChecked(value)
+    }
   }
   const started = useRef(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once, for code handed over with the system

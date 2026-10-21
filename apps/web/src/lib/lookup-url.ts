@@ -1,5 +1,5 @@
 import { formatRemoteSpec, parseRemoteSpec } from '@dsgraph/sources'
-import type { SideInput } from './types'
+import type { CodeInput, SideInput } from './types'
 
 export interface LookupUrl {
   source?: SideInput
@@ -8,11 +8,14 @@ export interface LookupUrl {
   query: string
   /** The open token, `#t=fgColor.accent`. */
   token?: string
+  /** The app's code checked against it, when it is a repository; folders stay out of links. */
+  code?: Extract<CodeInput, { kind: 'github' }>
 }
 
 /**
  * `?pkg=@scope/tokens&v=1.2.0` for a package, `?src=github:owner/repo/tokens@main` otherwise;
- * `ctx=theme:dark`, `q=` for the search. The open token and dropped files go into the fragment
+ * `ctx=theme:dark`, `q=` for the search, `code=github:owner/repo/src@main` for the app checked
+ * against it. The open token and dropped files go into the fragment
  * (`#t=…&d=…`), which is never sent to a server.
  */
 export function readLookupUrl(url: URL): LookupUrl {
@@ -24,6 +27,14 @@ export function readLookupUrl(url: URL): LookupUrl {
     const r = parseRemoteSpec(q.get('src') ?? '')
     if (r) state.source = r
   }
+  const code = parseRemoteSpec(q.get('code') ?? '')
+  if (code?.kind === 'github')
+    state.code = {
+      kind: 'github',
+      repo: code.repo,
+      ref: code.ref ?? '',
+      ...(code.root ? { root: code.root } : {}),
+    }
   for (const pair of (q.get('ctx') ?? '').split(',')) {
     const [k, v] = pair.split(':')
     if (k && v) state.context[k] = v
@@ -45,6 +56,7 @@ export function writeLookupUrl(path: string, s: LookupUrl, files = ''): string {
     .join(',')
   if (ctx) q.set('ctx', ctx)
   if (s.query) q.set('q', s.query)
+  if (s.code) q.set('code', formatRemoteSpec(s.code))
   const query = q
     .toString()
     .replace(/%40/g, '@')
