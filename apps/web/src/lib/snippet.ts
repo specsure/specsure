@@ -1,4 +1,4 @@
-import { scanCssText, scanFileText } from '@dsgraph/adapters'
+import { resolveVars, scanCssText, scanFileText } from '@dsgraph/adapters'
 import {
   type CodeIndex,
   type DsGraph,
@@ -38,6 +38,8 @@ export function fixSnippet(g: DsGraph, text: string): Promise<SnippetAnswer> {
   const code: CodeIndex = { files: [file], uses: [], literals: [], skipped: [] }
   if (script || sheet) scanFileText(file, text, code)
   else scanCssText(file, text, code, { declarations: true })
+  // Variables the pasted code defines itself (`--sp-accent: #2563eb`) are values written by hand too.
+  resolveVars(code)
   return check(g, {}, [], { code }).then((findings) => {
     const edits: SnippetEdit[] = []
     const lines = text.split('\n')
@@ -54,11 +56,12 @@ export function fixSnippet(g: DsGraph, text: string): Promise<SnippetAnswer> {
         exact: boolean
         deltaE?: number
         distance?: number
+        variable?: string
       }
       const line = f.loc?.line ?? 1
       const token = g.token(e.token)
       const from = e.source ?? e.value
-      const to = e.source ? e.replacement : token ? `var(${cssName(token)})` : e.token
+      const to = e.source && !e.variable ? e.replacement : token ? `var(${cssName(token)})` : e.token
       const edit: SnippetEdit = { line, from, to, token: e.token, exact: e.exact, applied: false }
       if (!e.exact) {
         if (e.deltaE !== undefined) edit.deltaE = e.deltaE

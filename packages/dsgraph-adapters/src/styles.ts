@@ -8,6 +8,7 @@ import {
   type Source,
   type StyleLiteral,
   type TokenUse,
+  type VarDefinition,
 } from '@dsgraph/core'
 import postcss, { type Declaration, type Root } from 'postcss'
 import scss from 'postcss-scss'
@@ -214,7 +215,14 @@ export function scanCssText(file: string, text: string, index: CodeIndex, opts: 
       if (v.fallback !== undefined) use.fallback = v.fallback
       index.uses.push(use)
     }
-    if (property.startsWith('--') || property.startsWith('$') || property.startsWith('@')) return
+    if (property.startsWith('--')) {
+      const def: VarDefinition = { ...loc, name: property, value: decl.value.trim() }
+      if (selector) def.selector = selector
+      if (!index.definitions) index.definitions = []
+      index.definitions.push(def)
+      return
+    }
+    if (property.startsWith('$') || property.startsWith('@')) return
     // SCSS interpolation, variables and JS expressions compute values we cannot see.
     if (/#\{|\$[\w-]|__expr__/.test(decl.value)) return
     for (const l of literalsIn(property, decl.value)) {
@@ -223,6 +231,61 @@ export function scanCssText(file: string, text: string, index: CodeIndex, opts: 
       index.literals.push(lit)
     }
   })
+}
+
+/** Selectors that define a variable for the whole page, not for one theme or one component. */
+const GLOBAL = /^(:root|html|:host|body|\*)?$/
+/** Stylesheets apply wherever they are linked; a definition in a page or a component stays there. */
+const SHEET = /\.(s?css|sass|less)$/i
+
+/**
+ * What the code's own definitions make of each `var()` it uses: the chain of variables followed to
+ * a value written in one of them (`--sp-accent` → `--sp-blue-600` → `#2563eb`), read as the property
+ * that uses it. A definition in the same file comes first, then one in a stylesheet; a page-wide one
+ * is taken over one for a theme or a component. Uses of names the code does not define, and values
+ * that are not one literal, stay unresolved.
+ */
+export function resolveVars(index: CodeIndex): void {
+  const byName = new Map<string, VarDefinition[]>()
+  for (const d of index.definitions ?? []) byName.set(d.name, [...(byName.get(d.name) ?? []), d])
+  if (!byName.size) return
+  const best = (ds: VarDefinition[]) => ds.find((d) => GLOBAL.test(d.selector ?? '')) ?? ds[0]
+  const pick = (name: string, file: string): VarDefinition | undefined => {
+    const ds = byName.get(name)
+    if (!ds) return undefined
+    const here = ds.filter((d) => d.file === file)
+    if (here.length) return best(here)
+    const sheets = ds.filter((d) => SHEET.test(d.file))
+    return sheets.length ? best(sheets) : undefined
+  }
+  for (const u of index.uses) {
+    if (u.property.startsWith('--') || u.resolved) continue
+    const via: string[] = []
+    let name: string | undefined = u.name
+    let file = u.file
+    let def: VarDefinition | undefined
+    while (name && via.length < 10 && !via.includes(name)) {
+      const found = pick(name, file)
+      if (!found) break
+      def = found
+      via.push(name)
+      file = def.file
+      const next = /^var\(\s*(--[\w-]+)\s*(?:,[^)]*)?\)$/.exec(def.value)
+      if (!next) break
+      name = next[1]
+    }
+    if (!def || !via.length || /^var\(/.test(def.value)) continue
+    if (plainParts(def.value).length !== 1) continue
+    const l = literalsIn(u.property, def.value)[0]
+    if (!l) continue
+    u.resolved = {
+      text: l.text,
+      type: l.type,
+      value: l.value,
+      via,
+      at: { file: def.file, line: def.line, column: def.column },
+    }
+  }
 }
 
 // Indented Sass: a declaration is `property: value` (or the old `:property value`) on its own line.
@@ -286,5 +349,6 @@ export async function scanStyles(source: Source, opts: StylesOptions = {}): Prom
       index.skipped.push({ file, message: (e as Error).message })
     }
   }
+  resolveVars(index)
   return index
 }

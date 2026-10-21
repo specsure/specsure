@@ -860,8 +860,39 @@ function agentTask(p: ProjectAnswer, l: ReturnType<typeof useT>['lookup']['code'
       const to = v.suggestion ?? v.replacement
       out.push(`- \`${v.name}\`${to ? ` → \`${to}\`` : ''}: ${at(v.sites)}`)
     }
+    out.push('')
+  }
+  if (p.own.length) {
+    out.push(l.task.own)
+    for (const o of p.own)
+      out.push(
+        `- \`var(${o.variable})\` (${o.value}) → \`${o.replacement}\`${o.exact ? '' : '?'}: ${at(o.sites)}`,
+      )
   }
   return out.join('\n').trim()
+}
+
+/**
+ * The prototype's variables defined again through the system's tokens: for each, the token it
+ * stands for most often; one with no exact token stays a comment, for a person to decide.
+ */
+function translationLayer(own: ProjectAnswer['own'], l: ReturnType<typeof useT>['lookup']['code']): string {
+  const byVar = new Map<string, ProjectAnswer['own']>()
+  for (const o of own) byVar.set(o.variable, [...(byVar.get(o.variable) ?? []), o])
+  const lines = [`/* ${l.ownLayerHead} */`, ':root {']
+  for (const [v, rows] of byVar) {
+    const sorted = [...rows].sort((a, b) => Number(b.exact) - Number(a.exact) || b.count - a.count)
+    const top = sorted[0]!
+    if (!top.exact) {
+      lines.push(`  /* ${l.ownLayerNone(v, top.value, top.replacement)} */`)
+      continue
+    }
+    lines.push(`  ${v}: ${top.replacement}; /* ${top.value} */`)
+    for (const o of sorted.slice(1))
+      if (o.exact) lines.push(`  /* ${v}: ${l.ownLayerAlso(o.replacement, o.count)} */`)
+  }
+  lines.push('}')
+  return lines.join('\n')
 }
 
 function Sites({ sites, total }: { sites: ProjectAnswer['replace'][number]['sites']; total: number }) {
@@ -938,7 +969,7 @@ function ProjectPanel({
       run()
     }
   }, [auto])
-  const how = (g: ProjectAnswer['missing'][number]) =>
+  const how = (g: { deltaE?: number; distance?: number }) =>
     g.deltaE !== undefined
       ? `${deltaWords(g.deltaE, t)} · ΔE ${g.deltaE}`
       : t.lookup.pxOff(g.distance ?? 0, 'px')
@@ -977,7 +1008,7 @@ function ProjectPanel({
               {l.colors(p.coverage.color.fromTokens, p.coverage.color.byHand)} ·{' '}
               {l.sizes(p.coverage.size.fromTokens, p.coverage.size.byHand)}
             </p>
-            {(p.replace.length > 0 || p.missing.length > 0 || p.variables.length > 0) && (
+            {(p.replace.length > 0 || p.missing.length > 0 || p.variables.length > 0 || p.own.length > 0) && (
               <button
                 type="button"
                 className="ghost ghost--strong"
@@ -990,9 +1021,10 @@ function ProjectPanel({
               </button>
             )}
           </section>
-          {p.replace.length === 0 && p.missing.length === 0 && p.variables.length === 0 && (
-            <div className="empty">{l.clean}</div>
-          )}
+          {p.replace.length === 0 &&
+            p.missing.length === 0 &&
+            p.variables.length === 0 &&
+            p.own.length === 0 && <div className="empty">{l.clean}</div>}
           {p.replace.length > 0 && (
             <section className="lookup__block">
               <h3>{l.replaceTitle}</h3>
@@ -1074,6 +1106,68 @@ function ProjectPanel({
                         />
                       )}
                       <Sites sites={g.sites} total={g.count} />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {p.own.length > 0 && (
+            <section className="lookup__block">
+              <div className="lookup__demo-head">
+                <div>
+                  <h3>{l.ownTitle}</h3>
+                </div>
+                <button
+                  type="button"
+                  className="ghost ghost--strong"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(translationLayer(p.own, l))
+                    onCopied(l.ownLayerCopied)
+                  }}
+                >
+                  {l.ownLayer}
+                </button>
+              </div>
+              <p className="muted">{l.ownLead}</p>
+              <p className="muted small">{l.ownLayerNote}</p>
+              <ul className="lookup__groups">
+                {p.own.map((o) => (
+                  <li key={`${o.variable}${o.token}`}>
+                    <details>
+                      <summary className="row">
+                        {o.swatch ? (
+                          <span className="icon icon--swatch" aria-hidden="true">
+                            <span style={{ background: o.swatch }} />
+                          </span>
+                        ) : (
+                          <span
+                            className={`icon icon--${o.exact ? 'neutral' : 'warning'}`}
+                            aria-hidden="true"
+                          >
+                            {o.exact ? '↔' : '≈'}
+                          </span>
+                        )}
+                        <span className="row__title">
+                          <span className="muted">var({o.variable}) → </span>
+                          {o.replacement}
+                        </span>
+                        <span className="row__subtitle">{o.exact ? o.value : l.ownNear(how(o))}</span>
+                        <span className="row__acc">
+                          <span className="acc-text">{l.places(o.count, o.files)}</span>
+                        </span>
+                      </summary>
+                      <p className="lookup__group-note">
+                        <button
+                          type="button"
+                          className="inline-link lookup__ref"
+                          onClick={() => onPick(o.token)}
+                        >
+                          {o.token}
+                        </button>
+                        {o.definedAt && <span className="muted"> · {l.ownDefined(o.definedAt)}</span>}
+                      </p>
+                      <Sites sites={o.sites} total={o.count} />
                     </details>
                   </li>
                 ))}

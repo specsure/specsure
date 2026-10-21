@@ -103,6 +103,34 @@ const accent = 'var(--color-accent)'
   'src/broken.tsx': 'export const x = <div className="a" ',
 })
 
+describe("the code's own variables", () => {
+  it('follows var() to the value the code writes, in the file or in a stylesheet', async () => {
+    const index = await scanCode(
+      new MemorySource({
+        'lib/colors.css':
+          ':root{--sp-blue-600:#2563eb;--sp-accent:var(--sp-blue-600);--sp-space-4:16px;--sp-shadow:0 1px 2px #0003}\n[data-theme=dark]{--sp-accent:#60a5fa}',
+        'app/a.css': '.b{color:var(--sp-accent);padding:var(--sp-space-4);box-shadow:var(--sp-shadow)}',
+        'app/page.html': '<style>:root{--local:#ff0000}.x{color:var(--local)}</style>',
+        'app/other.html': '<style>.y{color:var(--local)}</style>',
+      }),
+    )
+    const r = (file: string, name: string) =>
+      index.uses.find((u) => u.file === file && u.name === name)?.resolved
+    // The page-wide definition, not the dark theme's; the chain kept.
+    expect(r('app/a.css', '--sp-accent')).toMatchObject({
+      text: '#2563eb',
+      type: 'color',
+      via: ['--sp-accent', '--sp-blue-600'],
+      at: { file: 'lib/colors.css' },
+    })
+    expect(r('app/a.css', '--sp-space-4')).toMatchObject({ text: '16px', type: 'dimension' })
+    // A shadow is not one value; a page's own variable does not reach another page.
+    expect(r('app/a.css', '--sp-shadow')).toBeUndefined()
+    expect(r('app/page.html', '--local')).toMatchObject({ text: '#ff0000' })
+    expect(r('app/other.html', '--local')).toBeUndefined()
+  })
+})
+
 describe("Tailwind's own palette", () => {
   it('reads a palette class as a token name and as the color Tailwind writes for it', () => {
     const item = classItem('hover:bg-blue-500')

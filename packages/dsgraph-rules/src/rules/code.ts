@@ -141,7 +141,8 @@ export const hardcodedColor: Rule = {
     const skip = excepted(options)
     const memo = new Map<string, NearestToken | undefined>()
     const palette = paletteLiterals(code, vars)
-    for (const l of [...code.literals, ...palette]) {
+    const foreign = foreignLiterals(code, vars)
+    for (const l of [...code.literals, ...palette, ...foreign.keys()]) {
       if (l.type !== 'color' || skip(l)) continue
       // The same color may want different tokens: text for `color`, background for `background`,
       // the hover one in `:hover`, the button's own in `.button`.
@@ -151,15 +152,19 @@ export const hardcodedColor: Rule = {
       const near = memo.get(key)
       if (!near) continue
       report({
-        message: palette.includes(l)
-          ? `"${l.source}" is Tailwind's own color, not one of the system's; use "${classFor(l.source!, near.token)}" (token "${near.token.id}"${near.exact ? '' : `, ΔE ${near.distance}`})`
-          : l.source
-            ? near.exact
-              ? `"${l.source}" writes a color by hand; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
-              : `"${l.source}" is not in the palette; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ΔE ${near.distance})`
-            : near.exact
-              ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
-              : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
+        message: foreign.has(l)
+          ? near.exact
+            ? `"${l.source}" is ${l.text} in the code's own variables (${where(foreign.get(l)!)}), not a token; use "${near.token.id}"`
+            : `"${l.source}" is ${l.text} in the code's own variables (${where(foreign.get(l)!)}); no token has it, closest is "${near.token.id}" (ΔE ${near.distance})`
+          : palette.includes(l)
+            ? `"${l.source}" is Tailwind's own color, not one of the system's; use "${classFor(l.source!, near.token)}" (token "${near.token.id}"${near.exact ? '' : `, ΔE ${near.distance}`})`
+            : l.source
+              ? near.exact
+                ? `"${l.source}" writes a color by hand; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
+                : `"${l.source}" is not in the palette; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ΔE ${near.distance})`
+              : near.exact
+                ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
+                : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
         nodes: [near.token.id],
         evidence: {
           value: l.text,
@@ -168,10 +173,11 @@ export const hardcodedColor: Rule = {
           source: l.source,
           token: near.token.id,
           // What to write instead: the class for a class, the token otherwise.
-          replacement: l.source ? classFor(l.source, near.token) : near.token.id,
+          replacement: l.source && !foreign.has(l) ? classFor(l.source, near.token) : near.token.id,
           exact: near.exact,
           deltaE: near.distance,
           ...(palette.includes(l) ? { builtin: true } : {}),
+          ...(foreign.has(l) ? foreignEvidence(foreign.get(l)!) : {}),
         },
         loc: locOf(l),
       })
@@ -203,16 +209,53 @@ export function paletteLiterals(code: CodeIndex, vars: VarMatcher | undefined): 
   return out
 }
 
+/** A use of the code's own variable, resolved: where its value is written. */
+interface Foreign {
+  variable: string
+  via: string[]
+  at: { file: string; line: number; column: number }
+}
+
+/**
+ * Uses of variables the code defines itself (a prototype's library, `--sp-accent: #2563eb`) that
+ * lead to a value written by hand, not to a token of the system: values the system should name.
+ * A chain that passes through a token of the system is the system's.
+ */
+export function foreignLiterals(code: CodeIndex, vars: VarMatcher | undefined): Map<StyleLiteral, Foreign> {
+  const out = new Map<StyleLiteral, Foreign>()
+  for (const u of code.uses) {
+    const r = u.resolved
+    if (!r || vars?.tokenOfUse(u) || r.via.some((name) => vars?.token(name))) continue
+    const l: StyleLiteral = {
+      file: u.file,
+      line: u.line,
+      column: u.column,
+      property: u.property,
+      text: r.text,
+      source: u.text ?? `var(${u.name})`,
+      type: r.type,
+      value: r.value,
+    }
+    if (u.selector) l.selector = u.selector
+    out.set(l, { variable: u.name, via: r.via, at: r.at })
+  }
+  return out
+}
+
+const where = (f: Foreign) => `${f.at.file}:${f.at.line}`
+const foreignEvidence = (f: Foreign) => ({ variable: f.variable, via: f.via, definedAt: where(f) })
+
 export const offScale: Rule = {
   id: 'style/off-scale',
   description:
     'A spacing, radius or font size in a style is written by hand: on the scale (use the token) or off it.',
   defaultSeverity: 'warning',
-  run({ graph, code, options, knowledge, report }) {
+  run({ graph, code, vars, options, knowledge, report }) {
     if (!code || graph.tokens({ type: 'dimension' }).length === 0) return
     const skip = excepted(options)
     const scales = new Map<RegExp, Token[]>()
-    for (const l of code.literals) {
+    const foreign = foreignLiterals(code, vars)
+    for (const l of [...code.literals, ...foreign.keys()]) {
       if (l.type !== 'dimension' || skip(l)) continue
       const scale = scaleOf(graph, l.property, scales)
       const near = nearestIn(graph, l, knowledge, new Set(scale.map((t) => t.id)))
@@ -221,13 +264,17 @@ export const offScale: Rule = {
       if (!near.exact && /radius$/i.test(l.property) && pxOf(l.value) >= 100) continue
       const px = near.value as { value: number; unit: string }
       report({
-        message: l.source
+        message: foreign.has(l)
           ? near.exact
-            ? `"${l.source}" is on the scale; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
-            : `"${l.source}" is off the scale; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ${px.value}${px.unit})`
-          : near.exact
-            ? `"${l.text}" in ${l.property} is on the scale; use "${near.token.id}"`
-            : `"${l.text}" in ${l.property} is off the scale; closest is "${near.token.id}" (${px.value}${px.unit})`,
+            ? `"${l.source}" is ${l.text} in the code's own variables (${where(foreign.get(l)!)}), on the scale; use "${near.token.id}"`
+            : `"${l.source}" is ${l.text} in the code's own variables (${where(foreign.get(l)!)}), off the scale; closest is "${near.token.id}" (${px.value}${px.unit})`
+          : l.source
+            ? near.exact
+              ? `"${l.source}" is on the scale; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
+              : `"${l.source}" is off the scale; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ${px.value}${px.unit})`
+            : near.exact
+              ? `"${l.text}" in ${l.property} is on the scale; use "${near.token.id}"`
+              : `"${l.text}" in ${l.property} is off the scale; closest is "${near.token.id}" (${px.value}${px.unit})`,
         nodes: [near.token.id],
         evidence: {
           value: l.text,
@@ -235,9 +282,10 @@ export const offScale: Rule = {
           selector: l.selector,
           source: l.source,
           token: near.token.id,
-          replacement: l.source ? classFor(l.source, near.token) : near.token.id,
+          replacement: l.source && !foreign.has(l) ? classFor(l.source, near.token) : near.token.id,
           exact: near.exact,
           distance: near.distance,
+          ...(foreign.has(l) ? foreignEvidence(foreign.get(l)!) : {}),
         },
         loc: locOf(l),
         // A value that has a token is a quick fix; one that has none is a design question.

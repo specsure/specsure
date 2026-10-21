@@ -20,6 +20,16 @@ export interface CodeIndex {
   skipped: Array<{ file: string; message: string }>
   /** Set when only part of the code was read: how many files there were. */
   limited?: number
+  /** Custom properties the code defines itself: a prototype's library, the app's own variables. */
+  definitions?: VarDefinition[]
+}
+
+/** A custom property defined in the code, `--sp-accent: #2563eb` in a library's stylesheet. */
+export interface VarDefinition extends CodeLoc {
+  name: string
+  /** As written. */
+  value: string
+  selector?: string
 }
 
 export interface CodeLoc {
@@ -46,6 +56,11 @@ export interface TokenUse extends CodeLoc {
    * project's theme does not define the name, in the Tailwind version the project uses.
    */
   builtin?: { name: string; text: string; value: unknown }
+  /**
+   * What the code's own definitions make of it when it is not `var()` of a token (`--sp-accent` →
+   * `#2563eb`): the value at the end of the chain, the variables on the way, where it is written.
+   */
+  resolved?: { text: string; type: 'color' | 'dimension'; value: unknown; via: string[]; at: CodeLoc }
 }
 
 /** A value written by hand where a token could be used. */
@@ -177,7 +192,11 @@ export interface Coverage {
 export function coverageOf(code: CodeIndex, vars: VarMatcher): Coverage {
   const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)).length
   // A class of Tailwind's own palette the system has no token for is a color written by hand.
-  const byHand = code.literals.length + code.uses.filter((u) => u.builtin && !vars.tokenOfUse(u)).length
+  // So is a use of the code's own variable that leads to a value, not to a token.
+  const own = (u: TokenUse) =>
+    !!u.resolved && !vars.tokenOfUse(u) && !u.resolved.via.some((name) => vars.token(name))
+  const byHand =
+    code.literals.length + code.uses.filter((u) => (u.builtin && !vars.tokenOfUse(u)) || own(u)).length
   const total = fromTokens + byHand
   return { fromTokens, byHand, share: total ? fromTokens / total : null }
 }
@@ -192,7 +211,12 @@ const REM = 16
 
 /** How far apart two values of a type are, in the unit people think in; undefined when not comparable. */
 export function valueDistance(type: string, a: unknown, b: unknown, remBase = REM): number | undefined {
-  if (type === 'color') return deltaEOK(a as ColorValue, b as ColorValue)
+  if (type === 'color') {
+    // ΔE leaves alpha out: a black at 2% is not the opaque black. A point of alpha counts as one of ΔE.
+    const ca = a as ColorValue
+    const cb = b as ColorValue
+    return deltaEOK(ca, cb) + Math.abs((ca.alpha ?? 1) - (cb.alpha ?? 1)) * 100
+  }
   if (type === 'dimension') {
     const pa = toPx(a as { value: number; unit: string }, remBase)
     const pb = toPx(b as { value: number; unit: string }, remBase)

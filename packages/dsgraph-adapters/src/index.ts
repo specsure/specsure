@@ -8,6 +8,7 @@ export {
   type CssTextOptions,
   isStyleProperty,
   literalsIn,
+  resolveVars,
   type StylesOptions,
   scanCssText,
   scanSassText,

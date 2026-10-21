@@ -12,6 +12,7 @@ export {
   type StyleLiteral,
   styleContext,
   type TokenUse,
+  type VarDefinition,
   VarMatcher,
   valueDistance,
   varNames,

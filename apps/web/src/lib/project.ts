@@ -1,10 +1,10 @@
 import { parseValue, scanCode } from '@dsgraph/adapters'
 import { type DsGraph, type Finding, VarMatcher, varNames } from '@dsgraph/core'
 import { suggestName } from '@dsgraph/report'
-import { check, paletteLiterals } from '@dsgraph/rules'
+import { check, foreignLiterals, paletteLiterals } from '@dsgraph/rules'
 import { codeSource, MAX_REMOTE_FILES } from './code'
 import { cssName } from './css-name'
-import type { HandGroup, ProjectAnswer, VarGroup } from './lookup-types'
+import type { HandGroup, OwnGroup, ProjectAnswer, VarGroup } from './lookup-types'
 import { refLabel } from './ref'
 import type { CodeInput } from './types'
 import { cssColor, isColor } from './view'
@@ -44,7 +44,7 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
   const input0 = g.defaultInput({})
 
   // Classes of Tailwind's own palette (`bg-blue-500`) are colors written by hand too.
-  const literals = [...code.literals, ...paletteLiterals(code, vars)]
+  const literals = [...code.literals, ...paletteLiterals(code, vars), ...foreignLiterals(code, vars).keys()]
   const share = (type: 'color' | 'dimension') => {
     const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)?.type === type).length
     const byHand = literals.filter((l) => l.type === type).length
@@ -54,6 +54,7 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
   const byHand = literals.length
 
   const groups = new Map<string, HandGroup & { fileSet: Set<string> }>()
+  const own = new Map<string, OwnGroup & { fileSet: Set<string> }>()
   for (const f of findings) {
     if (f.rule !== 'style/hardcoded-color' && f.rule !== 'style/off-scale') continue
     const e = f.evidence as {
@@ -64,8 +65,37 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
       exact: boolean
       deltaE?: number
       distance?: number
+      variable?: string
+      definedAt?: string
     }
     const t = g.token(e.token)
+    if (e.variable) {
+      const key = `${e.variable}\u0000${e.token}`
+      let o = own.get(key)
+      if (!o) {
+        o = {
+          variable: e.variable,
+          value: e.value,
+          token: e.token,
+          replacement: t ? `var(${cssName(t)})` : e.token,
+          exact: e.exact,
+          count: 0,
+          files: 0,
+          definedAt: e.definedAt ?? '',
+          sites: [],
+          fileSet: new Set(),
+        }
+        if (e.deltaE !== undefined) o.deltaE = e.deltaE
+        if (e.distance !== undefined) o.distance = e.distance
+        const parsed = parseValue(e.value)
+        if (parsed && isColor(parsed.value)) o.swatch = cssColor(parsed.value)
+        own.set(key, o)
+      }
+      o.count++
+      if (f.loc?.file) o.fileSet.add(f.loc.file)
+      if (o.sites.length < SITES) o.sites.push(site(f, e.source ?? e.variable))
+      continue
+    }
     // One row per value and what replaces it: a class and a declaration are different edits.
     const key = `${e.exact ? 'x' : 'n'}\u0000${e.value.toLowerCase()}\u0000${e.exact ? `${e.token}\u0000${e.source ? e.replacement : ''}` : ''}`
     let grp = groups.get(key)
@@ -155,6 +185,9 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
     replace: all.filter((x) => x.exact).sort(byCount),
     missing: all.filter((x) => !x.exact).sort(byCount),
     variables: [...varGroups.values()].sort((a, b) => b.count - a.count),
+    own: [...own.values()]
+      .map(({ fileSet, ...o }) => ({ ...o, files: fileSet.size }))
+      .sort((a, b) => a.variable.localeCompare(b.variable) || b.count - a.count),
   }
   if (code.limited) answer.limited = code.limited
   if (input.kind === 'github') {

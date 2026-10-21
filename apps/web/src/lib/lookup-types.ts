@@ -146,6 +146,28 @@ export interface VarGroup {
   sites: CodeSite[]
 }
 
+/**
+ * A variable the code defines itself (a prototype's library) and the system's token for it, in the
+ * property where it is used: one row per variable and token.
+ */
+export interface OwnGroup {
+  variable: string
+  /** Its value, as the code writes it. */
+  value: string
+  swatch?: string
+  token: string
+  /** `var(--color-action-primary)`. */
+  replacement: string
+  exact: boolean
+  deltaE?: number
+  distance?: number
+  count: number
+  files: number
+  /** Where the code defines it: `lib/colors.css:12`. */
+  definedAt: string
+  sites: CodeSite[]
+}
+
 export interface ProjectAnswer {
   label?: string
   files: number
@@ -161,6 +183,8 @@ export interface ProjectAnswer {
   replace: HandGroup[]
   missing: HandGroup[]
   variables: VarGroup[]
+  /** The code's own variables, by the system's tokens for them. */
+  own: OwnGroup[]
 }
 
 export type LookupRequest =

@@ -167,6 +167,44 @@ describe('Token Fix', () => {
     expect(r.project.variables).toEqual([])
   })
 
+  it("puts the code's own variables on the system's tokens, with a layer to translate them", async () => {
+    const ask = session()
+    await ask({ id: 1, kind: 'open', source: { kind: 'files', files: LOOKUP_EXAMPLE }, include: '' })
+    const files = [
+      // A prototype on a library of its own: its variables, and a page that uses them.
+      {
+        path: 'lib/sp.css',
+        text: ':root{--sp-ink:#0f172a;--sp-paper:var(--sp-white);--sp-white:#ffffff;--sp-pad:16px;--sp-odd:#ede9fe}',
+      },
+      {
+        path: 'src/Card.css',
+        text: '.card{color:var(--sp-ink);background:var(--sp-paper);padding:var(--sp-pad)}\n.tag{background:var(--sp-odd)}\n',
+      },
+    ]
+    const r = await ask({ id: 2, kind: 'project', input: { kind: 'files', files } })
+    if (!r.ok || r.kind !== 'project') throw new Error(r.ok ? 'wrong kind' : r.error)
+    expect(
+      r.project.own.map((o) => `${o.variable} ${o.value} → ${o.replacement}${o.exact ? '' : ' ?'}`),
+    ).toEqual([
+      '--sp-ink #0f172a → var(--text-default)',
+      expect.stringMatching(/^--sp-odd #ede9fe → var\(--[\w-]+\) \?$/),
+      '--sp-pad 16px → var(--space-4)',
+      // In `.card`: the card's own token, not the page's background.
+      '--sp-paper #ffffff → var(--card-bg)',
+    ])
+    expect(r.project.replace).toEqual([])
+    expect(r.project.coverage).toMatchObject({ fromTokens: 0, byHand: 4 })
+    // Pasted with its own variables, the code comes back on the system's.
+    const pasted = await ask({
+      id: 3,
+      kind: 'snippet',
+      text: ':root { --sp-ink: #0f172a; }\n.card { color: var(--sp-ink); }',
+    })
+    expect(pasted.ok && pasted.kind === 'snippet' && pasted.snippet.output).toContain(
+      'color: var(--text-default)',
+    )
+  })
+
   it('tells code from a name or a value', () => {
     expect(looksLikeCode('#3366ff')).toBe(false)
     expect(looksLikeCode('background: #fff')).toBe(false)

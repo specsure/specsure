@@ -1,6 +1,6 @@
 import { type CodeIndex, matchGlob, prefetch, type Source } from '@dsgraph/core'
 import { scanScriptText } from './scripts.js'
-import { scanCssText, scanSassText } from './styles.js'
+import { resolveVars, scanCssText, scanSassText } from './styles.js'
 import { paletteColor } from './tailwind.js'
 
 export interface CodeOptions {
@@ -161,8 +161,10 @@ export async function scanCode(source: Source, opts: CodeOptions = {}): Promise<
     index.files.push(file)
     index.uses.push(...part.uses)
     index.literals.push(...part.literals)
+    if (part.definitions) index.definitions = [...(index.definitions ?? []), ...part.definitions]
     if (/\.s?css$/i.test(file)) styles.push(text)
   }
+  resolveVars(index)
   // Classes of Tailwind's own palette were read as Tailwind 4; a Tailwind 3 project writes its hex,
   // and an older one a palette of its own that is not known here.
   const major = index.uses.some((u) => u.builtin) ? await tailwindMajor(source, styles) : 4

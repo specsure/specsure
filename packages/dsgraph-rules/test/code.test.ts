@@ -223,6 +223,77 @@ describe('the token for a color written by hand', () => {
   })
 })
 
+describe("the code's own variables", () => {
+  it('are values written by hand when they do not lead to a token, with alpha counted', async () => {
+    const own: CodeIndex = {
+      files: ['src/proto.css'],
+      skipped: [],
+      literals: [],
+      uses: [
+        {
+          ...at(1),
+          name: '--sp-accent',
+          property: 'color',
+          resolved: {
+            text: '#2663eb',
+            type: 'color',
+            value: lit(0.15, 0.39, 0.92),
+            via: ['--sp-accent'],
+            at: at(9),
+          },
+        },
+        {
+          ...at(2),
+          name: '--sp-veil',
+          property: 'background',
+          resolved: {
+            text: 'rgba(38, 99, 235, .02)',
+            type: 'color',
+            value: { ...lit(0.15, 0.39, 0.92), alpha: 0.02 },
+            via: ['--sp-veil'],
+            at: at(9),
+          },
+        },
+        // A chain through a token of the system is the system's.
+        {
+          ...at(3),
+          name: '--sp-link',
+          property: 'color',
+          resolved: {
+            text: '#2663eb',
+            type: 'color',
+            value: lit(0.15, 0.39, 0.92),
+            via: ['--sp-link', '--ds-color-accent'],
+            at: at(9),
+          },
+        },
+        {
+          ...at(4),
+          name: '--sp-gap',
+          property: 'padding',
+          resolved: { text: '16px', type: 'dimension', value: px(16), via: ['--sp-gap'], at: at(9) },
+        },
+      ],
+    }
+    const fs = await check(await system(), { code: { prefix: '--ds-' } }, [], { code: own })
+    expect(lines(fs, 'style/hardcoded-color')).toEqual([
+      'src/app.css:1 warning "var(--sp-accent)" is #2663eb in the code\'s own variables (src/app.css:9), not a token; use "color.accent"',
+      expect.stringMatching(
+        /^src\/app\.css:2 warning "var\(--sp-veil\)" is rgba\(38, 99, 235, \.02\) .*no token has it/,
+      ),
+    ])
+    expect(lines(fs, 'style/off-scale')).toEqual([
+      'src/app.css:4 info "var(--sp-gap)" is 16px in the code\'s own variables (src/app.css:9), on the scale; use "space.md"',
+    ])
+    expect(fs.find((f) => f.rule === 'style/hardcoded-color')?.evidence).toMatchObject({
+      variable: '--sp-accent',
+      via: ['--sp-accent'],
+      definedAt: 'src/app.css:9',
+      replacement: 'color.accent',
+    })
+  })
+})
+
 describe('rules on code', () => {
   it('stay silent without code', async () => {
     const fs = await check(await system())

@@ -3,6 +3,20 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+- The code's own variables count: a prototype built on a library of its own, or an app with
+  variables of its own (`--sp-accent: #2563eb`, then `color: var(--sp-accent)`), is checked like
+  values written by hand. `scanCode` keeps the custom properties the code defines
+  (`CodeIndex.definitions`) and follows each `var()` through them to the value (`TokenUse.resolved`,
+  `resolveVars` in `@dsgraph/adapters`): a definition in the same file first, then one in a
+  stylesheet, the page-wide one over a theme's. `style/hardcoded-color` and `style/off-scale` report
+  such a use with the system's token for it (`"var(--sp-accent)" is #2563eb in the code's own
+  variables (lib/colors.css:3), not a token; use "color.accent"`), unless the chain leads to a token
+  of the system; coverage counts it as written by hand. `foreignLiterals` in `@dsgraph/rules`.
+- A color's alpha counts when a token is chosen for it: a black at 2% no longer matches the opaque
+  black token (a point of alpha weighs as one of ΔE).
+
 ## 0.8.1 — 2026-10-22
 
 - `coverageOf` counts classes of Tailwind's own palette the system has no token for as written by
