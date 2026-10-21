@@ -12,20 +12,28 @@ import {
   type Input,
   impactOf,
   type Knowledge,
-  normalizeName,
   type StyleContext,
-  type Token,
   VarMatcher,
   varNames,
-  vocabularyOf,
 } from '@dsgraph/core'
-import { formatChangeset, formatFindings, formatValue, formatWhen } from '@dsgraph/report'
+import {
+  componentOf,
+  describeTokens,
+  findToken,
+  formatChangeset,
+  formatFindings,
+  formatWhen,
+  readToken,
+  searchTokens,
+  similarIds,
+  stateOf,
+} from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { parseRemoteSpec } from '@dsgraph/sources'
 import { NodeFsSource } from '@dsgraph/sources/node'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { nearest, parseValue } from './nearest.js'
+import { parseValue } from './nearest.js'
 
 export interface ServerOptions {
   /** The design system the tools read when a call names no source: a folder, a file, `npm:…` or `github:…`. */
@@ -66,13 +74,6 @@ const CODE = z
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
 const failure = (t: string) => ({ content: [{ type: 'text' as const, text: t }], isError: true })
-
-function describeValue(graph: DsGraph, t: Token, input: Input): string {
-  const v = graph.value(t.id, input)
-  const chain = graph.chain(t.id, input)
-  const alias = chain.length > 1 ? ` (alias of ${chain.slice(1).join(' → ')})` : ''
-  return `${formatValue(t.type, v)}${alias}`
-}
 
 /** The MCP server: read-only tools over a design system's tokens, built on dsgraph. */
 export function createServer(opts: ServerOptions): McpServer {
@@ -159,53 +160,32 @@ export function createServer(opts: ServerOptions): McpServer {
           `"${value}" is not a value dsgraph can read as a token value. Pass \`type\` if it is ambiguous.`,
         )
       const graph = await graphOf(source)
-      const input = inputOf(graph, context)
-      // Tokens with the same value are one choice: grouped, so the list shows different values.
-      const groups: Array<{ value: string; matches: ReturnType<typeof nearest> }> = []
       const near: StyleContext = {}
       if (property) near.property = property
-      if (state?.trim()) {
-        // `focus-visible`, `:hover`, `pressed`: the first word the vocabulary knows names the state.
-        const states = vocabularyOf(opts.knowledge).states
-        const words = normalizeName(state.replace(/^:+/, '')).split('.')
-        near.states = [states.get(words.find((w) => states.has(w)) ?? '') ?? words[0]!]
-      }
-      if (component?.trim())
-        near.components = [
-          component
-            .trim()
-            .replace(/[\s._-]+/g, '')
-            .toLowerCase(),
-        ]
-      for (const m of nearest(graph, parsed, input, 500, near, opts.knowledge)) {
-        const key = formatValue(m.token.type, m.value)
-        const g = groups.find((x) => x.value === key)
-        if (g) g.matches.push(m)
-        else if (groups.length < (limit ?? 5)) groups.push({ value: key, matches: [m] })
-      }
-      if (!groups.length) return text(`No ${parsed.type} tokens${contextLine(graph, input)}.`)
-      const lines = groups.map(({ value: v, matches }) => {
-        const first = matches[0]!
-        const how = first.exact
-          ? 'exact'
-          : parsed.type === 'color'
-            ? `ΔE ${first.distance}`
-            : `off by ${first.distance}`
-        const shown = matches.slice(0, 4).map((m) => {
-          const chain = graph.chain(m.token.id, input)
-          const alias = chain.length > 1 ? ` → ${chain.at(-1)}` : ''
-          return `\`${m.token.id}\`${alias}${m.token.deprecated ? ' (deprecated)' : ''}`
-        })
-        const more = matches.length > 4 ? `, and ${matches.length - 4} more` : ''
-        return `- ${v} — ${how}: ${shown.join(', ')}${more}`
+      if (state?.trim()) near.states = [stateOf(state, opts.knowledge)]
+      if (component?.trim()) near.components = [componentOf(component)]
+      const found = findToken(graph, parsed, {
+        context: near,
+        input: inputOf(graph, context),
+        limit: limit ?? 5,
+        ...(opts.knowledge ? { knowledge: opts.knowledge } : {}),
       })
-      const best = groups[0]!.matches[0]!
-      const advice = best.exact
-        ? `Use \`${best.token.id}\` instead of the literal value${groups[0]!.matches.length > 1 ? ', or another token with the same value whose name fits the use' : ''}.`
-        : `No token matches exactly; the closest is \`${best.token.id}\`. Using a literal value here would bypass the design system.`
-      return text(
-        `${parsed.type} ${formatValue(parsed.type, parsed.value)}${contextLine(graph, input)}:\n${lines.join('\n')}\n\n${advice}`,
-      )
+      const where = contextLine(graph, found.input)
+      if (!found.groups.length) return text(`No ${parsed.type} tokens${where}.`)
+      const lines = found.groups.map((g) => {
+        const how = g.exact ? 'exact' : parsed.type === 'color' ? `ΔE ${g.distance}` : `off by ${g.distance}`
+        const shown = g.tokens
+          .slice(0, 4)
+          .map((t) => `\`${t.id}\`${t.target ? ` → ${t.target}` : ''}${t.deprecated ? ' (deprecated)' : ''}`)
+        const more = g.tokens.length > 4 ? `, and ${g.tokens.length - 4} more` : ''
+        return `- ${g.value} — ${how}: ${shown.join(', ')}${more}`
+      })
+      const first = found.groups[0]!
+      const best = first.tokens[0]!
+      const advice = first.exact
+        ? `Use \`${best.id}\` instead of the literal value${first.tokens.length > 1 ? ', or another token with the same value whose name fits the use' : ''}.`
+        : `No token matches exactly; the closest is \`${best.id}\`. Using a literal value here would bypass the design system.`
+      return text(`${found.type} ${found.value}${where}:\n${lines.join('\n')}\n\n${advice}`)
     },
   )
 
@@ -225,17 +205,14 @@ export function createServer(opts: ServerOptions): McpServer {
     },
     async ({ id, source }) => {
       const graph = await graphOf(source)
-      const t = graph.token(id)
-      if (!t) {
-        const near = graph
-          .tokens()
-          .map((x) => x.id)
-          .filter((x) => x.includes(id) || id.includes(x))
-          .slice(0, 8)
+      const d = readToken(graph, id)
+      if (!d) {
+        const near = similarIds(graph, id)
         return failure(
           `No token "${id}".${near.length ? ` Similar: ${near.map((n) => `\`${n}\``).join(', ')}` : ''}`,
         )
       }
+      const t = d.token
       const lines = [`\`${t.id}\` — ${t.type ?? 'untyped'}`]
       if (t.description) lines.push(t.description)
       if (t.deprecated)
@@ -243,25 +220,28 @@ export function createServer(opts: ServerOptions): McpServer {
           `Deprecated${t.deprecated.replacement ? `: use \`${t.deprecated.replacement}\`` : t.deprecated.reason ? `: ${t.deprecated.reason}` : ''}.`,
         )
       lines.push('', 'Values:')
-      for (const v of t.values) {
-        const chain = graph.chain(t.id, v.when)
-        const via = chain.length > 1 ? ` ← ${chain.slice(1).join(' ← ')}` : ''
-        lines.push(
-          `- ${formatWhen(v.when).replace(/^ \(|\)$/g, '') || 'everywhere'}: ${formatValue(t.type, v.value)}${via}`,
-        )
+      for (const v of d.values) {
+        const via = v.via.length ? ` ← ${v.via.join(' ← ')}` : ''
+        lines.push(`- ${formatWhen(v.when).replace(/^ \(|\)$/g, '') || 'everywhere'}: ${v.text}${via}`)
       }
-      const users = graph.dependents(t.id)
-      const all = graph.dependents(t.id, { transitive: true })
+      const users = d.users
       lines.push(
         '',
         users.length
-          ? `Used by ${users.length} token${users.length === 1 ? '' : 's'}${all.length > users.length ? ` (${all.length} counting their users)` : ''}: ${users
+          ? `Used by ${users.length} token${users.length === 1 ? '' : 's'}${d.allUsers > users.length ? ` (${d.allUsers} counting their users)` : ''}: ${users
               .slice(0, 30)
               .map((u) => `\`${u}\``)
               .join(', ')}${users.length > 30 ? ', …' : ''}`
           : 'No other token uses it.',
-        `File: ${t.origin.file}`,
       )
+      if (d.sameValue.length)
+        lines.push(
+          `Same value: ${d.sameValue
+            .slice(0, 10)
+            .map((u) => `\`${u}\``)
+            .join(', ')}${d.sameValue.length > 10 ? ', …' : ''}`,
+        )
+      lines.push(`File: ${t.origin.file}`)
       return text(lines.join('\n'))
     },
   )
@@ -292,20 +272,14 @@ export function createServer(opts: ServerOptions): McpServer {
     async ({ query, type, context, limit, source }) => {
       const graph = await graphOf(source)
       const input = inputOf(graph, context)
-      const q = query?.trim() ?? ''
-      const glob = /[*?]/.test(q)
-      const all = graph.tokens(type ? { type } : {}).filter((t) => {
-        if (!q) return true
-        if (glob) return graph.tokens({ path: q }).some((x) => x.id === t.id)
-        return t.id.toLowerCase().includes(q.toLowerCase())
-      })
+      const all = searchTokens(graph, { ...(query ? { query } : {}), ...(type ? { type } : {}), input })
       const max = limit ?? 100
       if (!all.length) return text('No tokens match.')
       const lines = all
         .slice(0, max)
         .map(
-          (t) =>
-            `- \`${t.id}\` (${t.type ?? '?'}): ${describeValue(graph, t, input)}${t.deprecated ? ' — deprecated' : ''}`,
+          (r) =>
+            `- \`${r.token.id}\` (${r.token.type ?? '?'}): ${r.text}${r.via.length ? ` (alias of ${r.via.join(' → ')})` : ''}${r.token.deprecated ? ' — deprecated' : ''}`,
         )
       if (all.length > max) lines.push(`… ${all.length - max} more; narrow the query or raise the limit.`)
       return text(
@@ -325,32 +299,20 @@ export function createServer(opts: ServerOptions): McpServer {
     },
     async ({ source }) => {
       const graph = await graphOf(source)
-      const tokens = graph.tokens()
-      const byType = new Map<string, number>()
-      for (const t of tokens) byType.set(t.type ?? 'untyped', (byType.get(t.type ?? 'untyped') ?? 0) + 1)
-      const roots = new Map<string, number>()
-      for (const t of tokens) {
-        const root = t.id.includes('.') ? t.id.split('.')[0]! : t.id.split('-')[0]!
-        roots.set(root, (roots.get(root) ?? 0) + 1)
-      }
-      const files = new Set(tokens.map((t) => t.origin.file))
-      const errors = graph.snapshot.diagnostics.filter((d) => d.severity === 'error').length
+      const d = describeTokens(graph)
       const lines = [
-        `${tokens.length} tokens from ${files.size} file${files.size === 1 ? '' : 's'} (${source?.trim() || opts.source}).`,
-        `Types: ${[...byType]
-          .sort((a, b) => b[1] - a[1])
-          .map(([k, n]) => `${k} ${n}`)
-          .join(', ')}.`,
-        graph.modifiers.length
-          ? `Modes: ${graph.modifiers.map((m) => `${m.name} (${m.contexts.join(', ')}; default ${m.default ?? m.contexts[0]})`).join('; ')}.`
+        `${d.tokens} tokens from ${d.files.length} file${d.files.length === 1 ? '' : 's'} (${source?.trim() || opts.source}).`,
+        `Types: ${d.types.map(([k, n]) => `${k} ${n}`).join(', ')}.`,
+        d.modes.length
+          ? `Modes: ${d.modes.map((m) => `${m.name} (${m.contexts.join(', ')}; default ${m.default})`).join('; ')}.`
           : 'No themes or other modes.',
-        `Top-level groups: ${[...roots]
-          .sort((a, b) => b[1] - a[1])
+        `Top-level groups: ${d.groups
           .slice(0, 20)
           .map(([k, n]) => `${k} ${n}`)
           .join(', ')}.`,
+        `${d.values} hold values, ${d.aliases} take them from other tokens.`,
       ]
-      if (errors) lines.push(`${errors} parse errors; run check_tokens for details.`)
+      if (d.errors) lines.push(`${d.errors} parse errors; run check_tokens for details.`)
       return text(lines.join('\n'))
     },
   )
