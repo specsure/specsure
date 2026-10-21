@@ -239,6 +239,13 @@ describe('Figma variables and styles as DTCG', () => {
       { name: 'motion/ease/bouncy', message: 'the bouncy curve has no exact cubic Bézier; left out' },
     ])
     expect(out.stats).toMatchObject({ collections: 2, variables: 14, styles: 3, skipped: 1 })
+    expect(out.summary).toEqual({
+      collections: [
+        { name: 'Primitives', modes: ['Value'], variables: 10 },
+        { name: 'Theme', modes: ['Light', 'Dark'], variables: 4 },
+      ],
+      styles: { color: 1, typography: 1, shadow: 1 },
+    })
   })
 
   it('types numbers by their scopes and names, keeps descriptions, scopes and code syntax', () => {

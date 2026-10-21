@@ -1,45 +1,702 @@
 <style>
+  /* Specsure's tokens (apps/web/src/styles/tokens.css): light by default, dark when Figma is dark. */
+  :root {
+    color-scheme: light;
+    --chrome: #f2f2f5;
+    --dot: #00000014;
+    --panel: #ffffff;
+    --raised: #ffffff;
+    --field: #f1f1f4;
+    --hover: #eaeaee;
+    --line: #e4e4e9;
+    --hairline: #00000014;
+    --edge: #dfdfe2;
+    --ink: #18181b;
+    --ink-2: #52525b;
+    --ink-3: #6a6a74;
+    --accent: #d93a3f;
+    --accent-fill: #e5484d;
+    --accent-soft: #e5484d14;
+    --primary: #18181b;
+    --on-primary: #ffffff;
+    --danger: #cc2d33;
+    --danger-soft: #cc2d3314;
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+  }
+  html.figma-dark {
+    color-scheme: dark;
+    --chrome: #0c0c0e;
+    --dot: #ffffff12;
+    --panel: #111113;
+    --raised: #18181b;
+    --field: #1e1e22;
+    --hover: #26262b;
+    --line: #222227;
+    --hairline: #ffffff17;
+    --edge: #222224;
+    --ink: #ededf0;
+    --ink-2: #a8a8b0;
+    --ink-3: #8b8b94;
+    --accent: #ff6363;
+    --accent-fill: #ff6363;
+    --accent-soft: #ff63631f;
+    --primary: #ededf0;
+    --on-primary: #0c0c0e;
+    --danger: #ff6369;
+    --danger-soft: #ff636924;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    height: 100%;
+  }
   body {
     margin: 0;
-    padding: 12px;
-    font: 12px/16px Inter, system-ui, sans-serif;
-    color: var(--figma-color-text, #111);
-    background: var(--figma-color-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    background: var(--chrome);
+    color: var(--ink);
+    font: 400 12px / 16px var(--font-ui);
+    -webkit-font-smoothing: antialiased;
   }
-  p { margin: 0 0 8px; color: var(--figma-color-text-secondary, #555); }
   button {
-    width: 100%;
-    margin-top: 6px;
-    padding: 7px 8px;
-    border: 1px solid var(--figma-color-border, #ddd);
-    border-radius: 6px;
-    background: var(--figma-color-bg, #fff);
-    color: inherit;
     font: inherit;
+    color: inherit;
     cursor: pointer;
   }
-  button.primary { border: 0; background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); }
-  button:disabled { opacity: 0.4; cursor: default; }
-  .stats { color: var(--figma-color-text, #111); }
-  details { margin-top: 8px; color: var(--figma-color-text-secondary, #555); }
-  details ul { margin: 4px 0 0; padding-left: 16px; max-height: 80px; overflow: auto; }
-  [hidden] { display: none; }
+  code,
+  kbd {
+    font: 500 11px / 14px var(--font-mono);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .muted {
+    color: var(--ink-3);
+  }
+
+  /* Header: the mark, the name, the tabs, on the site's dot grid. */
+  header {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 8px 0 12px;
+    border-bottom: 1px solid var(--line);
+    background-color: var(--panel);
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+    background-size: 6px 6px;
+  }
+  header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--panel) 35%, transparent);
+    pointer-events: none;
+  }
+  header > * {
+    position: relative;
+    z-index: 1;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 600 12px / 16px var(--font-ui);
+  }
+  .tabs {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .tabs button {
+    height: 20px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--ink-2);
+    font: 500 11px / 14px var(--font-ui);
+  }
+  .tabs button[aria-selected="true"] {
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 0 0 1px var(--edge);
+  }
+
+  main {
+    flex: 1;
+    overflow: auto;
+    padding: 12px;
+  }
+  h2 {
+    margin: 0 0 4px;
+    font: 600 13px / 18px var(--font-ui);
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    margin: 14px 0 6px;
+    color: var(--ink-3);
+    font: 500 11px / 14px var(--font-ui);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  h3.first {
+    margin-top: 0;
+  }
+  p {
+    margin: 0 0 8px;
+  }
+  .lead {
+    color: var(--ink-2);
+  }
+
+  /* A window, as on the site: rows inside a raised card. */
+  .card {
+    border-radius: var(--radius-md);
+    background: var(--raised);
+    box-shadow: 0 0 0 1px var(--edge);
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 6px 10px;
+  }
+  .row + .row {
+    border-top: 1px solid var(--line);
+  }
+  .row__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-xs);
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    color: var(--ink-2);
+  }
+  .row__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .row__count {
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: var(--radius-xs);
+    background: var(--field);
+    color: var(--ink-2);
+    font: 500 10px / 14px var(--font-ui);
+    white-space: nowrap;
+  }
+  .tags {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 55%;
+  }
+
+  /* Formats: two choices, the chosen one marked with the accent. */
+  .choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+  .choice + .choice {
+    border-top: 1px solid var(--line);
+  }
+  .choice:hover {
+    background: var(--hover);
+  }
+  .choice__dot {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    margin-top: 2px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px var(--ink-3);
+  }
+  fieldset.card {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .sr,
+  .choice input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .choice:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .choice input:checked + .choice__dot {
+    box-shadow: inset 0 0 0 4px var(--accent-fill);
+  }
+  .choice b {
+    display: block;
+    font-weight: 500;
+  }
+  .choice small {
+    display: block;
+    color: var(--ink-3);
+    font-size: 11px;
+  }
+
+  details {
+    margin-top: 10px;
+    color: var(--ink-2);
+  }
+  summary {
+    cursor: pointer;
+    color: var(--ink-3);
+  }
+  details ul {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  details li {
+    padding: 3px 0;
+    border-top: 1px solid var(--line);
+  }
+  details li code {
+    color: var(--ink);
+  }
+
+  /* The next step, back to the site: the anchor that this is the same product. */
+  .next {
+    display: grid;
+    gap: 2px;
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--ink-2);
+  }
+  .next a,
+  .links a {
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .next a:hover,
+  .links a:hover {
+    text-decoration: underline;
+  }
+
+  .empty {
+    display: grid;
+    gap: 12px;
+  }
+  .points {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .points li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    color: var(--ink-2);
+  }
+  .points li::before {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--accent-fill);
+    transform: translateY(-1px);
+  }
+  /* What the .zip holds, on the site's dot grid. */
+  .tree {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background-color: var(--raised);
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+    background-size: 6px 6px;
+    box-shadow: 0 0 0 1px var(--edge);
+  }
+  .tree__file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 18px;
+  }
+  .tree__file:not(:first-child) {
+    padding-left: 12px;
+  }
+  .tree__file code {
+    padding: 0 3px;
+    border-radius: 3px;
+    background: var(--raised);
+  }
+  .tag--accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .error {
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  /* Guide and About */
+  .steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+    display: grid;
+    gap: 8px;
+  }
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 8px;
+  }
+  .steps li::before {
+    content: counter(step);
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    color: var(--ink-2);
+    font: 600 10px / 1 var(--font-ui);
+  }
+  .steps b {
+    font-weight: 500;
+  }
+  .steps span {
+    display: block;
+    color: var(--ink-3);
+  }
+  .map {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5px 10px;
+    margin: 0;
+  }
+  .map dt {
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .map dd {
+    margin: 0;
+  }
+  .snippet {
+    display: block;
+    margin-top: 4px;
+    padding: 5px 7px;
+    border-radius: var(--radius-sm);
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    color: var(--ink);
+    user-select: all;
+  }
+  .about-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .about-mark b {
+    display: block;
+    font: 600 14px / 18px var(--font-ui);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 12px;
+  }
+
+  /* Bottom bar: the status and the one action that matters now. */
+  footer {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 44px;
+    padding: 0 8px 0 12px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+  footer .status {
+    flex: 1;
+    min-width: 0;
+    color: var(--ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    font: 500 12px / 16px var(--font-ui);
+    white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+  .btn--primary:hover {
+    opacity: 0.9;
+  }
+  .btn--ghost {
+    background: transparent;
+    color: var(--ink-2);
+  }
+  .btn--ghost:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .btn kbd {
+    padding: 0 3px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--on-primary) 18%, transparent);
+    font-size: 10px;
+  }
+
+  /* Reading: the accent line, as the site shows loading. */
+  .progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    overflow: hidden;
+  }
+  .progress::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: var(--accent-fill);
+    animation: slide 0.9s ease-in-out infinite;
+  }
+  @keyframes slide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+  /* Last and above any class: a hidden element stays hidden whatever its display. */
+  html [hidden] {
+    display: none;
+  }
 </style>
-<p>The file's variables and styles as DTCG tokens, for Token Diff, Token Fix and CI. Nothing in the file is changed.</p>
-<button type="button" id="run" class="primary">Read variables and styles</button>
-<div id="done" hidden>
-  <p class="stats" id="stats"></p>
-  <button type="button" id="zip">Download .zip: a file per collection and mode, with a resolver</button>
-  <button type="button" id="one">Download one file: modes inside each token</button>
-  <button type="button" id="copy">Copy one file</button>
-  <details id="notes" hidden><summary></summary><ul></ul></details>
-</div>
-<p id="error" hidden></p>
+
+<header>
+  <div class="brand">
+    <svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" />
+      <rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent-fill)" />
+    </svg>
+    Specsure
+  </div>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" data-tab="export" aria-selected="true">Export</button>
+    <button type="button" role="tab" data-tab="guide" aria-selected="false">Guide</button>
+    <button type="button" role="tab" data-tab="about" aria-selected="false">About</button>
+  </div>
+  <div class="progress" id="progress" hidden></div>
+</header>
+
+<main>
+  <section data-view="export">
+    <div class="empty" id="empty">
+      <div>
+        <h2>Your variables and styles as tokens</h2>
+        <p class="lead">DTCG 2025.10 files that Token Diff, Token Fix, the dsgraph CLI and CI read as they are.</p>
+      </div>
+      <ul class="points">
+        <li>Every collection and mode, references kept</li>
+        <li>Color, text and effect styles</li>
+        <li>Reads only: nothing in the file changes, nothing is sent anywhere</li>
+      </ul>
+      <div class="tree" aria-hidden="true">
+        <div class="tree__file"><span class="muted">tokens/</span></div>
+        <div class="tree__file"><code>Primitives.tokens.json</code></div>
+        <div class="tree__file"><code>Theme/Light.tokens.json</code><span class="tag">mode</span></div>
+        <div class="tree__file"><code>Theme/Dark.tokens.json</code><span class="tag">mode</span></div>
+        <div class="tree__file"><code>styles.tokens.json</code></div>
+        <div class="tree__file"><code>tokens.resolver.json</code><span class="tag tag--accent">resolver</span></div>
+      </div>
+    </div>
+
+    <div id="done" hidden>
+      <h3 class="first">In this file</h3>
+      <div class="card" id="summary"></div>
+      <h3>Save as</h3>
+      <fieldset class="card">
+        <legend class="sr">Format</legend>
+        <label class="choice">
+          <input type="radio" name="format" value="zip" checked />
+          <span class="choice__dot"></span>
+          <span><b>.zip — a file per collection and mode</b><small>With a resolver; the layout most tools read</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="format" value="one" />
+          <span class="choice__dot"></span>
+          <span><b>One file — modes inside each token</b><small>To drop or paste into Token Fix as it is</small></span>
+        </label>
+      </fieldset>
+      <div class="next">
+        <span>Next, on specsure.vercel.app:</span>
+        <a href="https://specsure.vercel.app/tools/fix" data-open>Check your code in Token Fix →</a>
+        <a href="https://specsure.vercel.app/tools/diff" data-open>Compare two exports in Token Diff →</a>
+      </div>
+      <details id="notes" hidden><summary></summary><ul></ul></details>
+    </div>
+
+    <p class="error" id="error" hidden></p>
+  </section>
+
+  <section data-view="guide" hidden>
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li><div><b>Read</b><span>Local variables, with their collections and modes, and local styles.</span></div></li>
+      <li><div><b>Save</b><span>A .zip for a repository and CI, or one file for a quick check.</span></div></li>
+      <li><div><b>Use</b><span>Drop the file into Token Fix or Token Diff, or run the CLI on the folder.</span></div></li>
+    </ol>
+    <h3>Where to take it</h3>
+    <dl class="map">
+      <dt>Token Fix</dt>
+      <dd>the token meant for a value, and what to replace in your code</dd>
+      <dt>Token Diff</dt>
+      <dd>two exports side by side: what changed, what breaks</dd>
+      <dt>CLI</dt>
+      <dd>checks in the terminal<code class="snippet">npx @dsgraph/cli check tokens</code></dd>
+      <dt>CI</dt>
+      <dd>a report on every pull request: <code>specsure/dsgraph-action</code></dd>
+    </dl>
+    <h3>Figma → DTCG</h3>
+    <dl class="map">
+      <dt>Color</dt>
+      <dd><code>color</code></dd>
+      <dt>Number</dt>
+      <dd><code>dimension</code> in px for lengths (by scope or name), <code>fontWeight</code>, otherwise <code>number</code></dd>
+      <dt>String</dt>
+      <dd><code>fontFamily</code> for font families</dd>
+      <dt>Easing, timing</dt>
+      <dd><code>cubicBezier</code>, <code>duration</code> in ms</dd>
+      <dt>Modes</dt>
+      <dd>a modifier in the resolver, the default mode first</dd>
+      <dt>Text style</dt>
+      <dd><code>typography</code>, bound variables as references</dd>
+      <dt>Effect style</dt>
+      <dd><code>shadow</code></dd>
+      <dt>Library</dt>
+      <dd>its value, the variable's name kept in <code>$extensions</code></dd>
+    </dl>
+    <p class="muted" style="margin-top: 10px">
+      Left out and listed after reading: booleans and plain strings, springs and back curves, blur effects, styles of several paints.
+    </p>
+  </section>
+
+  <section data-view="about" hidden>
+    <div class="about-mark">
+      <svg width="36" height="36" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" />
+        <rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent-fill)" />
+      </svg>
+      <div><b>Specsure</b><span class="muted">Open tools for design systems</span></div>
+    </div>
+    <p class="lead">
+      See what a release of your tokens breaks, and put hand-written values in your code back on tokens. No account and no server: in the browser, in CI, in the terminal.
+    </p>
+    <div class="card">
+      <div class="row"><span class="row__title">Token Diff</span><span class="tag">Web</span></div>
+      <div class="row"><span class="row__title">Token Fix</span><span class="tag">Web</span></div>
+      <div class="row"><span class="row__title">GitHub Action</span><span class="tag">CI</span></div>
+      <div class="row"><span class="row__title">MCP server for coding agents</span><span class="tag">MCP</span></div>
+    </div>
+    <h3>This plugin</h3>
+    <p class="lead">Reads the open file and never writes to it. It has no network access: the tokens go only where you save them. Open source, MIT.</p>
+    <div class="links">
+      <a href="https://specsure.vercel.app" data-open>specsure.vercel.app</a>
+      <a href="https://github.com/specsure/specsure/tree/main/apps/figma-plugin" data-open>Source</a>
+      <a href="https://github.com/specsure/specsure/issues" data-open>Report an issue</a>
+      <span class="muted">v0.1.0</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="status" id="status">Ready</span>
+  <button type="button" class="btn btn--ghost" id="copy" title="Copy the tokens as one file" hidden>Copy</button>
+  <button type="button" class="btn btn--primary" id="main">Read file <kbd>↵</kbd></button>
+</footer>
+
 <script>
   const $ = (id) => document.getElementById(id)
+  const post = (msg) => parent.postMessage({ pluginMessage: msg }, '*')
   let result = null
+  let format = 'zip'
+  let reading = false
   const safe = (s) => s.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'tokens'
   const json = (v) => `${JSON.stringify(v, null, 2)}\n`
+  const plural = (n, one, many) => `${n.toLocaleString('en')} ${n === 1 ? one : many}`
 
   // A ZIP without compression: token files are small, and nothing has to be installed.
   const CRC = (() => {
@@ -103,16 +760,108 @@
     a.click()
   }
 
-  $('run').onclick = () => {
-    $('run').disabled = true
-    $('error').hidden = true
-    parent.postMessage({ pluginMessage: { type: 'export' } }, '*')
+  const show = (tab) => {
+    for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab))
+    for (const s of document.querySelectorAll('[data-view]')) s.hidden = s.dataset.view !== tab
+    $('main').hidden = tab !== 'export'
+    $('copy').hidden = tab !== 'export' || !result
   }
-  $('zip').onclick = () =>
-    save(zip(Object.entries(result.files).map(([p, v]) => [`tokens/${p}`, json(v)])), `${safe(result.name)} tokens.zip`)
-  $('one').onclick = () =>
-    save(new Blob([json(result.single)], { type: 'application/json' }), `${safe(result.name)}.tokens.json`)
-  $('copy').onclick = async () => {
+  for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => show(b.dataset.tab)
+  // Links open in the browser through the plugin: the UI frame cannot navigate.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-open]')
+    if (!a) return
+    e.preventDefault()
+    post({ type: 'open', url: a.href })
+  })
+
+  for (const input of document.querySelectorAll('input[name="format"]'))
+    input.onchange = () => {
+      format = input.value
+      render()
+    }
+
+  const ICON = {
+    collection:
+      '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="9" height="9" rx="2"/><path d="M1.5 6h9M6 1.5v9"/></svg>',
+    styles:
+      '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9.5 6 2.5l3 7M4 7.2h4"/></svg>',
+  }
+  const STYLE_NAMES = { color: 'color', gradient: 'gradient', typography: 'text', shadow: 'effect' }
+
+  // A row built from the file's own names: text is set as text, never as markup.
+  const row = (iconSvg, title, tags, count) => {
+    const r = document.createElement('div')
+    r.className = 'row'
+    r.innerHTML = `<span class="row__icon">${iconSvg}</span><span class="row__title"></span><span class="tags"></span><span class="row__count"></span>`
+    r.querySelector('.row__title').textContent = title
+    for (const t of tags) {
+      const s = document.createElement('span')
+      s.className = 'tag'
+      s.textContent = t
+      r.querySelector('.tags').append(s)
+    }
+    r.querySelector('.row__count').textContent = count
+    return r
+  }
+
+  function render() {
+    const done = !!result
+    $('empty').hidden = done
+    $('done').hidden = !done
+    $('copy').hidden = !done
+    $('main').disabled = reading
+    $('main').innerHTML = reading
+      ? 'Reading…'
+      : done
+        ? `Download ${format === 'zip' ? '.zip' : 'file'} <kbd>↵</kbd>`
+        : 'Read file <kbd>↵</kbd>'
+    $('progress').hidden = !reading
+    if (!done) return
+    const s = result.stats
+    // The breakdown is in the card; the bar keeps the total, which fits next to the buttons.
+    $('status').textContent = plural(s.variables + s.styles, 'token', 'tokens')
+    const summary = $('summary')
+    summary.replaceChildren()
+    for (const c of result.summary.collections)
+      summary.append(row(ICON.collection, c.name, c.modes.length > 1 ? c.modes : [], c.variables))
+    const styles = Object.entries(result.summary.styles)
+    if (styles.length)
+      summary.append(row(ICON.styles, 'Styles', styles.map(([t, n]) => `${n} ${STYLE_NAMES[t] ?? t}`), s.styles))
+    if (!summary.children.length) {
+      const empty = document.createElement('div')
+      empty.className = 'row muted'
+      empty.textContent = 'No local variables or styles in this file'
+      summary.append(empty)
+    }
+    const notes = $('notes')
+    notes.hidden = result.notes.length === 0
+    notes.querySelector('summary').textContent = `${plural(result.notes.length, 'item', 'items')} left out`
+    const ul = notes.querySelector('ul')
+    ul.replaceChildren()
+    for (const n of result.notes) {
+      const li = document.createElement('li')
+      const code = document.createElement('code')
+      code.textContent = n.name
+      li.append(code, ` — ${n.message}`)
+      ul.append(li)
+    }
+  }
+
+  const read = () => {
+    reading = true
+    $('error').hidden = true
+    $('status').textContent = 'Reading variables and styles…'
+    render()
+    post({ type: 'export' })
+  }
+  const download = () => {
+    if (format === 'zip')
+      save(zip(Object.entries(result.files).map(([p, v]) => [`tokens/${p}`, json(v)])), `${safe(result.name)} tokens.zip`)
+    else save(new Blob([json(result.single)], { type: 'application/json' }), `${safe(result.name)}.tokens.json`)
+  }
+  $('main').onclick = () => (result ? download() : read())
+  $('copy').onclick = () => {
     // The plugin frame may not have clipboard permission: the old way works there.
     const area = document.createElement('textarea')
     area.value = json(result.single)
@@ -121,29 +870,24 @@
     document.execCommand('copy')
     area.remove()
     $('copy').textContent = 'Copied'
-    setTimeout(() => ($('copy').textContent = 'Copy one file'), 1500)
+    setTimeout(() => {
+      $('copy').textContent = 'Copy'
+    }, 1500)
   }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !reading && !$('main').hidden && !e.target.closest('button, a, summary, label')) $('main').click()
+  })
 
   window.addEventListener('message', (e) => {
     const m = e.data.pluginMessage
-    $('run').disabled = false
+    if (!m) return
+    reading = false
     if (m.type === 'error') {
       $('error').hidden = false
       $('error').textContent = m.message
-      return
-    }
-    result = m
-    const s = m.stats
-    $('done').hidden = false
-    $('stats').textContent = `${s.variables} variables in ${s.collections} collections, ${s.styles} styles.`
-    const notes = $('notes')
-    notes.hidden = m.notes.length === 0
-    notes.querySelector('summary').textContent = `${m.notes.length} left out or changed`
-    notes.querySelector('ul').innerHTML = ''
-    for (const n of m.notes) {
-      const li = document.createElement('li')
-      li.textContent = `${n.name}: ${n.message}`
-      notes.querySelector('ul').append(li)
-    }
+      $('status').textContent = 'Could not read the file'
+    } else if (m.type === 'result') result = m
+    render()
   })
+  render()
 </script>

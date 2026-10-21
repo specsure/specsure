@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plugin UI preview</title>
+<style>
+  body { margin: 0; padding: 24px; background: #e5e5ea; font: 12px/16px system-ui, sans-serif; color: #444; }
+  .grid { display: flex; flex-wrap: wrap; gap: 24px; }
+  figure { margin: 0; }
+  figcaption { margin-bottom: 6px; }
+  iframe { display: block; width: 320px; height: 440px; border: 0; border-radius: 8px; box-shadow: 0 0 0 1px #0000001a, 0 8px 24px -8px #00000040; }
+  .dark iframe { box-shadow: 0 0 0 1px #ffffff1a, 0 8px 24px -8px #00000080; }
+</style>
+</head>
+<body>
+<!-- The plugin's UI outside Figma, in the size Figma shows it: each frame gets the messages the
+     plugin would send. Serve this folder over HTTP (frames must be same-origin) and open this page. -->
+<div class="grid" id="grid"></div>
+<script>
+  const sample = {
+    type: 'result',
+    name: 'Acme Design System',
+    files: { 'Primitives.tokens.json': {}, 'tokens.resolver.json': {} },
+    single: {},
+    layout: [],
+    stats: { collections: 3, variables: 409, styles: 32, skipped: 1 },
+    summary: {
+      collections: [
+        { name: 'Primitives', modes: ['Value'], variables: 182 },
+        { name: 'Semantic', modes: ['Light', 'Dark'], variables: 205 },
+        { name: 'Density', modes: ['Desktop', 'Mobile'], variables: 22 },
+      ],
+      styles: { typography: 21, color: 8, shadow: 3 },
+    },
+    notes: [
+      { name: 'overlay/backdrop', message: 'blur effects have no DTCG type; left out' },
+      { name: 'flags/beta', message: 'boolean variables have no DTCG type; left out' },
+    ],
+  }
+  const states = [
+    ['Light · start', false, null, 'export'],
+    ['Light · read', false, sample, 'export'],
+    ['Dark · read', true, sample, 'export'],
+    ['Dark · guide', true, null, 'guide'],
+    ['Light · about', false, null, 'about'],
+    ['Dark · error', true, { type: 'error', message: 'Could not read variables: the file is still loading.' }, 'export'],
+  ]
+  for (const [title, dark, message, tab] of states) {
+    const fig = document.createElement('figure')
+    if (dark) fig.className = 'dark'
+    fig.innerHTML = '<figcaption></figcaption><iframe src="ui.html"></iframe>'
+    fig.querySelector('figcaption').textContent = title
+    const frame = fig.querySelector('iframe')
+    frame.onload = () => {
+      const w = frame.contentWindow
+      if (dark) w.document.documentElement.classList.add('figma-dark')
+      if (message) w.dispatchEvent(new MessageEvent('message', { data: { pluginMessage: message } }))
+      w.document.querySelector(`[data-tab="${tab}"]`)?.click()
+      if (message?.notes) w.document.getElementById('notes').open = true
+    }
+    document.getElementById('grid').append(fig)
+  }
+</script>
+</body>
+</html>

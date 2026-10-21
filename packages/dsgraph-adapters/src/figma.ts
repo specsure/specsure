@@ -124,6 +124,11 @@ export interface FigmaTokens {
   >
   notes: Array<{ name: string; message: string }>
   stats: { collections: number; variables: number; styles: number; skipped: number }
+  /** What was written, for a person to check: each collection with its modes, and the styles by type. */
+  summary: {
+    collections: Array<{ name: string; modes: string[]; variables: number }>
+    styles: Record<string, number>
+  }
 }
 
 type Doc = Record<string, unknown>
@@ -302,10 +307,12 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
   const layout: FigmaTokens['layout'] = []
   let count = 0
   let skipped = 0
+  const summary: FigmaTokens['summary'] = { collections: [], styles: {} }
 
   for (const col of raw.collections) {
     const vars = raw.variables.filter((v) => v.collectionId === col.id)
     if (!vars.length) continue
+    const before = count
     const modes = col.modes
     const docs = new Map(modes.map((m) => [m.id, {} as Doc]))
     for (const v of vars) {
@@ -344,6 +351,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       if (!setAt(single, path, token))
         notes.push({ name: v.name, message: 'another collection has a token or group with this name' })
     }
+    summary.collections.push({ name: col.name, modes: modes.map((m) => m.name), variables: count - before })
     const name = fileName(col.name)
     if (modes.length === 1) {
       files[`${name}.tokens.json`] = docs.get(modes[0]!.id)
@@ -386,6 +394,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     layout,
     notes,
     stats: { collections: raw.collections.length, variables: count, styles: styles.count, skipped },
+    summary: { ...summary, styles: styles.byType },
   }
 }
 
@@ -395,9 +404,10 @@ function convertStyles(
   byId: Map<string, FigmaVariable>,
   typeOf: (v: FigmaVariable) => string | null,
   notes: FigmaTokens['notes'],
-): { doc: Doc; count: number } {
+): { doc: Doc; count: number; byType: Record<string, number> } {
   const doc: Doc = {}
   let count = 0
+  const byType: Record<string, number> = {}
   const ref = (id: string | undefined, type: string): string | undefined => {
     const v = id ? byId.get(id) : undefined
     return v && typeOf(v) === type ? `{${pathOf(v.name).join('.')}}` : undefined
@@ -405,8 +415,10 @@ function convertStyles(
   const put = (name: string, token: Doc, id: string, description?: string) => {
     if (description) token.$description = description
     token.$extensions = { 'com.figma.styleId': id }
-    if (setAt(doc, ['styles', ...pathOf(name)], token)) count++
-    else notes.push({ name, message: 'its name is taken by another style; left out' })
+    if (setAt(doc, ['styles', ...pathOf(name)], token)) {
+      count++
+      byType[token.$type as string] = (byType[token.$type as string] ?? 0) + 1
+    } else notes.push({ name, message: 'its name is taken by another style; left out' })
   }
 
   for (const s of raw.styles.paint) {
@@ -463,7 +475,7 @@ function convertStyles(
       s.description,
     )
   }
-  return { doc, count }
+  return { doc, count, byType }
 }
 
 /**
