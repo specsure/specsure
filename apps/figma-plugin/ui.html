@@ -378,11 +378,36 @@
     background: var(--accent-soft);
     color: var(--accent);
   }
+  /* An error comes out of the card above it, as a strip drawn from under its bottom edge. */
+  .attached {
+    display: grid;
+  }
+  .attached > :has(+ .error:not([hidden])) {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
   .error {
-    padding: 8px 10px;
-    border-radius: var(--radius-md);
-    background: var(--danger-soft);
+    position: relative;
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 10px 9px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: color-mix(in srgb, var(--danger) 10%, var(--raised));
+    box-shadow: 0 0 0 1px var(--edge), inset 0 1px 0 color-mix(in srgb, var(--danger) 30%, transparent);
     color: var(--danger);
+  }
+  .error::before {
+    content: "!";
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: var(--raised);
+    font: 700 10px / 1 var(--font-ui);
   }
 
   /* Guide and About */
@@ -574,13 +599,16 @@
         <li>Color, text and effect styles</li>
         <li>Reads only: nothing in the file changes, nothing is sent anywhere</li>
       </ul>
-      <div class="tree" aria-hidden="true">
-        <div class="tree__file"><span class="muted">tokens/</span></div>
-        <div class="tree__file"><code>Primitives.tokens.json</code></div>
-        <div class="tree__file"><code>Theme/Light.tokens.json</code><span class="tag">mode</span></div>
-        <div class="tree__file"><code>Theme/Dark.tokens.json</code><span class="tag">mode</span></div>
-        <div class="tree__file"><code>styles.tokens.json</code></div>
-        <div class="tree__file"><code>tokens.resolver.json</code><span class="tag tag--accent">resolver</span></div>
+      <div class="attached">
+        <div class="tree" aria-hidden="true">
+          <div class="tree__file"><span class="muted">tokens/</span></div>
+          <div class="tree__file"><code>Primitives.tokens.json</code></div>
+          <div class="tree__file"><code>Theme/Light.tokens.json</code><span class="tag">mode</span></div>
+          <div class="tree__file"><code>Theme/Dark.tokens.json</code><span class="tag">mode</span></div>
+          <div class="tree__file"><code>styles.tokens.json</code></div>
+          <div class="tree__file"><code>tokens.resolver.json</code><span class="tag tag--accent">resolver</span></div>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
       </div>
     </div>
 
@@ -609,7 +637,6 @@
       <details id="notes" hidden><summary></summary><ul></ul></details>
     </div>
 
-    <p class="error" id="error" hidden></p>
   </section>
 
   <section data-view="guide" hidden>
