@@ -11,6 +11,7 @@ import {
 import { formatValue } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { cssName } from './css-name'
+import { leadWord } from './lead-word'
 import type { DemoAnswer, SnippetAnswer, SnippetEdit } from './lookup-types'
 
 /** The lines inside a string literal: a value there can be replaced by `var()` without breaking the script. */
@@ -101,7 +102,7 @@ export async function demoSnippet(g: DsGraph): Promise<DemoAnswer | null> {
   const alias = (t: Token) => g.chain(t.id, input).length > 1
   // General semantic tokens make the clearest example: a role word first, an alias, no state.
   // A general token (`bgColor.default`: the role first) before a component's (`avatar.bgColor`).
-  const general = (n: string, role: RegExp) => Number(role.test(n.split('.')[0]!))
+  const general = (n: string, role: RegExp) => Number(role.test(leadWord(n.split('.'))))
   // Only a value the engine itself answers with the same token: the example shows its real answer.
   const agrees = (t: Token, ctx: StyleContext) =>
     nearestTokens(g, { type: 'color', value: g.value(t.id, input) }, input, 1, ctx)[0]?.token.id === t.id

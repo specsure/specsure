@@ -7,6 +7,7 @@ import {
   vocabularyOf,
 } from '@dsgraph/core'
 import { formatValue } from '@dsgraph/report'
+import { leadWord } from './lead-word'
 import type { Overview, OverviewToken, Trap, Use } from './lookup-types'
 import { cssColor, isColor } from './view'
 
@@ -60,7 +61,7 @@ export function overviewOf(g: DsGraph): Overview {
   }
   // General semantic tokens first: the role as the first word, an alias, the ones most is built on.
   const rank = (role: RegExp) => (a: Token, b: Token) =>
-    Number(role.test(words.get(b.id)![0]!)) - Number(role.test(words.get(a.id)![0]!)) ||
+    Number(role.test(leadWord(words.get(b.id)!))) - Number(role.test(leadWord(words.get(a.id)!))) ||
     Number(alias(b)) - Number(alias(a)) ||
     used(b) - used(a) ||
     words.get(a.id)!.length - words.get(b.id)!.length ||
@@ -120,7 +121,7 @@ export function overviewOf(g: DsGraph): Overview {
       const w = words.get(best.token.id)!
       const fits = state
         ? stateOf(best.token) === state && v.roles[use].test(w.join('.'))
-        : v.roles[use].test(w[0]!) && !stateOf(best.token)
+        : v.roles[use].test(leadWord(w)) && !stateOf(best.token)
       if (!fits) return
       seen.add(best.token.id)
       picks.push({ use, ...(state ? { state } : {}), token: best.token.id })
