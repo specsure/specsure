@@ -10,11 +10,14 @@ interface ModeToken {
 
 const THEME_WORDS = new Set(['light', 'dark'])
 
-/** The token without `mode` in its extensions (and without empty extensions left behind). */
+/** The context a token's own `$value` stands for when `modes` lists only the overrides. */
+const BASE_MODE = 'default'
+
+/** The token without `mode` or `modes` in its extensions (and without empty extensions left behind). */
 function withoutModes(token: Record<string, unknown>): Record<string, unknown> {
   const { $extensions, ...rest } = token
   if (!isPlainObject($extensions)) return token
-  const { mode: _mode, ...ext } = $extensions
+  const { mode: _mode, modes: _modes, ...ext } = $extensions
   return Object.keys(ext).length > 0 ? { ...rest, $extensions: ext } : rest
 }
 
@@ -32,8 +35,15 @@ function strip(tree: unknown, found: ModeToken[], path: string[] = []): unknown 
   if (!isPlainObject(tree)) return tree
   if (Object.hasOwn(tree, '$value')) {
     const ext = tree.$extensions
-    if (!isPlainObject(ext) || !isPlainObject(ext.mode)) return tree
-    if (Object.keys(ext.mode).length > 1) found.push({ path, token: withoutModes(tree), modes: ext.mode })
+    if (!isPlainObject(ext)) return tree
+    // `mode` lists every mode; `modes` only the ones that differ, the token's own value being the rest.
+    const modes = isPlainObject(ext.mode)
+      ? ext.mode
+      : isPlainObject(ext.modes) && Object.keys(ext.modes).length > 0
+        ? { [BASE_MODE]: tree.$value, ...ext.modes }
+        : undefined
+    if (!modes) return tree
+    if (Object.keys(modes).length > 1) found.push({ path, token: withoutModes(tree), modes })
     return withoutModes(tree)
   }
   const out: Record<string, unknown> = {}
@@ -43,7 +53,9 @@ function strip(tree: unknown, found: ModeToken[], path: string[] = []): unknown 
 
 /**
  * Modes written per token in `$extensions.mode` (`{ "light": …, "dark": … }`), as Figma variable
- * exports and some build tools write them, become modifiers. Tokens that share the same mode names share a
+ * exports and some build tools write them, become modifiers; so do `$extensions.modes` that list
+ * only the modes where a value differs (`{ "mobile": … }`), the token's own value then being the
+ * `default` context. Tokens that share the same mode names share a
  * modifier; it is called `theme` for light and dark, otherwise after the top-level group (a Figma
  * collection) its tokens live in. Systems that already have modifiers are left as they are.
  */

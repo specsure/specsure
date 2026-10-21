@@ -290,6 +290,40 @@ describe('modes in $extensions.mode', () => {
     expect(graph.value('Colors.overlay')).toMatchObject({ components: [0, 0, 0], alpha: 0.5 })
   })
 
+  it('reads `$extensions.modes` that list only the modes that differ', async () => {
+    const tree = {
+      space: {
+        $type: 'dimension',
+        page: {
+          $value: { value: 32, unit: 'px' },
+          $extensions: { modes: { mobile: { value: 16, unit: 'px' } } },
+        },
+        gap: { $value: { value: 8, unit: 'px' } },
+      },
+      // A shadow written as CSS, as hand-written exports do.
+      shadow: {
+        $type: 'shadow',
+        raised: { $value: '0 1px 2px rgba(16,16,14,.06), inset 0 0 0 1px #0000000a' },
+      },
+    }
+    const { snapshot, graph, errors } = await scanFiles({ 'tokens.json': json(tree) })
+    expect(errors).toEqual([])
+    expect(snapshot.contexts.modifiers).toEqual([
+      { name: 'space', contexts: ['default', 'mobile'], default: 'default' },
+    ])
+    expect(graph.value('space.page', { space: 'mobile' })).toEqual({ value: 16, unit: 'px' })
+    expect(graph.value('space.page', { space: 'default' })).toEqual({ value: 32, unit: 'px' })
+    expect(graph.value('shadow.raised')).toMatchObject([
+      {
+        offsetY: { value: 1, unit: 'px' },
+        blur: { value: 2, unit: 'px' },
+        color: { alpha: 0.06 },
+        inset: false,
+      },
+      { spread: { value: 1, unit: 'px' }, inset: true },
+    ])
+  })
+
   it('reads legacy-syntax exports with modes too', async () => {
     const legacy = {
       color: {

@@ -14,6 +14,10 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   such a use with the system's token for it (`"var(--sp-accent)" is #2563eb in the code's own
   variables (lib/colors.css:3), not a token; use "color.accent"`), unless the chain leads to a token
   of the system; coverage counts it as written by hand. `foreignLiterals` in `@dsgraph/rules`.
+- `$extensions.modes` that lists only the modes where a value differs (`{ "mobile": … }`) is read as
+  modes too, the token's own value being the `default` context; `$extensions.mode` lists them all.
+- A shadow written as a CSS string (`"0 1px 2px rgba(16,16,14,.06)"`, `"none"`) is read, with a
+  `dtcg/legacy-syntax` warning, instead of failing as `dtcg/invalid-shadow`.
 - A color's alpha counts when a token is chosen for it: a black at 2% no longer matches the opaque
   black token (a point of alpha weighs as one of ΔE).
 

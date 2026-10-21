@@ -1,6 +1,7 @@
 import { isPlainObject } from '../path.js'
 import { canonicalColor } from './color.js'
 import { invalid, lenient, type ValueContext } from './context.js'
+import { cssShadow } from './css-shadow.js'
 import { canonicalDimension, type DimensionValue } from './dimension.js'
 
 export const STANDARD_TYPES = new Set([
@@ -203,6 +204,14 @@ function composite(
 }
 
 function shadow(raw: unknown, ctx: ValueContext): unknown[] | undefined {
+  // A shadow written as CSS, as hand-written and older exports do: read, with a warning.
+  if (typeof raw === 'string') {
+    const layers = cssShadow(raw)
+    if (!layers) return invalid(ctx, 'dtcg/invalid-shadow', `Shadow "${raw}" is not a CSS shadow`)
+    if (!lenient(ctx, 'dtcg/legacy-syntax', `Shadow "${raw}" is a string; DTCG 2025.10 requires objects`))
+      return undefined
+    raw = layers
+  }
   // A reference to another shadow token inside the array resolves to that token's value,
   // which may itself be an array of layers; it is inlined as layers.
   const layers = Array.isArray(raw) ? raw.flat() : [raw]
