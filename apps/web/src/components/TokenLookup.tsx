@@ -4,14 +4,16 @@ import type { Lang } from '../i18n'
 import { localePath } from '../i18n'
 import { LangProvider, useLang, useT } from '../i18n/react'
 import { looksLikeCode } from '../lib/code-text'
-import { EXAMPLE } from '../lib/example'
 import { deltaWords } from '../lib/explain'
+import { LOOKUP_EXAMPLE } from '../lib/lookup-example'
 import type {
   DemoAnswer,
   IndexRow,
   LookupRequest,
   LookupResponse,
   LookupSummary,
+  Overview,
+  OverviewToken,
   SnippetAnswer,
   TokenCard,
   ValueAnswer,
@@ -20,7 +22,7 @@ import { readLookupUrl, writeLookupUrl } from '../lib/lookup-url'
 import type { SideInput, TokenGraph } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, unpackFiles } from '../lib/url'
 import { GraphView } from './GraphView'
-import { Count, Findings, Keys, MOD } from './Results'
+import { Findings, Keys, MOD } from './Results'
 import { SidePicker } from './SidePicker'
 
 const emptyNpm: SideInput = { kind: 'npm', pkg: '', version: '' }
@@ -161,7 +163,7 @@ function App() {
     setContext(s.context)
     initial.current = { query: s.query, ...(s.token ? { token: s.token } : {}) }
     if (url.searchParams.has('example')) {
-      setSource({ kind: 'files', files: EXAMPLE.head })
+      setSource({ kind: 'files', files: LOOKUP_EXAMPLE })
       autoOpen.current = true
       setTick((x) => x + 1)
       return
@@ -226,7 +228,7 @@ function App() {
   }, [loaded, context, query, token])
 
   const example = () => {
-    const s: SideInput = { kind: 'files', files: EXAMPLE.head }
+    const s: SideInput = { kind: 'files', files: LOOKUP_EXAMPLE }
     setSource(s)
     setInclude('')
     open(s, '')
@@ -337,11 +339,22 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
   const [answer, setAnswer] = useState<ValueAnswer | null>(null)
   const [snippet, setSnippet] = useState<SnippetAnswer | null>(null)
   const [demo, setDemo] = useState<DemoAnswer | null>(null)
+  const [overview, setOverview] = useState<Overview | null>(null)
+  /** Every token as a list; otherwise an empty search shows the overview. A shared token link opens the list. */
+  const [catalog, setCatalog] = useState(!!token)
+  const openToken = (id: string) => {
+    setCatalog(true)
+    onToken(id)
+  }
   // The example is built once per system, from its own values.
   useEffect(() => {
     let live = true
     setDemo(null)
     if (!index.length) return
+    setOverview(null)
+    ask({ kind: 'overview' }).then((r) => {
+      if (live && r.ok && r.kind === 'overview') setOverview(r.overview)
+    })
     ask({ kind: 'demo' }).then((r) => {
       if (live && r.ok && r.kind === 'demo') setDemo(r.demo)
     })
@@ -475,22 +488,16 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
 
   return (
     <div className="results">
-      <header className="verdict">
-        <p className="verdict__sources">
-          <code>{summary.label}</code>
-        </p>
-        <h2 className="verdict__title verdict__title--none">{l.summary(d.tokens, d.files.length)}</h2>
-        <p className="verdict__counts">
-          {d.types.slice(0, 6).map(([ty, n]) => (
-            <Count key={ty} text={`${l.types[ty] ?? ty} ${n}`} />
-          ))}
-        </p>
-        <p className="verdict__reason">
-          {l.layers(d.values, d.aliases)}.{' '}
+      <p className="lookup__head">
+        <code>{summary.label}</code>
+        <span className="muted">
+          {' · '}
+          {l.summary(d.tokens, d.files.length)}
+          {' · '}
           {d.modes.length ? d.modes.map((m) => l.modes(m.name, m.contexts)).join(' · ') : l.noModes}
           {d.errors ? ` · ${l.errors(d.errors)}` : ''}
-        </p>
-      </header>
+        </span>
+      </p>
 
       {/* biome-ignore lint/a11y/noStaticElementInteractions: arrow keys for the listbox and the search field inside */}
       <div
@@ -594,7 +601,10 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
                 className="accessory"
                 aria-label={l.typeAria}
                 value={type}
-                onChange={(e) => setType(e.target.value)}
+                onChange={(e) => {
+                  setType(e.target.value)
+                  if (e.target.value) setCatalog(true)
+                }}
               >
                 <option value="">{l.anyType}</option>
                 {types.map((ty) => (
@@ -607,16 +617,47 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
           )}
         </div>
 
-        {!query.trim() && demo && (
-          <DemoView
-            demo={demo}
-            onUse={() => {
-              onQuery(demo.input)
-              search.current?.focus()
-            }}
-          />
+        {!query.trim() && (
+          <div className="lookup__tabs">
+            <div className="seg" role="tablist" aria-label={l.overview.tabsAria}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!catalog}
+                className={catalog ? '' : 'is-on'}
+                onClick={() => {
+                  setCatalog(false)
+                  setType('')
+                }}
+              >
+                {l.overview.tab}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={catalog}
+                className={catalog ? 'is-on' : ''}
+                onClick={() => setCatalog(true)}
+              >
+                {l.overview.all(index.length)}
+              </button>
+            </div>
+          </div>
         )}
-        {isCode ? (
+        {!query.trim() && !catalog ? (
+          <div className="lookup__overview">
+            {overview ? <OverviewView overview={overview} onPick={openToken} /> : null}
+            {demo && (
+              <DemoView
+                demo={demo}
+                onUse={() => {
+                  onQuery(demo.input)
+                  search.current?.focus()
+                }}
+              />
+            )}
+          </div>
+        ) : isCode ? (
           snippet && (
             <SnippetView
               snippet={snippet}
@@ -715,6 +756,137 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
         </footer>
       </div>
     </div>
+  )
+}
+
+function TokenChip({ token, onPick }: { token: OverviewToken; onPick: (id: string) => void }) {
+  return (
+    <button type="button" className="lookup__chip" onClick={() => onPick(token.id)} title={token.text}>
+      {token.swatch && <span className="lookup__dot" style={{ background: token.swatch }} />}
+      <code>{token.id}</code>
+    </button>
+  )
+}
+
+function UseCard({
+  title,
+  total,
+  tokens,
+  onPick,
+}: {
+  title: string
+  total: number
+  tokens: OverviewToken[]
+  onPick: (id: string) => void
+}) {
+  const l = useT().lookup.overview
+  return (
+    <div className="lookup__use">
+      <h4>
+        {title} <span className="count">{total}</span>
+      </h4>
+      <div className="lookup__chips">
+        {tokens.map((x) => (
+          <TokenChip key={x.id} token={x} onPick={onPick} />
+        ))}
+        {total > tokens.length && <span className="muted small">{l.more(total - tokens.length)}</span>}
+      </div>
+    </div>
+  )
+}
+
+/** How the open system is meant to be used: where the same value means different tokens, and what is for what. */
+function OverviewView({ overview: o, onPick }: { overview: Overview; onPick: (id: string) => void }) {
+  const t = useT()
+  const l = t.lookup.overview
+  const states = t.lookup.states as Record<string, string>
+  const scales = [
+    { key: 'space', title: l.space, rows: o.space },
+    { key: 'radius', title: l.radius, rows: o.radius },
+  ].filter((x) => x.rows.length > 1)
+  return (
+    <>
+      {o.traps.length > 0 && (
+        <section className="lookup__block">
+          <h3>{l.trapsTitle}</h3>
+          <p className="muted">{l.trapsLead(o.trapCount)}</p>
+          <ul className="lookup__traps">
+            {o.traps.map((trap) => (
+              <li key={trap.value}>
+                <span className="lookup__trap-value">
+                  {trap.swatch && <span className="lookup__swatch" style={{ background: trap.swatch }} />}
+                  <code>{trap.value}</code>
+                  <span className="muted small">{l.held(trap.count)}</span>
+                </span>
+                <span className="lookup__picks">
+                  {trap.picks.map((p) => (
+                    <span key={p.token} className="lookup__pick">
+                      <span className="muted">
+                        {p.state ? (l.forState[p.state] ?? p.state) : l.for[p.use]}
+                      </span>
+                      <button
+                        type="button"
+                        className="inline-link lookup__ref"
+                        onClick={() => onPick(p.token)}
+                      >
+                        {p.token}
+                      </button>
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {(o.uses.length > 0 || o.states.length > 0) && (
+        <section className="lookup__block">
+          <h3>{l.usesTitle}</h3>
+          <p className="muted">{l.usesLead}</p>
+          <div className="lookup__uses">
+            {o.uses.map((u) => (
+              <UseCard key={u.use} title={l.uses[u.use]} total={u.total} tokens={u.tokens} onPick={onPick} />
+            ))}
+            {o.states.map((u) => (
+              <UseCard
+                key={u.state}
+                title={states[u.state] ?? u.state}
+                total={u.total}
+                tokens={u.tokens}
+                onPick={onPick}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {scales.length > 0 && (
+        <section className="lookup__block">
+          <div className="lookup__uses">
+            {scales.map((sc) => {
+              const max = Math.max(...sc.rows.map((x) => x.px))
+              return (
+                <div key={sc.key} className="lookup__use">
+                  <h4>{sc.title}</h4>
+                  <ul className="lookup__scale">
+                    {sc.rows.map((x) => (
+                      <li key={x.id}>
+                        <button type="button" className="lookup__scale-row" onClick={() => onPick(x.id)}>
+                          <code>{x.id}</code>
+                          <span className="lookup__bar">
+                            <span style={{ width: `${Math.max(3, (x.px / max) * 100)}%` }} />
+                          </span>
+                          <span className="muted">{x.text}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+    </>
   )
 }
 

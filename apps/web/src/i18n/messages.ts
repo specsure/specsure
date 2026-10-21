@@ -566,6 +566,30 @@ const en = {
     linkCopied: 'Link copied',
     shareTooBig: 'These files are too large for a link.',
     example: 'Try an example',
+    overview: {
+      tabsAria: 'What to show',
+      tab: 'Overview',
+      all: (n: number) => `All tokens ${num('en', n)}`,
+      trapsTitle: 'Where it is easy to take the wrong token',
+      trapsLead: (n: number) =>
+        `In this system, ${count('en', n, { one: 'color is', other: 'colors are' })} held by tokens for different uses. A value copied from a mockup does not say which one is meant; the search picks it by use.`,
+      held: (n: number) => `in ${count('en', n, { one: 'token', other: 'tokens' })}`,
+      for: { text: 'for text', background: 'for a background', border: 'for a border' },
+      forState: {
+        hover: 'on hover',
+        focus: 'on focus',
+        active: 'when pressed',
+        disabled: 'when disabled',
+        selected: 'when selected',
+      } as Record<string, string>,
+      usesTitle: 'What to use for what',
+      usesLead:
+        'The tokens this design system made for each use. The ones most of the system is built on come first.',
+      uses: { text: 'Text', background: 'Backgrounds', border: 'Borders', shadow: 'Shadows' },
+      space: 'Spacing',
+      radius: 'Radii',
+      more: (n: number) => `and ${num('en', n)} more`,
+    },
     demo: {
       title: 'Try it with code',
       lead: 'Paste CSS, JSX or Tailwind into the search. Here is how it goes with this design system’s own values:',
@@ -1253,6 +1277,31 @@ const ru: Messages = {
     linkCopied: 'Ссылка скопирована',
     shareTooBig: 'Файлы слишком большие для ссылки.',
     example: 'Пример',
+    overview: {
+      tabsAria: 'Что показать',
+      tab: 'Обзор',
+      all: (n: number) => `Все токены ${num('ru', n)}`,
+      trapsTitle: 'Где легко взять не тот токен',
+      trapsLead: (n: number) =>
+        `В этой системе ${count('ru', n, { one: 'цвет есть', few: 'цвета есть', many: 'цветов есть', other: 'цвета есть' })} у токенов для разных целей. По значению из макета не понять, какой из них нужен, а поиск выбирает по назначению.`,
+      held: (n: number) =>
+        `у ${count('ru', n, { one: 'токена', few: 'токенов', many: 'токенов', other: 'токенов' })}`,
+      for: { text: 'для текста', background: 'для фона', border: 'для рамки' },
+      forState: {
+        hover: 'при наведении',
+        focus: 'в фокусе',
+        active: 'при нажатии',
+        disabled: 'когда недоступно',
+        selected: 'когда выбрано',
+      } as Record<string, string>,
+      usesTitle: 'Что для чего',
+      usesLead:
+        'Токены, которые эта дизайн-система сделала для каждой цели. Первыми — те, на которых держится большая часть системы.',
+      uses: { text: 'Текст', background: 'Фон', border: 'Рамки', shadow: 'Тени' },
+      space: 'Отступы',
+      radius: 'Скругления',
+      more: (n: number) => `и ещё ${num('ru', n)}`,
+    },
     demo: {
       title: 'Попробуйте на коде',
       lead: 'Вставьте в поиск CSS, JSX или Tailwind. Вот как это выглядит на значениях самой этой дизайн-системы:',

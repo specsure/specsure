@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { looksLikeCode } from '../src/lib/code-text'
 import { EXAMPLE } from '../src/lib/example'
 import { session } from '../src/lib/lookup'
+import { LOOKUP_EXAMPLE } from '../src/lib/lookup-example'
 import { readLookupUrl, writeLookupUrl } from '../src/lib/lookup-url'
 
 const open = async () => {
@@ -50,6 +51,29 @@ describe('Token Lookup', () => {
     if (!tsx.ok || tsx.kind !== 'snippet') throw new Error('no snippet')
     expect(tsx.snippet.output).toContain('className="bg-accent"')
     expect(tsx.snippet.output).toContain('gap: 8')
+  })
+
+  it('reads how the system is meant to be used: what is for what, and where one value means different tokens', async () => {
+    const ask = session()
+    await ask({ id: 1, kind: 'open', source: { kind: 'files', files: LOOKUP_EXAMPLE }, include: '' })
+    const r = await ask({ id: 2, kind: 'overview' })
+    if (!r.ok || r.kind !== 'overview') throw new Error('no overview')
+    const o = r.overview
+    expect(o.uses.find((u) => u.use === 'border')?.tokens.map((x) => x.id)).toEqual([
+      'border-accent',
+      'border-danger',
+      'border-default',
+    ])
+    expect(o.states.map((s) => s.state)).toEqual(['hover', 'focus', 'disabled', 'selected'])
+    expect(o.space.map((x) => x.px)).toEqual([4, 8, 12, 16, 24])
+    const blue = o.traps.find((x) => x.value === '#2563eb')!
+    expect(blue.picks.map((p) => `${p.use} ${p.token}`)).toEqual([
+      'text text-accent',
+      'background bg-accent',
+      'border border-accent',
+    ])
+    const gray = o.traps.find((x) => x.value === '#f1f5f9')!
+    expect(gray.picks.map((p) => `${p.state} ${p.token}`)).toEqual(['hover bg-hover', 'disabled bg-disabled'])
   })
 
   it('tells code from a name or a value', () => {

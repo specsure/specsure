@@ -5,6 +5,7 @@ import { check } from '@dsgraph/rules'
 import { graphOf, labelOf, load } from './compare'
 import { cssName } from './css-name'
 import type { IndexRow, LookupRequest, LookupResponse, TokenCard, ValueAnswer } from './lookup-types'
+import { overviewOf } from './overview'
 import { cssColor, isColor } from './view'
 
 const swatchOf = (v: unknown): string | undefined => (isColor(v) ? cssColor(v) : undefined)
@@ -98,6 +99,8 @@ export function session() {
         return { id: req.id, ok: true, kind: 'find', answer: answer(graph, req.text, opts) }
       }
       if (req.kind === 'token') return { id: req.id, ok: true, kind: 'token', card: card(graph, req.token) }
+      if (req.kind === 'overview')
+        return { id: req.id, ok: true, kind: 'overview', overview: overviewOf(graph) }
       if (req.kind === 'demo') {
         const { demoSnippet } = await import('./snippet')
         return { id: req.id, ok: true, kind: 'demo', demo: await demoSnippet(graph) }

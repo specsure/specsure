@@ -58,6 +58,36 @@ export interface SnippetAnswer {
   language: 'css' | 'tsx'
 }
 
+export type Use = 'text' | 'background' | 'border' | 'shadow'
+
+export interface OverviewToken {
+  id: string
+  text: string
+  swatch?: string
+}
+
+/** A value held by tokens for different uses, and the token the search picks for each. */
+export interface Trap {
+  value: string
+  swatch?: string
+  /** How many tokens hold it. */
+  count: number
+  picks: Array<{ use: Exclude<Use, 'shadow'>; state?: string; token: string }>
+}
+
+/** How the system is meant to be used, read from its names and references. */
+export interface Overview {
+  uses: Array<{ use: Use; tokens: OverviewToken[]; total: number }>
+  states: Array<{ state: string; tokens: OverviewToken[]; total: number }>
+  space: Array<OverviewToken & { px: number }>
+  radius: Array<OverviewToken & { px: number }>
+  traps: Trap[]
+  /** Values with such a choice among the ones checked. */
+  trapCount: number
+  /** Shared values checked: the most shared ones. */
+  checked: number
+}
+
 /** The page's own example: code written by hand with the open system's values, and the same on tokens. */
 export interface DemoAnswer {
   input: string
@@ -77,6 +107,7 @@ export type LookupRequest =
   | { id: number; kind: 'token'; token: string }
   | { id: number; kind: 'snippet'; text: string }
   | { id: number; kind: 'demo' }
+  | { id: number; kind: 'overview' }
   | { id: number; kind: 'health' }
 
 export type LookupResponse =
@@ -93,5 +124,6 @@ export type LookupResponse =
   | { id: number; ok: true; kind: 'token'; card: TokenCard | null }
   | { id: number; ok: true; kind: 'snippet'; snippet: SnippetAnswer }
   | { id: number; ok: true; kind: 'demo'; demo: DemoAnswer | null }
+  | { id: number; ok: true; kind: 'overview'; overview: Overview }
   | { id: number; ok: true; kind: 'health'; findings: Finding[] }
   | { id: number; ok: false; error: string; hint?: 'private' }
