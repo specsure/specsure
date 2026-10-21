@@ -21,6 +21,9 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
     tracking % for typography) the value no longer has;
   - `typography/unlinked-field`: a typography field written by hand where most typography tokens
     take it from a token.
+- The class that replaces an arbitrary Tailwind value uses a theme namespace only for the kind of
+  value it holds: a color token `text-default` becomes `text-(--text-default)`, not the font-size
+  class `text-default`; and `--bg-accent` becomes `bg-(--bg-accent)`, not `bg-bg-accent`.
 - `parseValue` (a value as people type it, as a DTCG type and value) is exported from
   `@dsgraph/adapters`.
 - MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold

@@ -23,7 +23,7 @@ const en = {
   site: {
     nav: {
       diff: 'Token Diff',
-      lookup: 'Token Lookup',
+      fix: 'Token Fix',
       guide: 'Guide',
       mcp: 'MCP',
       cli: 'CLI',
@@ -61,8 +61,7 @@ const en = {
     lead: 'Open-source tools for design systems. No account and no server: they run in your browser, your CI or your terminal.',
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
-      lookup:
-        'Paste a color or a piece of code: the token meant for it, for a background or text, for hover, for this component',
+      fix: 'Paste a color or a piece of code: the token meant for it, for a background or text, for hover, for this component',
       cli: 'Diff and checks in your terminal and CI; upgrade‑check shows what a new version breaks in your code',
       action:
         'A report on every pull request: what a token change breaks in your code, and a failed check when it does',
@@ -499,8 +498,8 @@ const en = {
 
   figure: { running: 'Running dsgraph…', compare: 'Compare', theme: 'theme' },
 
-  lookupPage: {
-    title: 'Token Lookup · Specsure',
+  fixPage: {
+    title: 'Token Fix · Specsure',
     description:
       'Paste a color, a size or a piece of CSS, JSX or Tailwind and get the design token meant for it: for a background or text, for hover, for this component. Any design system from npm, GitHub or your files, read in your browser.',
     lead: 'Paste a color, a size or a piece of code, and get the token your design system meant for it: for a background or text, for hover, for this component. Not just one with the same value. Code comes back rewritten on tokens. The same answers your coding agent gets from the MCP server; everything is read in your browser.',
@@ -590,6 +589,9 @@ const en = {
         disabled: 'when disabled',
         selected: 'when selected',
       } as Record<string, string>,
+      improveTitle: 'What to fix in the system',
+      improveLead: (n: number) =>
+        `${count('en', n, { one: 'thing', other: 'things' })} the checks found in the tokens themselves. Click a token to open it.`,
       usesTitle: 'What to use for what',
       usesLead:
         'The tokens this design system made for each use. The ones most of the system is built on come first.',
@@ -599,6 +601,43 @@ const en = {
       between: (m: number, a: number, b: number) =>
         `A value between two steps is outside the system: instead of ${num('en', m)}px, take ${num('en', a)}px or ${num('en', b)}px.`,
       betweenPlain: 'A value between two steps is outside the system: take the nearest step.',
+      more: (n: number) => `and ${num('en', n)} more`,
+    },
+    code: {
+      tab: 'Your code',
+      lead: 'Add the folder of an app built on this design system, or its GitHub repository. The code is read in this tab and never uploaded.',
+      check: 'Check the code',
+      progress: 'Reading the code…',
+      failed: 'Could not read the code',
+      onTokens: 'On tokens',
+      split: (fromTokens: number, byHand: number) =>
+        `${num('en', fromTokens)} from tokens · ${num('en', byHand)} written by hand`,
+      colors: (a: number, b: number) => `Colors: ${num('en', a)} from tokens, ${num('en', b)} by hand`,
+      sizes: (a: number, b: number) => `Sizes: ${num('en', a)} from tokens, ${num('en', b)} by hand`,
+      read: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} read`,
+      places: (n: number, files: number) =>
+        `${count('en', n, { one: 'place', other: 'places' })} in ${count('en', files, { one: 'file', other: 'files' })}`,
+      replaceTitle: 'Replace with tokens',
+      replaceLead:
+        'Values written by hand that the system has a token for. The token is chosen for the property, state and component where each value is written.',
+      missingTitle: 'Tokens the system is missing',
+      missingLead:
+        'Values written by hand with no exact token. Used in many places, they are candidates for new tokens; used once, take the closest one.',
+      closest: (how: string) => `closest (${how}):`,
+      belongs: (group: string) => `a new token would go in ${group}`,
+      variablesTitle: 'Variables to fix',
+      typo: (s: string) => `not a token; did you mean ${s}?`,
+      unknown: 'not a token in this system',
+      deprecated: (r?: string) => (r ? `deprecated, use ${r}` : 'deprecated'),
+      clean: 'Nothing written by hand and no broken variables. The code is on tokens.',
+      agent: 'Copy a task for your agent',
+      agentCopied: 'Task copied',
+      task: {
+        head: "Replace values written by hand with the design system's tokens. Keep everything else as it is.",
+        replace: 'Replace:',
+        missing: 'No exact token; ask the design system team or use the closest:',
+        variables: 'Fix variables:',
+      },
       more: (n: number) => `and ${num('en', n)} more`,
     },
     demo: {
@@ -703,7 +742,7 @@ const ru: Messages = {
   site: {
     nav: {
       diff: 'Token Diff',
-      lookup: 'Token Lookup',
+      fix: 'Token Fix',
       guide: 'Гайд',
       mcp: 'MCP',
       cli: 'CLI',
@@ -741,8 +780,7 @@ const ru: Messages = {
     lead: 'Открытые инструменты для дизайн-систем. Без регистрации и без сервера: всё работает в браузере, в CI или в терминале.',
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
-      lookup:
-        'Вставьте цвет или кусок кода — получите токен, задуманный для него: для фона или текста, для наведения, для компонента',
+      fix: 'Вставьте цвет или кусок кода — получите токен, задуманный для него: для фона или текста, для наведения, для компонента',
       cli: 'Сравнение и проверки в терминале и CI; upgrade‑check покажет, что новая версия сломает в вашем коде',
       action:
         'Отчёт в каждом pull request: что изменение токенов сломает в вашем коде, и проваленная проверка, если ломает',
@@ -1224,8 +1262,8 @@ const ru: Messages = {
 
   figure: { running: 'dsgraph считает…', compare: 'Сравнить', theme: 'theme' },
 
-  lookupPage: {
-    title: 'Token Lookup · Specsure',
+  fixPage: {
+    title: 'Token Fix · Specsure',
     description:
       'Вставьте цвет, размер или кусок CSS, JSX или Tailwind и получите дизайн-токен, задуманный именно для этого: для фона или текста, для наведения, для этого компонента. Любая дизайн-система из npm, GitHub или ваших файлов, всё читается в браузере.',
     lead: 'Вставьте цвет, размер или кусок кода — и получите токен, который ваша дизайн-система задумала именно для этого: для фона или текста, для наведения, для этого компонента. А не просто совпадающий по значению. Код вернётся уже переписанным на токены. Это те же ответы, что ваш агент получает от MCP-сервера; всё читается в браузере.',
@@ -1317,6 +1355,9 @@ const ru: Messages = {
         disabled: 'когда недоступно',
         selected: 'когда выбрано',
       } as Record<string, string>,
+      improveTitle: 'Что поправить в системе',
+      improveLead: (n: number) =>
+        `Проверки нашли в самих токенах ${count('ru', n, { one: 'место', few: 'места', many: 'мест', other: 'места' })}. Нажмите на токен, чтобы его открыть.`,
       usesTitle: 'Что для чего',
       usesLead:
         'Токены, которые эта дизайн-система сделала для каждой цели. Первыми — те, на которых держится большая часть системы.',
@@ -1326,6 +1367,44 @@ const ru: Messages = {
       between: (m: number, a: number, b: number) =>
         `Значение между шагами — вне системы: вместо ${num('ru', m)}px возьмите ${num('ru', a)}px или ${num('ru', b)}px.`,
       betweenPlain: 'Значение между шагами — вне системы: берите ближайший шаг.',
+      more: (n: number) => `и ещё ${num('ru', n)}`,
+    },
+    code: {
+      tab: 'Ваш код',
+      lead: 'Добавьте папку приложения на этой дизайн-системе или его репозиторий на GitHub. Код читается в этой вкладке и никуда не загружается.',
+      check: 'Проверить код',
+      progress: 'Читаю код…',
+      failed: 'Не удалось прочитать код',
+      onTokens: 'На токенах',
+      split: (fromTokens: number, byHand: number) =>
+        `${num('ru', fromTokens)} из токенов · ${num('ru', byHand)} вписано вручную`,
+      colors: (a: number, b: number) => `Цвета: ${num('ru', a)} из токенов, ${num('ru', b)} вручную`,
+      sizes: (a: number, b: number) => `Размеры: ${num('ru', a)} из токенов, ${num('ru', b)} вручную`,
+      read: (n: number) =>
+        `прочитано ${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}`,
+      places: (n: number, files: number) =>
+        `${count('ru', n, ruPlace)} в ${count('ru', files, { one: 'файле', few: 'файлах', many: 'файлах', other: 'файлах' })}`,
+      replaceTitle: 'Заменить на токены',
+      replaceLead:
+        'Значения, вписанные вручную, для которых в системе есть токен. Токен выбран по свойству, состоянию и компоненту, где записано значение.',
+      missingTitle: 'Каких токенов не хватает',
+      missingLead:
+        'Значения, вписанные вручную, для которых точного токена нет. Если их много, это кандидаты в новые токены; если одно — возьмите ближайший.',
+      closest: (how: string) => `ближайший (${how}):`,
+      belongs: (group: string) => `новый токен — в группу ${group}`,
+      variablesTitle: 'Переменные, которые надо исправить',
+      typo: (s: string) => `такого токена нет; возможно, ${s}`,
+      unknown: 'такого токена в системе нет',
+      deprecated: (r?: string) => (r ? `устарел, используйте ${r}` : 'устарел'),
+      clean: 'Ничего не вписано вручную и нет сломанных переменных. Код на токенах.',
+      agent: 'Скопировать задание для агента',
+      agentCopied: 'Задание скопировано',
+      task: {
+        head: 'Замени значения, вписанные вручную, на токены дизайн-системы. Остальное не меняй.',
+        replace: 'Заменить:',
+        missing: 'Точного токена нет; спроси команду дизайн-системы или возьми ближайший:',
+        variables: 'Исправить переменные:',
+      },
       more: (n: number) => `и ещё ${num('ru', n)}`,
     },
     demo: {

@@ -1,4 +1,5 @@
 import type { Finding, When } from '@dsgraph/core'
+import { groupFindings } from '@dsgraph/report'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { localePath } from '../i18n'
@@ -14,15 +15,17 @@ import type {
   LookupSummary,
   Overview,
   OverviewToken,
+  ProjectAnswer,
   SnippetAnswer,
   TokenCard,
   ValueAnswer,
 } from '../lib/lookup-types'
 import { readLookupUrl, writeLookupUrl } from '../lib/lookup-url'
-import type { SideInput, TokenGraph } from '../lib/types'
+import type { CodeInput, SideInput, TokenGraph } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, unpackFiles } from '../lib/url'
+import { CodeField } from './CodeField'
 import { GraphView } from './GraphView'
-import { Findings, Keys, MOD } from './Results'
+import { Keys, MOD } from './Results'
 import { SidePicker } from './SidePicker'
 
 const emptyNpm: SideInput = { kind: 'npm', pkg: '', version: '' }
@@ -74,7 +77,7 @@ function valueIn<V extends { when: When }>(values: V[], at: Record<string, strin
   return best ?? values[0]
 }
 
-export default function TokenLookup({ lang = 'en' }: { lang?: Lang }) {
+export default function TokenFix({ lang = 'en' }: { lang?: Lang }) {
   return (
     <LangProvider lang={lang}>
       <App />
@@ -295,6 +298,7 @@ function App() {
       {loaded && (
         <Browser
           loaded={loaded}
+          findings={findings}
           ask={ask}
           context={context}
           onContext={setContext}
@@ -305,13 +309,14 @@ function App() {
           share={canShare ? () => navigator.clipboard.writeText(location.href) : undefined}
         />
       )}
-      {loaded && findings && <Findings findings={findings} label={loaded.summary.label} />}
     </div>
   )
 }
 
 interface BrowserProps {
   loaded: Loaded
+  /** Checks on the system, once they have run. */
+  findings: Finding[] | null
   ask: ReturnType<typeof useLookup>
   context: Record<string, string>
   onContext: (c: Record<string, string>) => void
@@ -328,7 +333,18 @@ interface Shown {
   note?: string
 }
 
-function Browser({ loaded, ask, context, onContext, query, onQuery, token, onToken, share }: BrowserProps) {
+function Browser({
+  loaded,
+  findings,
+  ask,
+  context,
+  onContext,
+  query,
+  onQuery,
+  token,
+  onToken,
+  share,
+}: BrowserProps) {
   const t = useT()
   const l = t.lookup
   const { summary, index } = loaded
@@ -341,7 +357,11 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
   const [demo, setDemo] = useState<DemoAnswer | null>(null)
   const [overview, setOverview] = useState<Overview | null>(null)
   /** Every token as a list; otherwise an empty search shows the overview. A shared token link opens the list. */
-  const [catalog, setCatalog] = useState(!!token)
+  const [view, setView] = useState<'overview' | 'all' | 'code'>(token ? 'all' : 'overview')
+  const catalog = view === 'all'
+  const setCatalog = (on: boolean) => setView(on ? 'all' : 'overview')
+  const [project, setProject] = useState<CodeInput>({ kind: 'files', files: [] })
+  const [githubToken, setGithubToken] = useState('')
   const openToken = (id: string) => {
     setCatalog(true)
     onToken(id)
@@ -623,8 +643,8 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
               <button
                 type="button"
                 role="tab"
-                aria-selected={!catalog}
-                className={catalog ? '' : 'is-on'}
+                aria-selected={view === 'overview'}
+                className={view === 'overview' ? 'is-on' : ''}
                 onClick={() => {
                   setCatalog(false)
                   setType('')
@@ -641,12 +661,31 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
               >
                 {l.overview.all(index.length)}
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === 'code'}
+                className={view === 'code' ? 'is-on' : ''}
+                onClick={() => setView('code')}
+              >
+                {l.code.tab}
+              </button>
             </div>
           </div>
         )}
-        {!query.trim() && !catalog ? (
+        {!query.trim() && view === 'code' ? (
+          <ProjectPanel
+            ask={ask}
+            value={project}
+            onChange={setProject}
+            githubToken={githubToken}
+            onGithubToken={setGithubToken}
+            onPick={openToken}
+            onCopied={(text) => flash(text)}
+          />
+        ) : !query.trim() && !catalog ? (
           <div className="lookup__overview">
-            {overview ? <OverviewView overview={overview} onPick={openToken} /> : null}
+            {overview ? <OverviewView overview={overview} findings={findings} onPick={openToken} /> : null}
             {demo && (
               <DemoView
                 demo={demo}
@@ -759,6 +798,312 @@ function Browser({ loaded, ask, context, onContext, query, onQuery, token, onTok
   )
 }
 
+/** A task for a coding agent: every replacement with its places, the values without a token, the variables to fix. */
+function agentTask(p: ProjectAnswer, l: ReturnType<typeof useT>['lookup']['code']): string {
+  const at = (sites: ProjectAnswer['replace'][number]['sites']) =>
+    sites.map((x) => `${x.file}:${x.line}`).join(', ')
+  const out = [l.task.head, '']
+  if (p.replace.length) {
+    out.push(l.task.replace)
+    for (const g of p.replace)
+      out.push(`- \`${g.value}\` → \`${g.replacement}\` (${g.token}): ${at(g.sites)}`)
+    out.push('')
+  }
+  if (p.missing.length) {
+    out.push(l.task.missing)
+    for (const g of p.missing) out.push(`- \`${g.value}\` → \`${g.replacement}\`?: ${at(g.sites)}`)
+    out.push('')
+  }
+  if (p.variables.length) {
+    out.push(l.task.variables)
+    for (const v of p.variables) {
+      const to = v.suggestion ?? v.replacement
+      out.push(`- \`${v.name}\`${to ? ` → \`${to}\`` : ''}: ${at(v.sites)}`)
+    }
+  }
+  return out.join('\n').trim()
+}
+
+function Sites({ sites, total }: { sites: ProjectAnswer['replace'][number]['sites']; total: number }) {
+  const l = useT().lookup.code
+  return (
+    <ul className="lookup__sites">
+      {sites.map((x) => (
+        <li key={`${x.file}:${x.line}:${x.text}`}>
+          <code className="muted">
+            {x.file}:{x.line}
+          </code>{' '}
+          <code>{x.text}</code>
+        </li>
+      ))}
+      {total > sites.length && <li className="muted">{l.more(total - sites.length)}</li>}
+    </ul>
+  )
+}
+
+/** The Code tab: the project that uses the system, checked against it. */
+function ProjectPanel({
+  ask,
+  value,
+  onChange,
+  githubToken,
+  onGithubToken,
+  onPick,
+  onCopied,
+}: {
+  ask: ReturnType<typeof useLookup>
+  value: CodeInput
+  onChange: (v: CodeInput) => void
+  githubToken: string
+  onGithubToken: (t: string) => void
+  onPick: (id: string) => void
+  onCopied: (status: string) => void
+}) {
+  const t = useT()
+  const l = t.lookup.code
+  const [running, setRunning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [p, setP] = useState<ProjectAnswer | null>(null)
+  const ready = value.kind === 'files' ? value.files.length > 0 : !!value.repo
+  const run = async () => {
+    if (!ready) return
+    setRunning(true)
+    setError(null)
+    const input: CodeInput = value.kind === 'github' && !value.ref ? { ...value, ref: 'HEAD' } : value
+    const r = await ask({ kind: 'project', input, ...(githubToken ? { githubToken } : {}) })
+    setRunning(false)
+    if (!r.ok)
+      setError(
+        r.hint === 'private'
+          ? `${r.error}. ${t.inputs.privateHint}`
+          : r.hint === 'reload'
+            ? t.inputs.reloadHint
+            : r.error,
+      )
+    else if (r.kind === 'project') setP(r.project)
+  }
+  const how = (g: ProjectAnswer['missing'][number]) =>
+    g.deltaE !== undefined
+      ? `${deltaWords(g.deltaE, t)} · ΔE ${g.deltaE}`
+      : t.lookup.pxOff(g.distance ?? 0, 'px')
+  const share = p?.coverage.share
+  return (
+    <div className="lookup__overview">
+      <section className="lookup__block">
+        <p className="muted">{l.lead}</p>
+        <div className="lookup__project">
+          <CodeField
+            value={value}
+            onChange={onChange}
+            error={error ?? undefined}
+            githubToken={githubToken}
+            onGithubToken={onGithubToken}
+          />
+          <div className="lookup__project-actions">
+            <span className="muted small">{running ? l.progress : p ? l.read(p.files) : ''}</span>
+            <button type="button" className="ghost ghost--strong" disabled={!ready || running} onClick={run}>
+              {l.check}
+            </button>
+          </div>
+        </div>
+      </section>
+      {p && (
+        <>
+          <section className="lookup__block">
+            <div className="lookup__meter">
+              <span className="lookup__meter-label">{l.onTokens}</span>
+              <strong>{share === null || share === undefined ? '—' : `${Math.round(share * 100)}%`}</strong>
+              <span className="lookup__bar">
+                <span style={{ width: `${Math.round((share ?? 0) * 100)}%` }} />
+              </span>
+            </div>
+            <p className="muted">
+              {l.colors(p.coverage.color.fromTokens, p.coverage.color.byHand)} ·{' '}
+              {l.sizes(p.coverage.size.fromTokens, p.coverage.size.byHand)}
+            </p>
+            {(p.replace.length > 0 || p.missing.length > 0 || p.variables.length > 0) && (
+              <button
+                type="button"
+                className="ghost ghost--strong"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(agentTask(p, l))
+                  onCopied(l.agentCopied)
+                }}
+              >
+                {l.agent}
+              </button>
+            )}
+          </section>
+          {p.replace.length === 0 && p.missing.length === 0 && p.variables.length === 0 && (
+            <div className="empty">{l.clean}</div>
+          )}
+          {p.replace.length > 0 && (
+            <section className="lookup__block">
+              <h3>{l.replaceTitle}</h3>
+              <p className="muted">{l.replaceLead}</p>
+              <ul className="lookup__groups">
+                {p.replace.map((g) => (
+                  <li key={`${g.value}${g.token}`}>
+                    <details>
+                      <summary className="row">
+                        {g.swatch ? (
+                          <span className="icon icon--swatch" aria-hidden="true">
+                            <span style={{ background: g.swatch }} />
+                          </span>
+                        ) : (
+                          <span className="icon icon--neutral" aria-hidden="true">
+                            ↔
+                          </span>
+                        )}
+                        <span className="row__title">
+                          <span className="muted">{g.value} → </span>
+                          {g.replacement}
+                        </span>
+                        <span className="row__acc">
+                          <span className="acc-text">{l.places(g.count, g.files)}</span>
+                        </span>
+                      </summary>
+                      <p className="lookup__group-note">
+                        <button
+                          type="button"
+                          className="inline-link lookup__ref"
+                          onClick={() => onPick(g.token)}
+                        >
+                          {g.token}
+                        </button>
+                      </p>
+                      <Sites sites={g.sites} total={g.count} />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {p.missing.length > 0 && (
+            <section className="lookup__block">
+              <h3>{l.missingTitle}</h3>
+              <p className="muted">{l.missingLead}</p>
+              <ul className="lookup__groups">
+                {p.missing.map((g) => (
+                  <li key={g.value}>
+                    <details>
+                      <summary className="row">
+                        <span className="icon icon--warning" aria-hidden="true">
+                          ≈
+                        </span>
+                        <span className="row__title">{g.value}</span>
+                        <span className="row__acc">
+                          <span className="acc-text">{l.places(g.count, g.files)}</span>
+                        </span>
+                      </summary>
+                      <p className="lookup__group-note">
+                        {l.closest(how(g))}{' '}
+                        <button
+                          type="button"
+                          className="inline-link lookup__ref"
+                          onClick={() => onPick(g.token)}
+                        >
+                          {g.token}
+                        </button>
+                        {g.group && g.count > 1 ? (
+                          <span className="muted"> · {l.belongs(g.group)}</span>
+                        ) : null}
+                      </p>
+                      <Sites sites={g.sites} total={g.count} />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {p.variables.length > 0 && (
+            <section className="lookup__block">
+              <h3>{l.variablesTitle}</h3>
+              <ul className="lookup__groups">
+                {p.variables.map((v) => (
+                  <li key={v.kind + v.name}>
+                    <details>
+                      <summary className="row">
+                        <span
+                          className={`icon icon--${v.kind === 'unknown' ? 'danger' : 'warning'}`}
+                          aria-hidden="true"
+                        >
+                          {v.kind === 'unknown' ? '?' : '!'}
+                        </span>
+                        <span className="row__title">{v.name}</span>
+                        <span className="row__subtitle">
+                          {v.kind === 'unknown'
+                            ? v.suggestion
+                              ? l.typo(v.suggestion)
+                              : l.unknown
+                            : l.deprecated(v.replacement)}
+                        </span>
+                        <span className="row__acc">
+                          <span className="acc-text">{v.count}</span>
+                        </span>
+                      </summary>
+                      <Sites sites={v.sites} total={v.count} />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Errors and warnings worth fixing, and hand-written values among the modes. */
+const IMPROVE = (f: Finding) => f.severity !== 'info' || f.rule === 'context/literal-value'
+
+/** What to fix in the system: the checks, grouped, each with its tokens to open. */
+function ImproveView({ findings, onPick }: { findings: Finding[]; onPick: (id: string) => void }) {
+  const t = useT()
+  const l = t.lookup.overview
+  const groups = useMemo(() => groupFindings(findings.filter(IMPROVE)), [findings])
+  if (!groups.length) return null
+  return (
+    <section className="lookup__block">
+      <h3>{l.improveTitle}</h3>
+      <p className="muted">{l.improveLead(groups.reduce((n, g) => n + g.findings.length, 0))}</p>
+      <ul className="lookup__improve">
+        {groups.map((g) => {
+          const ids = [...new Set(g.findings.flatMap((f) => f.nodes.slice(0, 1)))]
+          return (
+            <li key={`${g.severity}${g.rule}${g.pattern}`}>
+              <span
+                className={`icon icon--${g.severity === 'error' ? 'danger' : g.severity}`}
+                aria-hidden="true"
+              >
+                {g.severity === 'error' ? '×' : g.severity === 'warning' ? '!' : 'i'}
+              </span>
+              <div>
+                <p className="lookup__improve-title">
+                  {t.checks.titles[g.rule] ?? (g.findings.length === 1 ? g.findings[0]!.message : g.pattern)}
+                  {g.findings.length > 1 && <span className="count">{g.findings.length}</span>}
+                </p>
+                {t.checks.help[g.rule] && <p className="muted small">{t.checks.help[g.rule]}</p>}
+                {ids.length > 0 && (
+                  <div className="lookup__chips">
+                    {ids.slice(0, 8).map((id) => (
+                      <button key={id} type="button" className="lookup__chip" onClick={() => onPick(id)}>
+                        <code>{id}</code>
+                      </button>
+                    ))}
+                    {ids.length > 8 && <span className="muted small">{l.more(ids.length - 8)}</span>}
+                  </div>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
 function TokenChip({ token, onPick }: { token: OverviewToken; onPick: (id: string) => void }) {
   return (
     <button type="button" className="lookup__chip" onClick={() => onPick(token.id)} title={token.text}>
@@ -811,7 +1156,15 @@ function betweenNote(steps: number[], l: ReturnType<typeof useT>['lookup']['over
 }
 
 /** How the open system is meant to be used: where the same value means different tokens, and what is for what. */
-function OverviewView({ overview: o, onPick }: { overview: Overview; onPick: (id: string) => void }) {
+function OverviewView({
+  overview: o,
+  findings,
+  onPick,
+}: {
+  overview: Overview
+  findings: Finding[] | null
+  onPick: (id: string) => void
+}) {
   const t = useT()
   const l = t.lookup.overview
   const states = t.lookup.states as Record<string, string>
@@ -854,6 +1207,7 @@ function OverviewView({ overview: o, onPick }: { overview: Overview; onPick: (id
           </ul>
         </section>
       )}
+      {findings && <ImproveView findings={findings} onPick={onPick} />}
       {(o.uses.length > 0 || o.states.length > 0) && (
         <section className="lookup__block">
           <h3>{l.usesTitle}</h3>

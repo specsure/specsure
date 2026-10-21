@@ -287,6 +287,10 @@ describe('classFor', () => {
   it('names the class that replaces an arbitrary value, variants kept', () => {
     expect(classFor('hover:bg-[#2952cc]', { id: 'color-accent', type: 'color' })).toBe('hover:bg-accent')
     expect(classFor('bg-[#0f172a]', { id: 'primary', type: 'color' })).toBe('bg-primary')
+    // A plain variable whose name repeats the utility is not in Tailwind's theme: named as a variable.
+    expect(classFor('hover:bg-[#1d4ed8]', { id: 'bg-accent-hover', type: 'color' })).toBe(
+      'hover:bg-(--bg-accent-hover)',
+    )
     expect(classFor('rounded-[6px]', { id: 'radius-md', type: 'dimension' })).toBe('rounded-md')
     expect(classFor('-mt-[16px]', { id: 'space-md', type: 'dimension' })).toBe('-mt-(--space-md)')
     expect(classFor('text-[#111]', { id: 'color.text.primary', type: 'color' })).toBe(

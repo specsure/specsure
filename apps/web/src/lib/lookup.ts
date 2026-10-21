@@ -99,6 +99,27 @@ export function session() {
         return { id: req.id, ok: true, kind: 'find', answer: answer(graph, req.text, opts) }
       }
       if (req.kind === 'token') return { id: req.id, ok: true, kind: 'token', card: card(graph, req.token) }
+      if (req.kind === 'project') {
+        // The code parsers are large: loaded the first time someone checks a project.
+        const { checkProject } = await import('./project').catch(() => {
+          throw Object.assign(new Error('Could not load the code checker'), { hint: 'reload' })
+        })
+        try {
+          return {
+            id: req.id,
+            ok: true,
+            kind: 'project',
+            project: await checkProject(graph, req.input, req.githubToken),
+          }
+        } catch (err) {
+          const message = (err as Error).message
+          const hint =
+            req.input.kind === 'github' && !req.githubToken && /\b(401|403|404)\b/.test(message)
+              ? 'private'
+              : undefined
+          throw Object.assign(new Error(message), hint ? { hint } : {})
+        }
+      }
       if (req.kind === 'overview')
         return { id: req.id, ok: true, kind: 'overview', overview: overviewOf(graph) }
       if (req.kind === 'demo') {
@@ -114,7 +135,9 @@ export function session() {
     } catch (err) {
       const message = (err as Error).message
       const r: LookupResponse = { id: req.id, ok: false, error: message }
-      if (
+      const hint = (err as { hint?: 'private' | 'reload' }).hint
+      if (hint) r.hint = hint
+      else if (
         req.kind === 'open' &&
         req.source.kind === 'github' &&
         !req.githubToken &&

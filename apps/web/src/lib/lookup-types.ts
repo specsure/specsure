@@ -1,6 +1,6 @@
 import type { Finding, Token, When } from '@dsgraph/core'
 import type { Description, FindResult } from '@dsgraph/report'
-import type { SideInput, TokenGraph } from './types'
+import type { CodeInput, SideInput, TokenGraph } from './types'
 
 /** A token as the page lists it: everything the catalog and name search need, without the graph. */
 export interface IndexRow {
@@ -94,6 +94,59 @@ export interface DemoAnswer {
   output: string
 }
 
+export interface CodeSite {
+  file: string
+  line: number
+  text: string
+}
+
+/** One value written by hand in the project, with the token for it or the closest one. */
+export interface HandGroup {
+  value: string
+  type: 'color' | 'dimension'
+  swatch?: string
+  /** Places in the code, and in how many files. */
+  count: number
+  files: number
+  token: string
+  /** What to write instead: `var(--…)`, or the class for a utility class. */
+  replacement: string
+  exact: boolean
+  deltaE?: number
+  distance?: number
+  /** For a value with no exact token: the group of the closest one, where a new token would go. */
+  group?: string
+  sites: CodeSite[]
+}
+
+/** A variable in the code that is not a token (misspelled, removed) or is deprecated. */
+export interface VarGroup {
+  name: string
+  kind: 'unknown' | 'deprecated'
+  count: number
+  replacement?: string
+  /** For an unknown one: the token name it is closest to. */
+  suggestion?: string
+  sites: CodeSite[]
+}
+
+export interface ProjectAnswer {
+  label?: string
+  files: number
+  limited?: number
+  skipped: number
+  coverage: {
+    fromTokens: number
+    byHand: number
+    share: number | null
+    color: { fromTokens: number; byHand: number }
+    size: { fromTokens: number; byHand: number }
+  }
+  replace: HandGroup[]
+  missing: HandGroup[]
+  variables: VarGroup[]
+}
+
 export type LookupRequest =
   | { id: number; kind: 'open'; source: SideInput; include: string; githubToken?: string }
   | {
@@ -108,6 +161,7 @@ export type LookupRequest =
   | { id: number; kind: 'snippet'; text: string }
   | { id: number; kind: 'demo' }
   | { id: number; kind: 'overview' }
+  | { id: number; kind: 'project'; input: CodeInput; githubToken?: string }
   | { id: number; kind: 'health' }
 
 export type LookupResponse =
@@ -125,5 +179,6 @@ export type LookupResponse =
   | { id: number; ok: true; kind: 'snippet'; snippet: SnippetAnswer }
   | { id: number; ok: true; kind: 'demo'; demo: DemoAnswer | null }
   | { id: number; ok: true; kind: 'overview'; overview: Overview }
+  | { id: number; ok: true; kind: 'project'; project: ProjectAnswer }
   | { id: number; ok: true; kind: 'health'; findings: Finding[] }
-  | { id: number; ok: false; error: string; hint?: 'private' }
+  | { id: number; ok: false; error: string; hint?: 'private' | 'reload' }

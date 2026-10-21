@@ -803,7 +803,92 @@ input.accessory {
   color: var(--ink-2);
 }
 
-/* Token Lookup */
+/* Token Fix */
+.lookup__improve {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lookup__improve li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+.lookup__improve p {
+  margin: 0 0 var(--space-1);
+}
+.lookup__improve-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--text-body-strong);
+}
+.lookup__project {
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  box-shadow: 0 0 0 1px var(--edge);
+}
+.lookup__project-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--line);
+}
+.lookup__project-actions > span {
+  margin-right: auto;
+}
+.lookup__meter {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+.lookup__meter strong {
+  font: var(--text-title-m);
+}
+.lookup__meter .lookup__bar {
+  height: 8px;
+}
+.lookup__meter .lookup__bar > span {
+  background: var(--success);
+}
+.lookup__groups {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lookup__groups details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.lookup__groups details > summary::-webkit-details-marker {
+  display: none;
+}
+.lookup__groups .row__title {
+  max-width: 70%;
+}
+.lookup__group-note {
+  margin: var(--space-1) 0 var(--space-1) 40px;
+  font: var(--text-body);
+}
+.lookup__sites {
+  margin: 0 0 var(--space-2) 40px;
+  padding: 0;
+  list-style: none;
+  font: var(--text-code);
+}
+.lookup__sites li {
+  padding: 1px 0;
+  overflow-wrap: anywhere;
+}
+
 .lookup__head {
   margin: var(--space-8) 0 var(--space-3);
   overflow: hidden;
@@ -1927,6 +2012,30 @@ a.launcher__row:focus-visible .launcher__go {
   }
   .lookup__uses {
     grid-template-columns: 1fr;
+  }
+  /* Report rows wrap on a phone: the replacement, the places and the note each get their own line. */
+  .lookup__groups .row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    min-height: 0;
+    padding-block: var(--space-2);
+  }
+  .lookup__groups .row__title,
+  .lookup__groups .row__subtitle {
+    max-width: calc(100% - 40px);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .lookup__groups .row__subtitle {
+    flex-basis: 100%;
+    padding-left: 40px;
+  }
+  .lookup__groups .row__acc {
+    margin-left: 40px;
+  }
+  .lookup__group-note,
+  .lookup__sites {
+    margin-left: 0;
   }
   .lookup__demo-head {
     flex-wrap: wrap;

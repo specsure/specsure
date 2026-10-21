@@ -27,6 +27,18 @@ function excepted(options: Record<string, unknown>) {
 
 /** Namespaces of Tailwind 4 theme variables: `--color-accent` is `bg-accent`, `--radius-md` is `rounded-md`. */
 const NAMESPACE = /^(color|radius|spacing|text|font-weight|font|shadow|leading|tracking)-/
+/** The token types each Tailwind 4 theme namespace holds. */
+const NAMESPACE_TYPES: Record<string, string[]> = {
+  color: ['color'],
+  radius: ['dimension'],
+  spacing: ['dimension'],
+  text: ['dimension'],
+  'font-weight': ['fontWeight', 'number'],
+  font: ['fontFamily', 'fontWeight'],
+  shadow: ['shadow'],
+  leading: ['dimension', 'number'],
+  tracking: ['dimension'],
+}
 
 /**
  * The class that replaces an arbitrary value with a token, variants kept: `hover:bg-[#2952cc]` and
@@ -38,13 +50,19 @@ export function classFor(source: string, token: { id: string; type: string | nul
   if (!m) return token.id
   const [, variants, sign, utility] = m
   const id = token.id
-  const name = id.includes('.')
+  // A theme namespace names a token only when it holds that kind of value: `--text-*` is font sizes,
+  // so a color token `text-default` is no `text-default` class.
+  const space = NAMESPACE.exec(id)?.[1]
+  const fits = space !== undefined && NAMESPACE_TYPES[space]?.includes(token.type ?? '')
+  let name = id.includes('.')
     ? `(--${id.replace(/\./g, '-')})`
-    : NAMESPACE.test(id)
+    : fits
       ? id.replace(NAMESPACE, '')
-      : token.type === 'color'
+      : token.type === 'color' && space === undefined
         ? id
         : `(--${id})`
+  // `--bg-accent` is not Tailwind's `--color-bg-accent`: `bg-bg-accent` would name nothing.
+  if (name.startsWith(`${utility}-`)) name = `(--${id})`
   return `${variants}${sign}${utility}-${name}`
 }
 

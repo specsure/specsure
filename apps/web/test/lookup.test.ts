@@ -12,7 +12,7 @@ const open = async () => {
   return { ask, r }
 }
 
-describe('Token Lookup', () => {
+describe('Token Fix', () => {
   it('opens a system once and lists its tokens with values per theme', async () => {
     const { r } = await open()
     expect(r.summary.description.tokens).toBe(r.index.length)
@@ -76,6 +76,40 @@ describe('Token Lookup', () => {
     expect(gray.picks.map((p) => `${p.state} ${p.token}`)).toEqual(['hover bg-hover', 'disabled bg-disabled'])
   })
 
+  it('checks a project against the system: what to replace, what tokens are missing, misspelled variables', async () => {
+    const ask = session()
+    await ask({ id: 1, kind: 'open', source: { kind: 'files', files: LOOKUP_EXAMPLE }, include: '' })
+    const files = [
+      {
+        path: 'src/Card.css',
+        text: '.card {\n  background: #ffffff;\n  color: #0f172a;\n  padding: 16px;\n  border: 1px solid #e2e8f0;\n}\n.card:hover { background: #f1f5f9; }\n.note { color: #2563eb; background: #ede9fe; }\n.tip { background: #ede9fe; color: var(--text-defualt); }\n',
+      },
+      { path: 'src/Badge.tsx', text: '<span className="bg-[#ede9fe] text-[#0f172a] p-[16px]" />' },
+    ]
+    const r = await ask({ id: 2, kind: 'project', input: { kind: 'files', files } })
+    if (!r.ok || r.kind !== 'project') throw new Error(r.ok ? 'wrong kind' : r.error)
+    const p = r.project
+    expect(p.files).toBe(2)
+    expect(p.coverage.fromTokens).toBe(0)
+    const rows = p.replace.map((x) => `${x.value} → ${x.replacement} ×${x.count}`)
+    // The declaration and the class are different edits: one row each.
+    expect(rows).toContain('#0f172a → var(--text-default) ×1')
+    expect(rows).toContain('#0f172a → text-(--text-default) ×1')
+    expect(rows).toContain('#f1f5f9 → var(--bg-hover) ×1')
+    expect(rows).toContain('#2563eb → var(--text-accent) ×1')
+    const violet = p.missing.find((x) => x.value === '#ede9fe')!
+    expect(violet).toMatchObject({ count: 3, files: 2, exact: false })
+    expect(violet.group).toBeTruthy()
+    expect(p.variables).toEqual([
+      expect.objectContaining({
+        name: '--text-defualt',
+        kind: 'unknown',
+        suggestion: '--text-default',
+        count: 1,
+      }),
+    ])
+  })
+
   it('tells code from a name or a value', () => {
     expect(looksLikeCode('#3366ff')).toBe(false)
     expect(looksLikeCode('background: #fff')).toBe(false)
@@ -86,7 +120,7 @@ describe('Token Lookup', () => {
 
   it('keeps the source, theme, search and open token in the address', () => {
     const url = writeLookupUrl(
-      '/tools/tokens',
+      '/tools/fix',
       {
         source: { kind: 'npm', pkg: '@scope/tokens', version: '1.2.0' },
         include: '',
@@ -96,7 +130,7 @@ describe('Token Lookup', () => {
       },
       'd=abc',
     )
-    expect(url).toBe('/tools/tokens?pkg=@scope/tokens&v=1.2.0&ctx=theme:dark&q=%23fff#t=color.text&d=abc')
+    expect(url).toBe('/tools/fix?pkg=@scope/tokens&v=1.2.0&ctx=theme:dark&q=%23fff#t=color.text&d=abc')
     expect(readLookupUrl(new URL(url, 'https://x.test'))).toEqual({
       source: { kind: 'npm', pkg: '@scope/tokens', version: '1.2.0' },
       include: '',

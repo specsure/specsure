@@ -1,5 +1,5 @@
 ---
-import TokenLookup from '../components/TokenLookup'
+import TokenFix from '../components/TokenFix'
 import { type Lang, localePath } from '../i18n'
 import { messages } from '../i18n/messages'
 import Base from '../layouts/Base.astro'
@@ -8,16 +8,16 @@ interface Props {
   lang: Lang
 }
 const { lang } = Astro.props
-const p = messages[lang].lookupPage
+const p = messages[lang].fixPage
 ---
 
-<Base title={p.title} description={p.description} path="/tools/tokens" lang={lang}>
+<Base title={p.title} description={p.description} path="/tools/fix" lang={lang}>
   <header class="page-head">
-    <h1>Token Lookup</h1>
+    <h1>Token Fix</h1>
     <p>
       {p.lead}{' '}
       <a class="inline-link" href={localePath(lang, '/tools/mcp')}>{p.how}</a>
     </p>
   </header>
-  <TokenLookup client:only="react" lang={lang} />
+  <TokenFix client:only="react" lang={lang} />
 </Base>

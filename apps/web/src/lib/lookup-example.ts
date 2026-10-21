@@ -1,7 +1,7 @@
 import type { DroppedFile } from './types'
 
 /**
- * A small two-layer design system for Token Lookup's example: a palette, semantic tokens for text,
+ * A small two-layer design system for Token Fix's example: a palette, semantic tokens for text,
  * backgrounds, borders and states, a few component tokens and a dark theme. The same blue is the
  * accent text, the accent background and the accent border, so the page has something to choose.
  */
