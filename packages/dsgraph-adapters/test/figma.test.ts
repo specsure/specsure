@@ -124,6 +124,14 @@ const file: FigmaExport = {
       },
     },
     {
+      id: 'e4',
+      name: 'motion/ease/back',
+      collectionId: 'c1',
+      type: 'EASING',
+      scopes: [],
+      valuesByMode: { m0: { easing: { type: 'EASE_OUT_BACK' } } },
+    },
+    {
       id: 'e3',
       name: 'motion/ease/bouncy',
       collectionId: 'c1',
@@ -137,7 +145,8 @@ const file: FigmaExport = {
       collectionId: 'c1',
       type: 'TIMING',
       scopes: [],
-      valuesByMode: { m0: 140 },
+      // Seconds, as a 32-bit float.
+      valuesByMode: { m0: 0.14000000059604645 },
     },
     // A color and an opacity: written as the color with that alpha.
     {
@@ -236,12 +245,12 @@ describe('Figma variables and styles as DTCG', () => {
     })
     expect(out.notes).toEqual([
       { name: 'flags/beta', message: 'boolean variables have no DTCG type; left out' },
-      { name: 'motion/ease/bouncy', message: 'the bouncy curve has no exact cubic Bézier; left out' },
+      { name: 'motion/ease/bouncy', message: 'the bouncy curve has no cubic Bézier; left out' },
     ])
-    expect(out.stats).toMatchObject({ collections: 2, variables: 14, styles: 3, skipped: 1 })
+    expect(out.stats).toMatchObject({ collections: 2, variables: 15, styles: 3, skipped: 1 })
     expect(out.summary).toEqual({
       collections: [
-        { name: 'Primitives', modes: ['Value'], variables: 10 },
+        { name: 'Primitives', modes: ['Value'], variables: 11 },
         { name: 'Theme', modes: ['Light', 'Dark'], variables: 4 },
       ],
       styles: { color: 1, typography: 1, shadow: 1 },
@@ -271,6 +280,7 @@ describe('Figma variables and styles as DTCG', () => {
     expect(p.motion!.ease).toMatchObject({
       out: { $type: 'cubicBezier', $value: [0, 0, 0.58, 1] },
       snap: { $type: 'cubicBezier', $value: [0.2, 0, 0, 1] },
+      back: { $type: 'cubicBezier', $value: [0.45, 1.45, 0.8, 1] },
     })
     expect(p.motion!.duration).toMatchObject({
       fast: { $type: 'duration', $value: { value: 140, unit: 'ms' } },
@@ -315,6 +325,241 @@ describe('Figma variables and styles as DTCG', () => {
     expect(one.value('bg.default', { [theme.name]: 'Dark' })).toMatchObject({
       components: [0.06, 0.09, 0.16],
     })
+  })
+})
+
+const colorVar = (
+  id: string,
+  name: string,
+  collectionId: string,
+  valuesByMode: FigmaExport['variables'][0]['valuesByMode'],
+) => ({
+  id,
+  name,
+  collectionId,
+  type: 'COLOR' as const,
+  scopes: [],
+  valuesByMode,
+})
+const bare = (raw: Partial<FigmaExport>): FigmaExport => ({
+  file: { name: 'x' },
+  collections: [],
+  variables: [],
+  external: {},
+  styles: { paint: [], text: [], effect: [] },
+  ...raw,
+})
+const red = { r: 1, g: 0, b: 0, a: 1 }
+const blue = { r: 0, g: 0, b: 1, a: 1 }
+
+describe('Figma names across collections', () => {
+  it('puts the tokens of collections whose names overlap under their names, references too', async () => {
+    const out = figmaTokens(
+      bare({
+        collections: [
+          { id: 'a', name: 'Brand', modes: [{ id: 'a0', name: 'Value' }], defaultModeId: 'a0' },
+          { id: 'b', name: 'Product', modes: [{ id: 'b0', name: 'Value' }], defaultModeId: 'b0' },
+          { id: 'c', name: 'Space', modes: [{ id: 'c0', name: 'Value' }], defaultModeId: 'c0' },
+        ],
+        variables: [
+          colorVar('1', 'color/accent', 'a', { a0: red }),
+          colorVar('2', 'color/accent', 'b', { b0: { alias: '1' } }),
+          colorVar('3', 'color/ink', 'b', { b0: blue }),
+          {
+            id: '4',
+            name: 'space/2',
+            collectionId: 'c',
+            type: 'FLOAT',
+            scopes: ['GAP'],
+            valuesByMode: { c0: 8 },
+          },
+        ],
+        styles: {
+          paint: [{ id: 's', name: 'Accent', paints: [{ type: 'SOLID', color: red, variable: '2' }] }],
+          text: [],
+          effect: [],
+        },
+      }),
+    )
+    expect(out.notes).toEqual([
+      { name: 'Brand', message: 'its names overlap Product; its tokens are under Brand' },
+      { name: 'Product', message: 'its names overlap Brand; its tokens are under Product' },
+    ])
+    expect(out.files['Product.tokens.json']).toMatchObject({
+      Product: { color: { accent: { $value: '{Brand.color.accent}' }, ink: {} } },
+    })
+    // A collection whose names are its own keeps them.
+    expect(out.files['Space.tokens.json']).toMatchObject({ space: { 2: { $type: 'dimension' } } })
+    expect(out.files['styles.tokens.json']).toMatchObject({
+      styles: { Accent: { $value: '{Product.color.accent}' } },
+    })
+    const files = Object.fromEntries(Object.entries(out.files).map(([k, v]) => [`t/${k}`, JSON.stringify(v)]))
+    const g = DsGraph.from(await scan(new MemorySource(files)))
+    expect(g.value('Product.color.accent')).toMatchObject({ components: [1, 0, 0] })
+    expect(g.value('Brand.color.accent')).toMatchObject({ components: [1, 0, 0] })
+  })
+
+  it('also when a token of one is a group of another', () => {
+    const out = figmaTokens(
+      bare({
+        collections: [
+          { id: 'a', name: 'A', modes: [{ id: 'a0', name: 'Value' }], defaultModeId: 'a0' },
+          { id: 'b', name: 'B', modes: [{ id: 'b0', name: 'Value' }], defaultModeId: 'b0' },
+        ],
+        variables: [
+          colorVar('1', 'accent', 'a', { a0: red }),
+          colorVar('2', 'accent/hover', 'b', { b0: blue }),
+        ],
+      }),
+    )
+    expect(out.single).toMatchObject({ A: { accent: {} }, B: { accent: { hover: {} } } })
+  })
+})
+
+describe('Figma extended collections', () => {
+  // Theme (Light, Dark) and Sub-brand extending it: its modes inherit Theme's, one value overridden.
+  const theme = {
+    id: 't',
+    name: 'Theme',
+    modes: [
+      { id: 'l', name: 'Light' },
+      { id: 'd', name: 'Dark' },
+    ],
+    defaultModeId: 'l',
+  }
+  const sub = {
+    id: 's',
+    name: 'Sub-brand',
+    modes: [
+      { id: 'sl', name: 'Light', parent: 'l' },
+      { id: 'sd', name: 'Dark', parent: 'd' },
+    ],
+    defaultModeId: 'sl',
+    extends: { parent: 't', variables: ['acc', 'btn'], overrides: { acc: { sl: blue } } },
+  }
+  const out = figmaTokens(
+    bare({
+      collections: [theme, sub],
+      variables: [
+        colorVar('acc', 'accent', 't', { l: red, d: red }),
+        colorVar('btn', 'button/bg', 't', { l: { alias: 'acc' }, d: { alias: 'acc' } }),
+      ],
+    }),
+  )
+
+  it('writes an extension as a collection of all it has, under its name, overrides applied', () => {
+    expect(out.notes).toEqual([])
+    expect(out.files['Sub-brand/Light.tokens.json']).toMatchObject({
+      'Sub-brand': {
+        accent: { $value: { components: [0, 0, 1] } },
+        // A reference inside the extension is to its own copy.
+        button: { bg: { $value: '{Sub-brand.accent}' } },
+      },
+    })
+    expect(out.files['Sub-brand/Dark.tokens.json']).toMatchObject({
+      'Sub-brand': { accent: { $value: { components: [1, 0, 0] } } },
+    })
+    // The parent keeps its own names.
+    expect(out.files['Theme/Light.tokens.json']).toMatchObject({
+      accent: {},
+      button: { bg: { $value: '{accent}' } },
+    })
+    expect(out.summary.collections).toEqual([
+      { name: 'Theme', modes: ['Light', 'Dark'], variables: 2 },
+      { name: 'Sub-brand', modes: ['Light', 'Dark'], variables: 2 },
+    ])
+  })
+
+  it('is read by dsgraph with its own modes', async () => {
+    const files = Object.fromEntries(Object.entries(out.files).map(([k, v]) => [`t/${k}`, JSON.stringify(v)]))
+    const g = DsGraph.from(await scan(new MemorySource(files)))
+    expect(g.value('Sub-brand.button.bg', { 'Sub-brand': 'Light' })).toMatchObject({ components: [0, 0, 1] })
+    expect(g.value('button.bg', { Theme: 'Light' })).toMatchObject({ components: [1, 0, 0] })
+  })
+
+  it("extends a library's collection with the values its variables come with", () => {
+    const lib = figmaTokens(
+      bare({
+        collections: [
+          {
+            id: 's',
+            name: 'Ours',
+            modes: [{ id: 'o', name: 'Value', parent: 'libmode' }],
+            defaultModeId: 'o',
+            extends: { parent: 'libcol', variables: ['x', 'y', 'gone'], overrides: { y: { o: blue } } },
+          },
+        ],
+        variables: [
+          colorVar('x', 'ink', 'libcol', { libmode: red }),
+          colorVar('y', 'accent', 'libcol', { libmode: red }),
+        ],
+      }),
+    )
+    expect(lib.files['Ours.tokens.json']).toMatchObject({
+      Ours: { ink: { $value: { components: [1, 0, 0] } }, accent: { $value: { components: [0, 0, 1] } } },
+    })
+    expect(lib.notes).toEqual([
+      { name: 'Ours', message: '1 of the variables it inherits are not in the export; left out' },
+    ])
+  })
+})
+
+describe('Figma grid styles', () => {
+  it('writes a grid style as a group of its numbers', () => {
+    const out = figmaTokens(
+      bare({
+        styles: {
+          paint: [],
+          text: [],
+          effect: [],
+          grid: [
+            {
+              id: 'g',
+              name: 'Grid/Desktop',
+              grids: [
+                {
+                  pattern: 'COLUMNS',
+                  alignment: 'STRETCH',
+                  count: 12,
+                  gutterSize: 24,
+                  offset: 80,
+                  sectionSize: 60,
+                },
+                {
+                  pattern: 'ROWS',
+                  alignment: 'MIN',
+                  count: Number.POSITIVE_INFINITY,
+                  gutterSize: 8,
+                  offset: 0,
+                  sectionSize: 4,
+                },
+                { pattern: 'GRID', sectionSize: 8, visible: false },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+    expect(out.files['styles.tokens.json']).toEqual({
+      styles: {
+        Grid: {
+          Desktop: {
+            columns: {
+              count: { $type: 'number', $value: 12 },
+              gutter: { $type: 'dimension', $value: { value: 24, unit: 'px' } },
+              offset: { $type: 'dimension', $value: { value: 80, unit: 'px' } },
+            },
+            rows: {
+              gutter: { $type: 'dimension', $value: { value: 8, unit: 'px' } },
+              offset: { $type: 'dimension', $value: { value: 0, unit: 'px' } },
+              size: { $type: 'dimension', $value: { value: 4, unit: 'px' } },
+            },
+            $extensions: { 'com.figma.styleId': 'g' },
+          },
+        },
+      },
+    })
+    expect(out.summary.styles).toEqual({ grid: 1 })
   })
 })
 
@@ -386,6 +631,51 @@ describe("Figma's REST API response", () => {
     expect(g.value('bg.default', { Theme: 'Dark' })).toMatchObject({ components: [0, 0, 0] })
     expect(g.token('bg.default')?.values.find((v) => v.when?.Theme === 'Dark')?.raw).toMatchObject({
       hex: '#000000',
+    })
+  })
+
+  it('reads extended collections', () => {
+    const raw = fromFigmaRest({
+      meta: {
+        variableCollections: {
+          C1: {
+            id: 'C1',
+            name: 'Theme',
+            modes: [{ modeId: '1:0', name: 'Value' }],
+            defaultModeId: '1:0',
+            remote: false,
+          },
+          C2: {
+            id: 'C2',
+            name: 'Sub',
+            modes: [{ modeId: '2:0', name: 'Value', parentModeId: '1:0' }],
+            defaultModeId: '2:0',
+            remote: false,
+            isExtension: true,
+            parentVariableCollectionId: 'C1',
+            rootVariableCollectionId: 'C1',
+            variableIds: ['V1'],
+            variableOverrides: { V1: { '2:0': { type: 'VARIABLE_ALIAS', id: 'V9' } } },
+          },
+        },
+        variables: {
+          V1: {
+            id: 'V1',
+            name: 'accent',
+            variableCollectionId: 'C1',
+            resolvedType: 'COLOR',
+            valuesByMode: { '1:0': red },
+            scopes: [],
+          },
+        },
+      },
+    })!
+    expect(raw.collections[1]).toEqual({
+      id: 'C2',
+      name: 'Sub',
+      modes: [{ id: '2:0', name: 'Value', parent: '1:0' }],
+      defaultModeId: '2:0',
+      extends: { parent: 'C1', variables: ['V1'], overrides: { V1: { '2:0': { alias: 'V9' } } } },
     })
   })
 

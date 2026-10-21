@@ -19,7 +19,11 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   modes become modifiers, references stay, library values are written in place; the CLI, MCP and
   the site use it. The conversion, `figmaTokens` in `@dsgraph/adapters/figma` (a module with no
   imports), also turns styles into tokens and writes DTCG files per collection and mode with a
-  resolver, or one file; the Figma plugin in `apps/figma-plugin` is built on it.
+  resolver, or one file; the Figma plugin in `apps/figma-plugin` is built on it. An extended
+  collection is written as a collection of its own under its name, with everything it inherits and
+  its overrides; collections whose names overlap go under their names, references too, instead of
+  one replacing the other. Figma's back curves are `cubicBezier`; grid styles become groups of
+  their numbers. Timings are in seconds in Figma and written in ms.
 - `$extensions.modes` that lists only the modes where a value differs (`{ "mobile": … }`) is read as
   modes too, the token's own value being the `default` context; `$extensions.mode` lists them all.
 - A shadow written as a CSS string (`"0 1px 2px rgba(16,16,14,.06)"`, `"none"`) is read, with a

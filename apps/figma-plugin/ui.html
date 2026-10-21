@@ -586,7 +586,7 @@
       </div>
       <ul class="points">
         <li>Every collection and mode, references kept</li>
-        <li>Color, text and effect styles</li>
+        <li>Color, text, effect and grid styles</li>
         <li>Reads only: nothing in the file changes, nothing is sent anywhere</li>
       </ul>
       <div class="attached">
@@ -659,15 +659,21 @@
       <dd><code>cubicBezier</code>, <code>duration</code> in ms</dd>
       <dt>Modes</dt>
       <dd>a modifier in the resolver, the default mode first</dd>
+      <dt>Extension</dt>
+      <dd>an extended collection: all it inherits, under its name, overrides applied</dd>
+      <dt>Same names</dt>
+      <dd>when two collections share names, each one's tokens go under its name</dd>
       <dt>Text style</dt>
       <dd><code>typography</code>, bound variables as references</dd>
       <dt>Effect style</dt>
       <dd><code>shadow</code></dd>
+      <dt>Grid style</dt>
+      <dd>a group of <code>count</code>, <code>gutter</code>, <code>offset</code> and <code>size</code> per grid</dd>
       <dt>Library</dt>
       <dd>its value, the variable's name kept in <code>$extensions</code></dd>
     </dl>
     <p class="muted" style="margin-top: 10px">
-      Left out and listed after reading: booleans and plain strings, springs and back curves, blur effects, styles of several paints.
+      Left out and listed after reading: booleans and plain strings, springs, blur effects, styles of several paints.
     </p>
   </section>
 
@@ -804,7 +810,7 @@
     styles:
       '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9.5 6 2.5l3 7M4 7.2h4"/></svg>',
   }
-  const STYLE_NAMES = { color: 'color', gradient: 'gradient', typography: 'text', shadow: 'effect' }
+  const STYLE_NAMES = { color: 'color', gradient: 'gradient', typography: 'text', shadow: 'effect', grid: 'grid' }
 
   // A row built from the file's own names: text is set as text, never as markup.
   const row = (iconSvg, title, tags, count) => {
@@ -853,7 +859,8 @@
     }
     const notes = $('notes')
     notes.hidden = result.notes.length === 0
-    notes.querySelector('summary').textContent = `${plural(result.notes.length, 'item', 'items')} left out`
+    // Most notes are what was left out; a collection put under its name is one too.
+    notes.querySelector('summary').textContent = plural(result.notes.length, 'note', 'notes')
     const ul = notes.querySelector('ul')
     ul.replaceChildren()
     for (const n of result.notes) {

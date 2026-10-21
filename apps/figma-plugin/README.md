@@ -6,13 +6,18 @@ A Figma file's variables and styles as [DTCG 2025.10](https://tr.designtokens.or
 
 - **A .zip**, the layout most tools read:
   - a file per collection (`Primitives.tokens.json`), or per mode for a collection with several (`Theme/Light.tokens.json`, `Theme/Dark.tokens.json`);
-  - `styles.tokens.json`: paint styles as colors and gradients, text styles as typography, effect styles as shadows, under `styles`;
+  - `styles.tokens.json`: paint styles as colors and gradients, text styles as typography, effect styles as shadows, grid styles as a group of their numbers per grid (`columns.count`, `columns.gutter`, `columns.offset`, `columns.size`; DTCG has no grid type), under `styles`;
   - `tokens.resolver.json`: a DTCG resolver where each collection with modes is a modifier and its default mode is the default.
 - **One file**, every mode inside its token in `$extensions.mode`: to drop into Token Fix or Token Diff as it is.
 
-Variables keep their references (`{color.blue.500}`), descriptions, scopes (`com.figma.scopes`), code syntax (`com.figma.codeSyntax`) and ids. A number becomes a `dimension` in px when its scopes say it is a length (radius, gap, size, stroke, font size…) or, offered everywhere, when its name does; a `fontWeight` or an opacity `number` otherwise. Easings become `cubicBezier`, timings `duration` in ms. A reference to a library variable is written as its value, with the library variable's name in `com.figma.alias`; a color composed of a color and an opacity likewise, in `com.figma.composedColor`.
+Variables keep their references (`{color.blue.500}`), descriptions, scopes (`com.figma.scopes`), code syntax (`com.figma.codeSyntax`) and ids. A number becomes a `dimension` in px when its scopes say it is a length (radius, gap, size, stroke, font size…) or, offered everywhere, when its name does; a `fontWeight` or an opacity `number` otherwise. Easings become `cubicBezier` (Figma's back curves too), timings `duration` in ms. A reference to a library variable is written as its value, with the library variable's name in `com.figma.alias`; a color composed of a color and an opacity likewise, in `com.figma.composedColor`.
 
-Left out, and listed in the plugin: booleans and plain strings (no DTCG type), springs and Figma's back curves (no exact cubic Bézier), blur effects, styles of several paints. A `.` in a name, which DTCG does not allow, becomes `-`.
+A token's path is its variable's name, without the collection's, as code names it. Two cases add the collection's name as the first segment:
+
+- an extended collection is written as a collection of its own with everything it inherits, its overrides applied and its modes as its parent's; its tokens are under its name, and a reference inside it is to its own copy, as Figma resolves it;
+- when the names of two collections overlap (the same token in both, or a token where the other has a group), each one's tokens go under its name, references to them too, so that neither replaces the other where they are read together.
+
+Left out, and listed in the plugin: booleans and plain strings (no DTCG type), springs (no cubic Bézier), blur effects, styles of several paints. A `.` in a name, which DTCG does not allow, becomes `-`.
 
 ## Run it
 

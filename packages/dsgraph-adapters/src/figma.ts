@@ -33,9 +33,15 @@ export type FigmaValue =
 export interface FigmaCollection {
   id: string
   name: string
-  modes: Array<{ id: string; name: string }>
+  /** In an extended collection, `parent` is the mode of the parent collection this one inherits. */
+  modes: Array<{ id: string; name: string; parent?: string }>
   defaultModeId: string
   hidden?: boolean
+  /**
+   * An extended collection: its parent, every variable it has (the inherited ones too) and the
+   * values it overrides, by variable and mode. Any other value is its parent's in the parent mode.
+   */
+  extends?: { parent: string; variables: string[]; overrides: Record<string, Record<string, FigmaValue>> }
 }
 
 export interface FigmaVariable {
@@ -94,6 +100,19 @@ export interface FigmaTextStyle {
   bound?: Record<string, string>
 }
 
+/** One grid of a grid style: columns, rows or a square grid, in pixels. */
+export interface FigmaGrid {
+  pattern: 'COLUMNS' | 'ROWS' | 'GRID'
+  alignment?: 'MIN' | 'MAX' | 'STRETCH' | 'CENTER'
+  count?: number
+  gutterSize?: number
+  offset?: number
+  sectionSize?: number
+  visible?: boolean
+  /** Variables bound to the grid's fields: `count`, `gutterSize`, `offset`, `sectionSize`. */
+  bound?: Record<string, string>
+}
+
 export interface FigmaExport {
   file: { name: string }
   collections: FigmaCollection[]
@@ -103,6 +122,7 @@ export interface FigmaExport {
     paint: Array<{ id: string; name: string; description?: string; paints: FigmaPaint[] }>
     text: FigmaTextStyle[]
     effect: Array<{ id: string; name: string; description?: string; effects: FigmaEffect[] }>
+    grid?: Array<{ id: string; name: string; description?: string; grids: FigmaGrid[] }>
   }
 }
 
@@ -112,7 +132,9 @@ export interface FigmaExport {
  *   modes, per mode (`Theme/Dark.tokens.json`), styles in `styles.tokens.json`, and a resolver
  *   (`tokens.resolver.json`) where each collection with modes is a modifier;
  * - `single`: one document, the modes of each token in `$extensions.mode`, for tools that read one file.
- * What has no DTCG type (booleans, plain strings) is left out and listed in `notes`.
+ * Token paths are the variables' names. An extended collection's tokens are under its name, and so
+ * are a collection's whose names overlap another collection's. What has no DTCG type (booleans,
+ * plain strings) is left out; that and every renaming are listed in `notes`.
  */
 export interface FigmaTokens {
   files: Record<string, unknown>
@@ -160,12 +182,18 @@ const WEIGHTS: Array<[RegExp, number]> = [
   [/medium/i, 500],
 ]
 
-/** Figma's named curves that are CSS's own; the others (back, springs) have no exact curve here. */
+/**
+ * Figma's named curves: CSS's own, and the back curves as Figma draws them. Springs and `HOLD`
+ * have no cubic Bézier.
+ */
 const CURVES: Record<string, number[]> = {
   LINEAR: [0, 0, 1, 1],
   EASE_IN: [0.42, 0, 1, 1],
   EASE_OUT: [0, 0, 0.58, 1],
   EASE_IN_AND_OUT: [0.42, 0, 0.58, 1],
+  EASE_IN_BACK: [0.3, -0.05, 0.7, -0.5],
+  EASE_OUT_BACK: [0.45, 1.45, 0.8, 1],
+  EASE_IN_AND_OUT_BACK: [0.7, -0.4, 0.4, 1.4],
 }
 
 function curve(e: FigmaEasing): number[] | undefined {
@@ -194,6 +222,7 @@ const isColor = (v: unknown): v is FigmaColor => typeof v === 'object' && v !== 
 const pathOf = (name: string): string[] =>
   name.split('/').map((s) => s.trim().replace(/[{}]/g, '').replace(/\./g, '-').replace(/^\$/, '') || '_')
 const fileName = (s: string) => s.replace(/[\\/:*?"<>|]+/g, '-').trim() || '_'
+const refTo = (path: string[]) => `{${path.join('.')}}`
 
 function setAt(doc: Doc, path: string[], token: Doc): boolean {
   let node = doc
@@ -209,6 +238,19 @@ function setAt(doc: Doc, path: string[], token: Doc): boolean {
   node[last] = token
   return true
 }
+
+/** Token paths as keys, and every group above them: two sets of names overlap where a key of one is a key or a group of the other. */
+function keysOf(paths: string[][]): { tokens: Set<string>; groups: Set<string> } {
+  const tokens = new Set<string>()
+  const groups = new Set<string>()
+  for (const p of paths) {
+    tokens.add(p.join('.'))
+    for (let i = 1; i < p.length; i++) groups.add(p.slice(0, i).join('.'))
+  }
+  return { tokens, groups }
+}
+const overlap = (a: ReturnType<typeof keysOf>, b: ReturnType<typeof keysOf>) =>
+  [...a.tokens].some((k) => b.tokens.has(k) || b.groups.has(k)) || [...b.tokens].some((k) => a.groups.has(k))
 
 export function figmaTokens(raw: FigmaExport): FigmaTokens {
   const notes: FigmaTokens['notes'] = []
@@ -246,12 +288,99 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     if (type === 'color') return isColor(value) ? color(value) : undefined
     if (type === 'cubicBezier')
       return typeof value === 'object' && 'easing' in value ? curve(value.easing) : undefined
+    // Figma keeps a duration in seconds, as a 32-bit float: 0.3 comes back as 0.30000001192092896.
     if (type === 'duration')
-      return typeof value === 'number' ? { value: round(value), unit: 'ms' } : undefined
+      return typeof value === 'number' ? { value: round(value * 1000, 3), unit: 'ms' } : undefined
     if (typeof value === 'number')
       return type === 'dimension' ? { value: round(value), unit: 'px' } : round(value)
     if (type === 'fontFamily' && typeof value === 'string') return value
     return undefined
+  }
+
+  /** The variables a collection writes: its own or, for an extended collection, all it has. */
+  const members = new Map(
+    raw.collections.map((col) => {
+      if (!col.extends) return [col.id, raw.variables.filter((v) => v.collectionId === col.id)]
+      const has = col.extends.variables.flatMap((id) => byId.get(id) ?? [])
+      const missing = col.extends.variables.length - has.length
+      if (missing)
+        notes.push({
+          name: col.name,
+          message: `${missing} of the variables it inherits are not in the export; left out`,
+        })
+      return [col.id, has]
+    }),
+  )
+  const memberIds = new Map([...members].map(([id, vars]) => [id, new Set(vars.map((v) => v.id))]))
+
+  /** A variable's value in a collection's mode: an extended collection's override, or its parent's value in the parent mode. */
+  const valueIn = (
+    v: FigmaVariable,
+    col: FigmaCollection,
+    modeId: string,
+    depth = 0,
+  ): FigmaValue | undefined => {
+    if (!col.extends) return v.valuesByMode[modeId]
+    const own = col.extends.overrides[v.id]?.[modeId]
+    if (own !== undefined) return own
+    const parentMode = col.modes.find((m) => m.id === modeId)?.parent
+    const parent = collections.get(col.extends.parent)
+    if (!parentMode || depth > 16) return undefined
+    // A library collection's values come with its variables.
+    if (!parent) return v.collectionId === col.extends.parent ? v.valuesByMode[parentMode] : undefined
+    return valueIn(v, parent, parentMode, depth + 1)
+  }
+
+  // Paths: a token's name, as in the file. An extended collection's tokens are under its name, as
+  // they are its parent's under the same names; so are a collection's when its names overlap
+  // another's, as one would replace the other where they are read together.
+  const prefix = new Map(raw.collections.map((c) => [c.id, c.extends ? pathOf(c.name) : []]))
+  const pathIn = (col: FigmaCollection, v: FigmaVariable) => [...prefix.get(col.id)!, ...pathOf(v.name)]
+  const written = raw.collections.filter((c) => members.get(c.id)!.some((v) => typeOf(v)))
+  const styleKeys = keysOf(
+    [...raw.styles.paint, ...raw.styles.text, ...raw.styles.effect, ...(raw.styles.grid ?? [])].map((s) => [
+      'styles',
+      ...pathOf(s.name),
+    ]),
+  )
+  for (let pass = 0; pass < 4; pass++) {
+    const keys = written.map((col) =>
+      keysOf(
+        members
+          .get(col.id)!
+          .filter((v) => typeOf(v))
+          .map((v) => pathIn(col, v)),
+      ),
+    )
+    const clash = new Map<FigmaCollection, string[]>()
+    const add = (col: FigmaCollection, other: string) => clash.set(col, [...(clash.get(col) ?? []), other])
+    written.forEach((a, i) => {
+      if (overlap(keys[i]!, styleKeys)) add(a, 'styles')
+      for (let j = i + 1; j < written.length; j++) {
+        const b = written[j]!
+        if (!overlap(keys[i]!, keys[j]!)) continue
+        add(a, b.name)
+        add(b, a.name)
+      }
+    })
+    let moved = false
+    for (const [col, others] of clash) {
+      if (prefix.get(col.id)!.length) continue
+      prefix.set(col.id, pathOf(col.name))
+      moved = true
+      notes.push({
+        name: col.name,
+        message: `its names overlap ${others.join(', ')}; its tokens are under ${pathOf(col.name).join('.')}`,
+      })
+    }
+    if (!moved) break
+  }
+
+  /** A reference to a variable where it is written, if it is: in its own collection, not an extension. */
+  const homePath = (id: string): string[] | undefined => {
+    const v = byId.get(id)
+    const home = v && collections.get(v.collectionId)
+    return v && home && !home.extends && memberIds.get(home.id)?.has(id) ? pathIn(home, v) : undefined
   }
 
   /** A variable's value in its collection's default mode, through references, for composed colors. */
@@ -265,7 +394,13 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
   const nameOf = (id: string) => byId.get(id)?.name ?? raw.external[id]?.name ?? id
 
   /** One mode's value: a reference to a variable of the file, or a literal (a library variable's value). */
-  const modeValue = (v: FigmaVariable, type: string, value: FigmaValue, ext: Doc): unknown => {
+  const modeValue = (
+    v: FigmaVariable,
+    col: FigmaCollection,
+    type: string,
+    value: FigmaValue,
+    ext: Doc,
+  ): unknown => {
     // A color and an opacity, either one a variable: DTCG has no reference with an alpha, so the value is written.
     if (typeof value === 'object' && 'composed' in value) {
       const { color: c, opacity: o } = value.composed
@@ -282,14 +417,18 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       if (out === undefined && type === 'cubicBezier' && typeof value === 'object' && 'easing' in value)
         notes.push({
           name: v.name,
-          message: `the ${value.easing.type.toLowerCase()} curve has no exact cubic Bézier; left out`,
+          message: `the ${value.easing.type.toLowerCase().replace(/_/g, ' ')} curve has no cubic Bézier; left out`,
         })
       return out
     }
-    const local = byId.get(value.alias)
-    if (local) return `{${pathOf(local.name).join('.')}}`
-    const lib = raw.external[value.alias]
-    if (!lib) {
+    // In an extended collection a reference to a variable it has is to its own copy, as Figma resolves it.
+    const target = byId.get(value.alias)
+    if (target && col.extends && memberIds.get(col.id)!.has(target.id)) return refTo(pathIn(col, target))
+    const home = homePath(value.alias)
+    if (home) return refTo(home)
+    const lib =
+      raw.external[value.alias] ?? (target ? { name: target.name, value: resolved(target.id) } : undefined)
+    if (!lib || lib.value === undefined) {
       notes.push({
         name: v.name,
         message: 'refers to a variable that is neither in the file nor in a library it uses',
@@ -310,7 +449,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
   const summary: FigmaTokens['summary'] = { collections: [], styles: {} }
 
   for (const col of raw.collections) {
-    const vars = raw.variables.filter((v) => v.collectionId === col.id)
+    const vars = members.get(col.id)!
     if (!vars.length) continue
     const before = count
     const modes = col.modes
@@ -318,20 +457,26 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     for (const v of vars) {
       const type = typeOf(v)
       if (!type) {
-        skipped++
-        notes.push({ name: v.name, message: `${v.type.toLowerCase()} variables have no DTCG type; left out` })
+        // An extended collection's copy is left out with the original.
+        if (!col.extends) {
+          skipped++
+          notes.push({
+            name: v.name,
+            message: `${v.type.toLowerCase()} variables have no DTCG type; left out`,
+          })
+        }
         continue
       }
-      const path = pathOf(v.name)
+      const path = pathIn(col, v)
       const ext: Doc = { 'com.figma.variableId': v.id }
       if (v.scopes.length && !v.scopes.includes('ALL_SCOPES')) ext['com.figma.scopes'] = v.scopes
       if (v.codeSyntax && Object.keys(v.codeSyntax).length) ext['com.figma.codeSyntax'] = v.codeSyntax
       if (v.hiddenFromPublishing) ext['com.figma.hiddenFromPublishing'] = true
       const perMode: Record<string, unknown> = {}
       for (const m of modes) {
-        const raw0 = v.valuesByMode[m.id]
+        const raw0 = valueIn(v, col, m.id)
         if (raw0 === undefined) continue
-        const value = modeValue(v, type, raw0, ext)
+        const value = modeValue(v, col, type, raw0, ext)
         if (value === undefined) continue
         perMode[m.name] = value
         const token: Doc = { $type: type, $value: value }
@@ -377,7 +522,15 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     }
   }
 
-  const styles = convertStyles(raw, byId, typeOf, notes)
+  const styles = convertStyles(
+    raw,
+    (id, type) => {
+      const v = byId.get(id)
+      const path = homePath(id)
+      return v && path && typeOf(v) === type ? refTo(path) : undefined
+    },
+    notes,
+  )
   if (Object.keys(styles.doc).length) {
     files['styles.tokens.json'] = styles.doc
     ;(resolver.sets as Doc).styles = { sources: [{ $ref: 'styles.tokens.json' }] }
@@ -398,26 +551,25 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
   }
 }
 
-/** Styles under `styles`: paint styles as colors and gradients, text styles as typography, effect styles as shadows. */
+/**
+ * Styles under `styles`: paint styles as colors and gradients, text styles as typography, effect
+ * styles as shadows, grid styles as a group of their numbers (DTCG has no grid type).
+ */
 function convertStyles(
   raw: FigmaExport,
-  byId: Map<string, FigmaVariable>,
-  typeOf: (v: FigmaVariable) => string | null,
+  refOf: (id: string, type: string) => string | undefined,
   notes: FigmaTokens['notes'],
 ): { doc: Doc; count: number; byType: Record<string, number> } {
   const doc: Doc = {}
   let count = 0
   const byType: Record<string, number> = {}
-  const ref = (id: string | undefined, type: string): string | undefined => {
-    const v = id ? byId.get(id) : undefined
-    return v && typeOf(v) === type ? `{${pathOf(v.name).join('.')}}` : undefined
-  }
-  const put = (name: string, token: Doc, id: string, description?: string) => {
+  const ref = (id: string | undefined, type: string) => (id ? refOf(id, type) : undefined)
+  const put = (name: string, token: Doc, id: string, description?: string, kind = token.$type as string) => {
     if (description) token.$description = description
     token.$extensions = { 'com.figma.styleId': id }
     if (setAt(doc, ['styles', ...pathOf(name)], token)) {
       count++
-      byType[token.$type as string] = (byType[token.$type as string] ?? 0) + 1
+      byType[kind] = (byType[kind] ?? 0) + 1
     } else notes.push({ name, message: 'its name is taken by another style; left out' })
   }
 
@@ -475,6 +627,42 @@ function convertStyles(
       s.description,
     )
   }
+
+  // A grid style: a group per grid (`columns`, `rows`, `grid`), its numbers as tokens. Figma's
+  // `offset` is the margin of a stretched grid and the indent of one at a side.
+  for (const s of raw.styles.grid ?? []) {
+    const group: Doc = {}
+    for (const g of s.grids.filter((x) => x.visible !== false)) {
+      const word = g.pattern === 'COLUMNS' ? 'columns' : g.pattern === 'ROWS' ? 'rows' : 'grid'
+      let key = word
+      for (let i = 2; group[key]; i++) key = `${word}-${i}`
+      const b = g.bound ?? {}
+      const px = (field: string, n: number | undefined): Doc | undefined =>
+        n === undefined || !Number.isFinite(n)
+          ? undefined
+          : { $type: 'dimension', $value: ref(b[field], 'dimension') ?? { value: round(n), unit: 'px' } }
+      const fields: Record<string, Doc | undefined> =
+        g.pattern === 'GRID'
+          ? { size: px('sectionSize', g.sectionSize) }
+          : {
+              // Figma's count of a grid that fits as many as it can is infinite.
+              count:
+                g.count !== undefined && Number.isFinite(g.count)
+                  ? { $type: 'number', $value: ref(b.count, 'number') ?? g.count }
+                  : undefined,
+              gutter: px('gutterSize', g.gutterSize),
+              offset: px('offset', g.offset),
+              size: g.alignment === 'STRETCH' ? undefined : px('sectionSize', g.sectionSize),
+            }
+      const tokens = Object.fromEntries(Object.entries(fields).filter(([, t]) => t))
+      if (Object.keys(tokens).length) group[key] = tokens
+    }
+    if (!Object.keys(group).length) {
+      notes.push({ name: s.name, message: 'a grid style with no visible grids; left out' })
+      continue
+    }
+    put(s.name, group, s.id, s.description, 'grid')
+  }
   return { doc, count, byType }
 }
 
@@ -527,16 +715,33 @@ export function fromFigmaRest(response: unknown, name = 'Figma'): FigmaExport | 
   if (!vars || !cols || typeof vars !== 'object' || typeof cols !== 'object') return undefined
   const collections: FigmaCollection[] = Object.values(cols)
     .filter((c) => !c.remote)
-    .map((c) => ({
-      id: String(c.id),
-      name: String(c.name),
-      modes: ((c.modes as Array<{ modeId: string; name: string }>) ?? []).map((m) => ({
-        id: m.modeId,
-        name: m.name,
-      })),
-      defaultModeId: String(c.defaultModeId),
-    }))
+    .map((c) => {
+      const out: FigmaCollection = {
+        id: String(c.id),
+        name: String(c.name),
+        modes: ((c.modes as Array<{ modeId: string; name: string; parentModeId?: string }>) ?? []).map(
+          (m) => ({ id: m.modeId, name: m.name, ...(m.parentModeId ? { parent: m.parentModeId } : {}) }),
+        ),
+        defaultModeId: String(c.defaultModeId),
+      }
+      if (c.isExtension && typeof c.parentVariableCollectionId === 'string') {
+        const overrides = (c.variableOverrides as Record<string, Record<string, unknown>>) ?? {}
+        out.extends = {
+          parent: c.parentVariableCollectionId,
+          variables: ((c.variableIds as string[]) ?? []).map(String),
+          overrides: Object.fromEntries(
+            Object.entries(overrides).map(([id, byMode]) => [
+              id,
+              Object.fromEntries(Object.entries(byMode).map(([m, x]) => [m, restValue(x)])),
+            ]),
+          ),
+        }
+      }
+      return out
+    })
   const local = new Set(collections.map((c) => c.id))
+  // A library variable an extended collection inherits is one of its own: written with its values.
+  const inherited = new Set(collections.flatMap((c) => c.extends?.variables ?? []))
   const variables: FigmaVariable[] = []
   const external: Record<string, FigmaLibraryVariable> = {}
   for (const v of Object.values(vars)) {
@@ -548,7 +753,7 @@ export function fromFigmaRest(response: unknown, name = 'Figma'): FigmaExport | 
       type: v.resolvedType as FigmaVariable['type'],
       scopes: (v.scopes as string[]) ?? [],
     }
-    if (local.has(String(v.variableCollectionId))) {
+    if (local.has(String(v.variableCollectionId)) || inherited.has(String(v.id))) {
       const out: FigmaVariable = {
         ...base,
         id: String(v.id),

@@ -1,5 +1,7 @@
 import type {
+  FigmaCollection,
   FigmaExport,
+  FigmaGrid,
   FigmaLibraryVariable,
   FigmaPaint,
   FigmaValue,
@@ -46,6 +48,15 @@ async function libraryValue(variable: Variable, seen = new Set<string>()): Promi
 export async function gather(): Promise<FigmaExport> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync()
   const variables = await figma.variables.getLocalVariablesAsync()
+  // An extended collection of a library's collection inherits library variables: they are written with it.
+  const extended = collections.filter((c) => c.isExtension) as unknown as ExtendedVariableCollection[]
+  const have = new Set(variables.map((v) => v.id))
+  for (const id of new Set(extended.flatMap((c) => c.variableIds))) {
+    if (have.has(id)) continue
+    const v = await figma.variables.getVariableByIdAsync(id)
+    if (v) variables.push(v)
+    have.add(id)
+  }
   const local = new Set(variables.map((v) => v.id))
 
   const raw: FigmaVariable[] = variables.map((v) => {
@@ -75,14 +86,16 @@ export async function gather(): Promise<FigmaExport> {
               typeof y === 'object' && 'alias' in y ? [y.alias] : [],
             )
           : []
-  for (const v of raw)
-    for (const id of Object.values(v.valuesByMode).flatMap(aliases)) {
-      if (local.has(id) || id in external) continue
-      const lib = await figma.variables.getVariableByIdAsync(id)
-      const value = lib ? await libraryValue(lib) : undefined
-      if (lib && value !== undefined)
-        external[id] = { name: lib.name, type: lib.resolvedType, scopes: [...lib.scopes], value }
-    }
+  const overrides = extended.flatMap((c) =>
+    Object.values(c.variableOverrides).flatMap((byMode) => Object.values(byMode).map(plain)),
+  )
+  for (const id of [...raw.flatMap((v) => Object.values(v.valuesByMode)), ...overrides].flatMap(aliases)) {
+    if (local.has(id) || id in external) continue
+    const lib = await figma.variables.getVariableByIdAsync(id)
+    const value = lib ? await libraryValue(lib) : undefined
+    if (lib && value !== undefined)
+      external[id] = { name: lib.name, type: lib.resolvedType, scopes: [...lib.scopes], value }
+  }
 
   const paintOf = (p: Paint): FigmaPaint => {
     const out: FigmaPaint = { type: p.type, opacity: p.opacity ?? 1 }
@@ -143,17 +156,58 @@ export async function gather(): Promise<FigmaExport> {
     ),
   }))
 
+  const grid = (await figma.getLocalGridStylesAsync()).map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    grids: s.layoutGrids.map((g): FigmaGrid => {
+      const bound: Record<string, string> = {}
+      for (const [field, alias] of Object.entries(g.boundVariables ?? {}))
+        if (alias && typeof alias === 'object' && 'id' in alias) bound[field] = alias.id
+      const out: FigmaGrid = { pattern: g.pattern, visible: g.visible, bound }
+      if (g.pattern === 'GRID') out.sectionSize = g.sectionSize
+      else {
+        out.alignment = g.alignment
+        out.count = g.count
+        out.gutterSize = g.gutterSize
+        if (g.offset !== undefined) out.offset = g.offset
+        if (g.sectionSize !== undefined) out.sectionSize = g.sectionSize
+      }
+      return out
+    }),
+  }))
+
   return {
     file: { name: figma.root.name },
-    collections: collections.map((c) => ({
-      id: c.id,
-      name: c.name,
-      modes: c.modes.map((m) => ({ id: m.modeId, name: m.name })),
-      defaultModeId: c.defaultModeId,
-      ...(c.hiddenFromPublishing ? { hidden: true } : {}),
-    })),
+    collections: collections.map((c) => {
+      const out: FigmaCollection = {
+        id: c.id,
+        name: c.name,
+        modes: c.modes.map((m) => ({
+          id: m.modeId,
+          name: m.name,
+          ...('parentModeId' in m && m.parentModeId ? { parent: String(m.parentModeId) } : {}),
+        })),
+        defaultModeId: c.defaultModeId,
+        ...(c.hiddenFromPublishing ? { hidden: true } : {}),
+      }
+      if (c.isExtension) {
+        const e = c as unknown as ExtendedVariableCollection
+        out.extends = {
+          parent: e.parentVariableCollectionId,
+          variables: [...e.variableIds],
+          overrides: Object.fromEntries(
+            Object.entries(e.variableOverrides).map(([id, byMode]) => [
+              id,
+              Object.fromEntries(Object.entries(byMode).map(([m, x]) => [m, plain(x)])),
+            ]),
+          ),
+        }
+      }
+      return out
+    }),
     variables: raw,
     external,
-    styles: { paint, text, effect },
+    styles: { paint, text, effect, grid },
   }
 }
