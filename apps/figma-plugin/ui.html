@@ -378,36 +378,22 @@
     background: var(--accent-soft);
     color: var(--accent);
   }
-  /* An error comes out of the card above it, as a strip drawn from under its bottom edge. */
+  /* An error slides out from under the card above it: a strip a little narrower, its top tucked
+     under the card's rounded bottom edge. */
   .attached {
     display: grid;
   }
-  .attached > :has(+ .error:not([hidden])) {
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  .attached > :first-child {
+    position: relative;
+    z-index: 1;
   }
   .error {
-    position: relative;
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    padding: 8px 10px 9px;
+    margin: -8px 8px 0;
+    padding: 16px 10px 8px;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
     background: color-mix(in srgb, var(--danger) 10%, var(--raised));
-    box-shadow: 0 0 0 1px var(--edge), inset 0 1px 0 color-mix(in srgb, var(--danger) 30%, transparent);
+    box-shadow: 0 0 0 1px var(--edge);
     color: var(--danger);
-  }
-  .error::before {
-    content: "!";
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 14px;
-    height: 14px;
-    margin-top: 1px;
-    border-radius: 50%;
-    background: var(--danger);
-    color: var(--raised);
-    font: 700 10px / 1 var(--font-ui);
   }
 
   /* Guide and About */
