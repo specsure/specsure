@@ -1,6 +1,7 @@
 import { type CodeIndex, matchGlob, prefetch, type Source } from '@dsgraph/core'
 import { scanScriptText } from './scripts.js'
 import { scanCssText, scanSassText } from './styles.js'
+import { paletteColor } from './tailwind.js'
 
 export interface CodeOptions {
   /** Globs of files to read; default every style, script and markup file. */
@@ -138,6 +139,7 @@ export async function scanCode(source: Source, opts: CodeOptions = {}): Promise<
   const files = opts.maxFiles !== undefined ? all.slice(0, opts.maxFiles) : all
   await prefetch(source, files)
   const index: CodeIndex = { files: [], uses: [], literals: [], skipped: [] }
+  const styles: string[] = []
   if (files.length < all.length) index.limited = all.length
   for (const file of files) {
     let text: string
@@ -159,6 +161,36 @@ export async function scanCode(source: Source, opts: CodeOptions = {}): Promise<
     index.files.push(file)
     index.uses.push(...part.uses)
     index.literals.push(...part.literals)
+    if (/\.s?css$/i.test(file)) styles.push(text)
   }
+  // Classes of Tailwind's own palette were read as Tailwind 4; a Tailwind 3 project writes its hex,
+  // and an older one a palette of its own that is not known here.
+  const major = index.uses.some((u) => u.builtin) ? await tailwindMajor(source, styles) : 4
+  if (major < 4)
+    for (const u of index.uses) {
+      if (!u.builtin) continue
+      const v3 = major === 3 ? paletteColor(u.builtin.name, 3) : undefined
+      if (v3) u.builtin = v3
+      else delete u.builtin
+    }
   return index
+}
+
+/**
+ * The Tailwind version a project uses: from `tailwindcss` in its package.json, else from its
+ * styles (`@tailwind base` is Tailwind 3 or older, `@import "tailwindcss"` Tailwind 4); 4 when
+ * nothing says.
+ */
+async function tailwindMajor(source: Source, styles: string[]): Promise<number> {
+  try {
+    const pkg = JSON.parse(await source.readText('package.json')) as Record<string, Record<string, string>>
+    const range =
+      pkg.dependencies?.tailwindcss ?? pkg.devDependencies?.tailwindcss ?? pkg.peerDependencies?.tailwindcss
+    const major = range && /(\d+)/.exec(range)?.[1]
+    if (major) return Number(major)
+  } catch {
+    // No package.json at the root, or not JSON: the styles decide.
+  }
+  if (styles.some((s) => /@import\s+["']tailwindcss/.test(s))) return 4
+  return styles.some((s) => /@tailwind\s+(base|components|utilities)/.test(s)) ? 3 : 4
 }

@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser'
 import type { CodeIndex, StyleLiteral, TokenUse } from '@dsgraph/core'
 import { isStyleProperty, literalsIn, scanCssText, varsIn } from './styles.js'
-import { classesIn, looksLikeClasses } from './tailwind.js'
+import { classesIn, looksLikeClasses, paletteColor } from './tailwind.js'
 
 interface Node {
   type: string
@@ -101,6 +101,10 @@ export function scanScriptText(file: string, text: string, index: CodeIndex, opt
       if (item.kind === 'use') {
         const use: TokenUse = { ...loc, name: item.names[0]!, property: item.property, text: item.text }
         if (item.names.length > 1) use.candidates = item.names.slice(1)
+        if (item.palette) {
+          const builtin = paletteColor(item.palette)
+          if (builtin) use.builtin = builtin
+        }
         index.uses.push(use)
       } else {
         const lit: StyleLiteral = { ...loc, property: item.property, ...item.literal, source: item.text }

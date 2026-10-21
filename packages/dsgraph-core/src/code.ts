@@ -41,6 +41,11 @@ export interface TokenUse extends CodeLoc {
   selector?: string
   /** Fallback written after the name, `var(--x, #fff)`. */
   fallback?: string
+  /**
+   * A class of Tailwind's own palette (`bg-blue-500`): the color Tailwind writes for it when the
+   * project's theme does not define the name, in the Tailwind version the project uses.
+   */
+  builtin?: { name: string; text: string; value: unknown }
 }
 
 /** A value written by hand where a token could be used. */

@@ -1,5 +1,6 @@
-import type { StyleLiteral } from '@dsgraph/core'
+import type { StyleLiteral, TokenUse } from '@dsgraph/core'
 import { literalsIn } from './styles.js'
+import { tailwindColor } from './tailwind-palette.js'
 
 /**
  * Utility classes in the Tailwind style: what a class string uses from the tokens and what it
@@ -9,7 +10,14 @@ import { literalsIn } from './styles.js'
  */
 
 export type ClassItem =
-  | { kind: 'use'; text: string; property: string; names: string[] }
+  | {
+      kind: 'use'
+      text: string
+      property: string
+      names: string[]
+      /** A name of Tailwind's own palette (`blue-500`), the color when the theme does not define it. */
+      palette?: string
+    }
   | {
       kind: 'literal'
       text: string
@@ -231,14 +239,29 @@ export function classItem(cls: string): ClassItem | undefined {
       }
       return undefined
     }
+    const modifier = /\/[\w.[\]()-]+$/.test(rest)
     rest = rest.replace(/\/[\w.[\]()-]+$/, '')
     if (!rest || KEYWORDS[utility]?.has(rest)) return undefined
     // `border-2`, `outline-4`: widths, not names.
     if (/^\d+$/.test(rest) && family !== 'space') return undefined
     const names = candidates(family, rest)
-    return names.length ? { kind: 'use', text: cls, property, names } : undefined
+    if (!names.length) return undefined
+    // With an opacity modifier the color is not the palette's own.
+    const palette =
+      (family === 'color' || family === 'text') && !modifier && tailwindColor(rest) ? rest : undefined
+    return { kind: 'use', text: cls, property, names, ...(palette ? { palette } : {}) }
   }
   return undefined
+}
+
+/**
+ * A color of Tailwind's own palette (`blue-500`) as a value, in Tailwind 4 unless told otherwise:
+ * what a class such as `bg-blue-500` writes when the project's theme does not define the name.
+ */
+export function paletteColor(name: string, major: 3 | 4 = 4): TokenUse['builtin'] {
+  const css = tailwindColor(name, major)
+  const l = css ? literalsIn('color', css)[0] : undefined
+  return l ? { name, text: l.text, value: l.value } : undefined
 }
 
 /** Every class of a class string that uses a token or writes a value by hand. */

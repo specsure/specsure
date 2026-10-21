@@ -1,4 +1,5 @@
 import {
+  type CodeIndex,
   type DsGraph,
   type Knowledge,
   matchGlob,
@@ -9,6 +10,7 @@ import {
   type StyleLiteral,
   styleContext,
   type Token,
+  type VarMatcher,
 } from '@dsgraph/core'
 import type { Rule, RuleContext } from '../types.js'
 
@@ -46,7 +48,10 @@ const NAMESPACE_TYPES: Record<string, string[]> = {
  * token is named as a variable, `p-(--space-md)`.
  */
 export function classFor(source: string, token: { id: string; type: string | null }): string {
-  const m = /^((?:[\w-]+:)*)(!?-?)([a-z]+(?:-[a-z]+)*?)-\[/.exec(source)
+  // A class of Tailwind's palette (`hover:bg-blue-500`) is replaced the way an arbitrary value is.
+  const named = /^(.*?-)([a-z]+-\d+|black|white)$/.exec(source)
+  const arbitrary = source.includes('[') || !named ? source : `${named[1]}[x]`
+  const m = /^((?:[\w-]+:)*)(!?-?)([a-z]+(?:-[a-z]+)*?)-\[/.exec(arbitrary)
   if (!m) return token.id
   const [, variants, sign, utility] = m
   const id = token.id
@@ -131,11 +136,12 @@ export const hardcodedColor: Rule = {
   id: 'style/hardcoded-color',
   description: 'A color in a style is written by hand instead of taken from a token.',
   defaultSeverity: 'warning',
-  run({ graph, code, options, knowledge, report }) {
+  run({ graph, code, vars, options, knowledge, report }) {
     if (!code || graph.tokens({ type: 'color' }).length === 0) return
     const skip = excepted(options)
     const memo = new Map<string, NearestToken | undefined>()
-    for (const l of code.literals) {
+    const palette = paletteLiterals(code, vars)
+    for (const l of [...code.literals, ...palette]) {
       if (l.type !== 'color' || skip(l)) continue
       // The same color may want different tokens: text for `color`, background for `background`,
       // the hover one in `:hover`, the button's own in `.button`.
@@ -145,13 +151,15 @@ export const hardcodedColor: Rule = {
       const near = memo.get(key)
       if (!near) continue
       report({
-        message: l.source
-          ? near.exact
-            ? `"${l.source}" writes a color by hand; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
-            : `"${l.source}" is not in the palette; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ΔE ${near.distance})`
-          : near.exact
-            ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
-            : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
+        message: palette.includes(l)
+          ? `"${l.source}" is Tailwind's own color, not one of the system's; use "${classFor(l.source!, near.token)}" (token "${near.token.id}"${near.exact ? '' : `, ΔE ${near.distance}`})`
+          : l.source
+            ? near.exact
+              ? `"${l.source}" writes a color by hand; use "${classFor(l.source, near.token)}" (token "${near.token.id}")`
+              : `"${l.source}" is not in the palette; closest is "${classFor(l.source, near.token)}" (token "${near.token.id}", ΔE ${near.distance})`
+            : near.exact
+              ? `Color "${l.text}" in ${l.property} is written by hand; use "${near.token.id}"`
+              : `Color "${l.text}" in ${l.property} is not in the palette; closest is "${near.token.id}" (ΔE ${near.distance})`,
         nodes: [near.token.id],
         evidence: {
           value: l.text,
@@ -163,11 +171,36 @@ export const hardcodedColor: Rule = {
           replacement: l.source ? classFor(l.source, near.token) : near.token.id,
           exact: near.exact,
           deltaE: near.distance,
+          ...(palette.includes(l) ? { builtin: true } : {}),
         },
         loc: locOf(l),
       })
     }
   },
+}
+
+/**
+ * Classes of Tailwind's own palette (`bg-blue-500`) the system has no token for, as colors written
+ * by hand: the color is Tailwind's, not the design system's.
+ */
+export function paletteLiterals(code: CodeIndex, vars: VarMatcher | undefined): StyleLiteral[] {
+  const out: StyleLiteral[] = []
+  for (const u of code.uses) {
+    if (!u.builtin || !u.text || vars?.tokenOfUse(u)) continue
+    const l: StyleLiteral = {
+      file: u.file,
+      line: u.line,
+      column: u.column,
+      property: u.property,
+      text: u.builtin.text,
+      source: u.text,
+      type: 'color',
+      value: u.builtin.value,
+    }
+    if (u.selector) l.selector = u.selector
+    out.push(l)
+  }
+  return out
 }
 
 export const offScale: Rule = {
@@ -246,7 +279,8 @@ export const unknownToken: Rule = {
     const skip = excepted(options)
     for (const u of code.uses) {
       const names = [u.name, ...(u.candidates ?? [])]
-      if (skip(u) || !names.some((n) => vars.isSystemName(n)) || vars.tokenOfUse(u)) continue
+      // A class of Tailwind's own palette is a color written by hand (style/hardcoded-color).
+      if (skip(u) || u.builtin || !names.some((n) => vars.isSystemName(n)) || vars.tokenOfUse(u)) continue
       report({
         message: `"${u.text ?? u.name}" is not a token${u.fallback ? `; the fallback "${u.fallback}" is used instead` : ''}`,
         nodes: [],

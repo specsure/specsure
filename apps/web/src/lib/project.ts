@@ -1,7 +1,7 @@
 import { parseValue, scanCode } from '@dsgraph/adapters'
 import { type DsGraph, type Finding, VarMatcher, varNames } from '@dsgraph/core'
 import { suggestName } from '@dsgraph/report'
-import { check } from '@dsgraph/rules'
+import { check, paletteLiterals } from '@dsgraph/rules'
 import { codeSource, MAX_REMOTE_FILES } from './code'
 import { cssName } from './css-name'
 import type { HandGroup, ProjectAnswer, VarGroup } from './lookup-types'
@@ -43,13 +43,15 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
   const vars = new VarMatcher(g, varNames(code))
   const input0 = g.defaultInput({})
 
+  // Classes of Tailwind's own palette (`bg-blue-500`) are colors written by hand too.
+  const literals = [...code.literals, ...paletteLiterals(code, vars)]
   const share = (type: 'color' | 'dimension') => {
     const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)?.type === type).length
-    const byHand = code.literals.filter((l) => l.type === type).length
+    const byHand = literals.filter((l) => l.type === type).length
     return { fromTokens, byHand }
   }
   const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)).length
-  const byHand = code.literals.length
+  const byHand = literals.length
 
   const groups = new Map<string, HandGroup & { fileSet: Set<string> }>()
   for (const f of findings) {

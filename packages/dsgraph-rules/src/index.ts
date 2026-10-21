@@ -1,5 +1,5 @@
 export { check, countBySeverity, RULES, resolveSettings, type Setting } from './check.js'
 export { contrastRatio, rgba } from './color.js'
 export { PRESETS } from './presets.js'
-export { classFor, usedTokens } from './rules/code.js'
+export { classFor, paletteLiterals, usedTokens } from './rules/code.js'
 export type { Finding, Rule, RuleContext } from './types.js'

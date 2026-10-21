@@ -103,6 +103,35 @@ const accent = 'var(--color-accent)'
   'src/broken.tsx': 'export const x = <div className="a" ',
 })
 
+describe("Tailwind's own palette", () => {
+  it('reads a palette class as a token name and as the color Tailwind writes for it', () => {
+    const item = classItem('hover:bg-blue-500')
+    expect(item?.kind === 'use' && item.palette).toBe('blue-500')
+    expect(classItem('text-white')).toMatchObject({ palette: 'white' })
+    // An opacity modifier makes another color; a project name is not the palette's.
+    expect(classItem('bg-blue-500/50')).not.toHaveProperty('palette')
+    expect(classItem('bg-primary')).not.toHaveProperty('palette')
+    expect(classItem('bg-blue-1000')).not.toHaveProperty('palette')
+  })
+
+  it("uses the colors of the project's Tailwind version", async () => {
+    const tsx = { 'src/a.tsx': '<div className="bg-blue-500 text-slate-900" />\n' }
+    const v4 = await scanCode(new MemorySource(tsx))
+    expect(v4.uses.map((u) => u.builtin?.text)).toEqual([
+      'oklch(62.3% 0.214 259.815)',
+      'oklch(20.8% 0.042 265.755)',
+    ])
+    const pkg = { 'package.json': JSON.stringify({ devDependencies: { tailwindcss: '^3.4.1' } }) }
+    const v3 = await scanCode(new MemorySource({ ...tsx, ...pkg }))
+    expect(v3.uses.map((u) => u.builtin?.text)).toEqual(['#3b82f6', '#0f172a'])
+    const css = { 'src/app.css': '@tailwind base;\n@tailwind utilities;\n' }
+    expect((await scanCode(new MemorySource({ ...tsx, ...css }))).uses[0]?.builtin?.text).toBe('#3b82f6')
+    // Tailwind 2 had a palette of its own: no color rather than a wrong one.
+    const v2 = { 'package.json': JSON.stringify({ dependencies: { tailwindcss: '2.2.19' } }) }
+    expect((await scanCode(new MemorySource({ ...tsx, ...v2 }))).uses[0]?.builtin).toBeUndefined()
+  })
+})
+
 describe('scanCode', () => {
   it('reads scripts, CSS-in-JS and markup, and skips config files', async () => {
     const index = await scanCode(project)

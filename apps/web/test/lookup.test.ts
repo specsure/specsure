@@ -144,6 +144,29 @@ describe('Token Fix', () => {
     })
   })
 
+  it("takes Tailwind's own palette for colors written by hand, when the system has no such token", async () => {
+    const ask = session()
+    await ask({ id: 1, kind: 'open', source: { kind: 'files', files: LOOKUP_EXAMPLE }, include: '' })
+    const files = [
+      { path: 'package.json', text: JSON.stringify({ devDependencies: { tailwindcss: '^3.4.0' } }) },
+      // `bg-blue-600` is the system's own `--blue-600`; `bg-white` and `text-sky-500` are Tailwind's.
+      { path: 'src/Tip.tsx', text: '<p className="bg-white text-sky-500 border-blue-600" />\n' },
+    ]
+    // Pasted code has no package.json: Tailwind 4's colors, the same white.
+    const pasted = await ask({ id: 3, kind: 'snippet', text: '<p className="bg-white" />' })
+    expect(pasted.ok && pasted.kind === 'snippet' && pasted.snippet.output).toBe(
+      '<p className="bg-(--bg-default)" />',
+    )
+    const r = await ask({ id: 2, kind: 'project', input: { kind: 'files', files } })
+    if (!r.ok || r.kind !== 'project') throw new Error(r.ok ? 'wrong kind' : r.error)
+    expect(r.project.replace.map((x) => `${x.value} → ${x.replacement}`)).toEqual([
+      '#fff → bg-(--bg-default)',
+    ])
+    expect(r.project.missing.map((x) => x.value)).toEqual(['#0ea5e9'])
+    expect(r.project.coverage).toMatchObject({ fromTokens: 1, byHand: 2 })
+    expect(r.project.variables).toEqual([])
+  })
+
   it('tells code from a name or a value', () => {
     expect(looksLikeCode('#3366ff')).toBe(false)
     expect(looksLikeCode('background: #fff')).toBe(false)

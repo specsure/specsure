@@ -32,6 +32,11 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   in the vocabulary (`layers`), and a knowledge pack can add to them.
 - `layer/crossing` (off by default) reports those references, for systems that do not set
   `layers` in the config.
+- Classes of Tailwind's own palette (`bg-blue-500`, `text-white`) that the system has no token for
+  are colors written by hand: `style/hardcoded-color` reports them with the system's token for the
+  color Tailwind writes, in the project's Tailwind version (from `tailwindcss` in package.json or
+  the styles; 4 when nothing says, nothing for Tailwind 2 and older). `usage/unknown-token` no
+  longer reports them. The palettes are Tailwind's (MIT), from tailwindcss 3.4.17 and 4.1.11.
 - The class that replaces an arbitrary Tailwind value uses a theme namespace only for the kind of
   value it holds: a color token `text-default` becomes `text-(--text-default)`, not the font-size
   class `text-default`; and `--bg-accent` becomes `bg-(--bg-accent)`, not `bg-bg-accent`.
