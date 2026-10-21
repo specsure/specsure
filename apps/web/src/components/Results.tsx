@@ -456,7 +456,7 @@ export function Verdict({ result }: { result: Result }) {
 }
 
 /** A count with its number in bold, wherever the number stands in the phrase («ещё 3 изменились»). */
-function Count({ text, muted }: { text: string; muted?: boolean }) {
+export function Count({ text, muted }: { text: string; muted?: boolean }) {
   const parts = text.split(/(\d+(?:[\u00a0\u202f\s,.]\d+)*)/)
   return (
     <span className={muted ? 'muted' : undefined}>

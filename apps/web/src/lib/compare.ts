@@ -120,7 +120,7 @@ export function graphOf(g: DsGraph): TokenGraph {
   return { refs, nodes }
 }
 
-const labelOf = (side: SideInput, g: DsGraph): string => {
+export const labelOf = (side: SideInput, g: DsGraph): string => {
   const s = g.snapshot.source
   if (s.kind === 'npm') return `${s.package}@${s.version}`
   if (s.kind === 'github') return `${s.repo}@${refLabel(s.ref, s.commit)}`

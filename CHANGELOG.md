@@ -3,6 +3,17 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+- `@dsgraph/report` answers questions about one design system as data: `findToken`, `readToken`,
+  `searchTokens`, `describeTokens` (with `stateOf`, `componentOf`, `similarIds`). The MCP server
+  words them for agents; Token Lookup on the site draws them.
+- `parseValue` (a value as people type it, as a DTCG type and value) is exported from
+  `@dsgraph/adapters`.
+- MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold
+  values and how many take them from others; `search_tokens` finds a custom property
+  (`--color-text`) and names written with other separators.
+
 ## 0.7.0 — 2026-10-20
 
 - A color written by hand points to the token for its state and component, not only its property:

@@ -1,0 +1,23 @@
+---
+import TokenLookup from '../components/TokenLookup'
+import { type Lang, localePath } from '../i18n'
+import { messages } from '../i18n/messages'
+import Base from '../layouts/Base.astro'
+
+interface Props {
+  lang: Lang
+}
+const { lang } = Astro.props
+const p = messages[lang].lookupPage
+---
+
+<Base title={p.title} description={p.description} path="/tools/tokens" lang={lang}>
+  <header class="page-head">
+    <h1>Token Lookup</h1>
+    <p>
+      {p.lead}{' '}
+      <a class="inline-link" href={localePath(lang, '/tools/mcp')}>{p.how}</a>
+    </p>
+  </header>
+  <TokenLookup client:only="react" lang={lang} />
+</Base>

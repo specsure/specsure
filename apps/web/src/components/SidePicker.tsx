@@ -61,10 +61,21 @@ interface Props {
   /** Token for private GitHub repositories, shared by both sides. */
   githubToken?: string
   onGithubToken?: (token: string) => void
+  /** The row's label instead of Before / After, for a page with one source. */
+  label?: string
 }
 
 /** One source row of the input window. Dropping files anywhere on it switches it to files. */
-export function SidePicker({ side, value, onChange, error, info, githubToken = '', onGithubToken }: Props) {
+export function SidePicker({
+  side,
+  value,
+  onChange,
+  error,
+  info,
+  githubToken = '',
+  onGithubToken,
+  label,
+}: Props) {
   const t = useT()
   const [over, setOver] = useState(false)
   const [tokenOpen, setTokenOpen] = useState(false)
@@ -106,7 +117,7 @@ export function SidePicker({ side, value, onChange, error, info, githubToken = '
       }}
     >
       <div className="source__row">
-        <span className="source__label">{side === 'base' ? t.inputs.before : t.inputs.after}</span>
+        <span className="source__label">{label ?? (side === 'base' ? t.inputs.before : t.inputs.after)}</span>
         <div className="seg" role="tablist" aria-label={t.inputs.sourceAria}>
           {KINDS.map((k) => (
             <button

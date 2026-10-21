@@ -21,7 +21,15 @@ const en = {
   switchLabel: 'Читать по-русски',
 
   site: {
-    nav: { diff: 'Token Diff', guide: 'Guide', mcp: 'MCP', cli: 'CLI', github: 'GitHub', about: 'About' },
+    nav: {
+      diff: 'Token Diff',
+      lookup: 'Token Lookup',
+      guide: 'Guide',
+      mcp: 'MCP',
+      cli: 'CLI',
+      github: 'GitHub',
+      about: 'About',
+    },
     footer: 'Specsure, MIT license',
     source: 'Source',
     about: {
@@ -53,6 +61,8 @@ const en = {
     lead: 'Open-source tools for design systems. No account and no server: they run in your browser, your CI or your terminal.',
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
+      lookup:
+        'One design system: the token for a color or size, what a token is in each theme, your code rewritten on tokens',
       cli: 'Diff and checks in your terminal and CI; upgrade‑check shows what a new version breaks in your code',
       action:
         'A report on every pull request: what a token change breaks in your code, and a failed check when it does',
@@ -481,6 +491,115 @@ const en = {
 
   figure: { running: 'Running dsgraph…', compare: 'Compare', theme: 'theme' },
 
+  lookupPage: {
+    title: 'Token Lookup · Specsure',
+    description:
+      'Look up design tokens: the token for a color or size, what each token is, where its value comes from and who uses it, in every theme. npm, GitHub or your files, read in your browser.',
+    lead: 'Open a design system and ask it: which token is this color for a background, what is this token in the dark theme, where does its value come from. The same answers your coding agent gets from the MCP server. Everything is read in your browser.',
+    how: 'Connect an agent',
+  },
+
+  lookup: {
+    source: 'Tokens',
+    open: 'Open',
+    progress: 'Reading tokens…',
+    failed: 'Could not read the tokens',
+    searchPlaceholder: 'Name, value or code: accent, #0969da, background: #fff',
+    searchAria: 'Find a token by name or value',
+    clearSearch: 'Clear the search',
+    every: (axis: string) => `Default ${axis}`,
+    anyType: 'Any type',
+    typeAria: 'Type',
+    propertyAria: 'What the value is for',
+    properties: {
+      '': 'Any use',
+      color: 'Text',
+      background: 'Background',
+      'border-color': 'Border',
+      'box-shadow': 'Shadow',
+    },
+    stateAria: 'State',
+    states: {
+      '': 'No state',
+      hover: 'Hover',
+      focus: 'Focus',
+      active: 'Pressed',
+      disabled: 'Disabled',
+      selected: 'Selected',
+    },
+    types: {
+      color: 'Colors',
+      dimension: 'Sizes',
+      fontFamily: 'Font families',
+      fontWeight: 'Font weights',
+      duration: 'Durations',
+      cubicBezier: 'Easing',
+      number: 'Numbers',
+      shadow: 'Shadows',
+      typography: 'Typography',
+      border: 'Borders',
+      gradient: 'Gradients',
+      transition: 'Transitions',
+      strokeStyle: 'Stroke styles',
+      'css-expression': 'CSS expressions',
+      untyped: 'Untyped',
+    } as Record<string, string>,
+    summary: (tokens: number, files: number) =>
+      `${count('en', tokens, { one: 'token', other: 'tokens' })} · ${count('en', files, { one: 'file', other: 'files' })}`,
+    layers: (values: number, aliases: number) =>
+      `${num('en', values)} hold values, ${num('en', aliases)} take them from other tokens`,
+    modes: (name: string, contexts: string[]) => `${name}: ${contexts.join(', ')}`,
+    noModes: 'One theme',
+    errors: (n: number) => `${count('en', n, { one: 'file', other: 'files' })} with errors`,
+    forValue: (value: string, property?: string) =>
+      property ? `Tokens for ${value} in ${property}` : `Tokens for ${value}`,
+    exact: 'exact',
+    pxOff: (n: number, unit = '') => `${num('en', n)}${unit} off`,
+    noneOfType: 'No tokens of this type.',
+    byName: 'By name',
+    noMatch: 'No tokens match.',
+    showAll: (n: number) => `Show all ${num('en', n)}`,
+    status: (shown: number, ms: number) =>
+      `${count('en', shown, { one: 'token', other: 'tokens' })} · read in ${num('en', ms)} ms`,
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
+    shareTooBig: 'These files are too large for a link.',
+    example: 'Try an example',
+    snippet: {
+      title: 'Your code on tokens',
+      replaced: (n: number) =>
+        n
+          ? `${count('en', n, { one: 'value', other: 'values' })} replaced with tokens`
+          : 'Nothing to replace',
+      suggested: 'No exact token: the closest, for you to decide',
+      manual: 'a number, not a string: replace it by hand',
+      clean: 'No values written by hand in this code.',
+      copy: 'Copy code',
+      copied: 'Code copied',
+      line: (n: number) => `line ${num('en', n)}`,
+      closest: (words: string) => `closest, ${words}`,
+    },
+    card: {
+      copyCss: 'Copy var()',
+      copyRef: 'Copy {reference}',
+      copied: 'Copied',
+      deprecated: (replacement?: string | null) =>
+        replacement ? `Deprecated: use ${replacement}` : 'Deprecated',
+      values: 'Values',
+      everywhere: 'Everywhere',
+      from: 'from',
+      graph: 'References',
+      graphHint: 'Above: where it takes its value from. Below: tokens that use it.',
+      usedBy: (n: number, all: number) =>
+        `Used by ${count('en', n, { one: 'token', other: 'tokens' })}${all > n ? `, ${num('en', all)} counting their users` : ''}`,
+      unused: 'No other token uses it.',
+      sameValue: 'Same value',
+      file: 'File',
+      inCss: 'In CSS',
+      compare: 'Compare with another version →',
+    },
+  },
+
   mcp: {
     tokens: 'Tokens',
     agent: 'Agent',
@@ -539,7 +658,15 @@ const ru: Messages = {
   switchLabel: 'Read in English',
 
   site: {
-    nav: { diff: 'Token Diff', guide: 'Гайд', mcp: 'MCP', cli: 'CLI', github: 'GitHub', about: 'О проекте' },
+    nav: {
+      diff: 'Token Diff',
+      lookup: 'Token Lookup',
+      guide: 'Гайд',
+      mcp: 'MCP',
+      cli: 'CLI',
+      github: 'GitHub',
+      about: 'О проекте',
+    },
     footer: 'Specsure, лицензия MIT',
     source: 'Исходный код',
     about: {
@@ -571,6 +698,8 @@ const ru: Messages = {
     lead: 'Открытые инструменты для дизайн-систем. Без регистрации и без сервера: всё работает в браузере, в CI или в терминале.',
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
+      lookup:
+        'Одна дизайн-система: какой токен у цвета или размера, чему равен токен в каждой теме, ваш код на токенах',
       cli: 'Сравнение и проверки в терминале и CI; upgrade‑check покажет, что новая версия сломает в вашем коде',
       action:
         'Отчёт в каждом pull request: что изменение токенов сломает в вашем коде, и проваленная проверка, если ломает',
@@ -1039,6 +1168,116 @@ const ru: Messages = {
   },
 
   figure: { running: 'dsgraph считает…', compare: 'Сравнить', theme: 'theme' },
+
+  lookupPage: {
+    title: 'Token Lookup · Specsure',
+    description:
+      'Поиск по дизайн-токенам: какой токен у цвета или размера, что это за токен, откуда он берёт значение и кто его использует — в каждой теме. npm, GitHub или ваши файлы, всё читается в браузере.',
+    lead: 'Откройте дизайн-систему и спросите её: какой токен у этого цвета для фона, чему равен этот токен в тёмной теме, откуда он берёт значение. Это те же ответы, что ваш агент получает от MCP-сервера. Всё читается в браузере.',
+    how: 'Подключить агента',
+  },
+
+  lookup: {
+    source: 'Токены',
+    open: 'Открыть',
+    progress: 'Чтение токенов…',
+    failed: 'Не удалось прочитать токены',
+    searchPlaceholder: 'Имя, значение или код: accent, #0969da, background: #fff',
+    searchAria: 'Найти токен по имени или значению',
+    clearSearch: 'Очистить поиск',
+    every: (axis: string) => `${axis} по умолчанию`,
+    anyType: 'Любой тип',
+    typeAria: 'Тип',
+    propertyAria: 'Для чего значение',
+    properties: {
+      '': 'Для чего угодно',
+      color: 'Текст',
+      background: 'Фон',
+      'border-color': 'Рамка',
+      'box-shadow': 'Тень',
+    },
+    stateAria: 'Состояние',
+    states: {
+      '': 'Без состояния',
+      hover: 'Наведение',
+      focus: 'Фокус',
+      active: 'Нажатие',
+      disabled: 'Недоступно',
+      selected: 'Выбрано',
+    },
+    types: {
+      color: 'Цвета',
+      dimension: 'Размеры',
+      fontFamily: 'Шрифты',
+      fontWeight: 'Начертания',
+      duration: 'Длительности',
+      cubicBezier: 'Кривые анимации',
+      number: 'Числа',
+      shadow: 'Тени',
+      typography: 'Типографика',
+      border: 'Рамки',
+      gradient: 'Градиенты',
+      transition: 'Переходы',
+      strokeStyle: 'Стили линий',
+      'css-expression': 'CSS-выражения',
+      untyped: 'Без типа',
+    } as Record<string, string>,
+    summary: (tokens: number, files: number) =>
+      `${count('ru', tokens, ruToken)} · ${count('ru', files, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })}`,
+    layers: (values: number, aliases: number) =>
+      `${num('ru', values)} хранят значения, ${num('ru', aliases)} берут их у других токенов`,
+    modes: (name: string, contexts: string[]) => `${name}: ${contexts.join(', ')}`,
+    noModes: 'Одна тема',
+    errors: (n: number) =>
+      `${count('ru', n, { one: 'файл', few: 'файла', many: 'файлов', other: 'файла' })} с ошибками`,
+    forValue: (value: string, property?: string) =>
+      property ? `Токены для ${value} в ${property}` : `Токены для ${value}`,
+    exact: 'точно',
+    pxOff: (n: number, unit = '') => `отличается на ${num('ru', n)}${unit === 'ms' ? ' мс' : unit}`,
+    noneOfType: 'Токенов этого типа нет.',
+    byName: 'По имени',
+    noMatch: 'Ничего не нашлось.',
+    showAll: (n: number) => `Показать все ${num('ru', n)}`,
+    status: (shown: number, ms: number) =>
+      `${count('ru', shown, ruToken)} · прочитано за ${num('ru', ms)} мс`,
+    copyLink: 'Скопировать ссылку',
+    linkCopied: 'Ссылка скопирована',
+    shareTooBig: 'Файлы слишком большие для ссылки.',
+    example: 'Пример',
+    snippet: {
+      title: 'Ваш код на токенах',
+      replaced: (n: number) =>
+        n
+          ? `${count('ru', n, { one: 'значение', few: 'значения', many: 'значений', other: 'значения' })} ${plural('ru', n, { one: 'заменено', few: 'заменены', many: 'заменено', other: 'заменены' })} на токены`
+          : 'Заменять нечего',
+      suggested: 'Точного токена нет: ближайший, решите сами',
+      manual: 'число, а не строка: замените вручную',
+      clean: 'В этом коде нет значений, вписанных вручную.',
+      copy: 'Скопировать код',
+      copied: 'Код скопирован',
+      line: (n: number) => `строка ${num('ru', n)}`,
+      closest: (words: string) => `ближайший, ${words}`,
+    },
+    card: {
+      copyCss: 'Скопировать var()',
+      copyRef: 'Скопировать {ссылку}',
+      copied: 'Скопировано',
+      deprecated: (replacement?: string | null) =>
+        replacement ? `Устарел: используйте ${replacement}` : 'Устарел',
+      values: 'Значения',
+      everywhere: 'Везде',
+      from: 'из',
+      graph: 'Ссылки',
+      graphHint: 'Сверху — откуда токен берёт значение. Снизу — токены, которые его используют.',
+      usedBy: (n: number, all: number) =>
+        `Используют ${count('ru', n, ruToken)}${all > n ? `, а вместе с их пользователями — ${num('ru', all)}` : ''}`,
+      unused: 'Другие токены его не используют.',
+      sameValue: 'То же значение',
+      file: 'Файл',
+      inCss: 'В CSS',
+      compare: 'Сравнить с другой версией →',
+    },
+  },
 
   mcp: {
     tokens: 'Токены',

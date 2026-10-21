@@ -19,7 +19,8 @@ const other: Lang = lang === 'en' ? 'ru' : 'en'
 const href = (p: string) => localePath(lang, p)
 const nav = [
   { href: href('/tools/diff'), label: m.site.nav.diff, current: '/tools/diff' },
-  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: '/tools/diff/guide' },
+  { href: href('/tools/tokens'), label: m.site.nav.lookup, current: '/tools/tokens' },
+  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: '/tools/diff/guide', wide: true },
   { href: href('/tools/mcp'), label: m.site.nav.mcp, current: '/tools/mcp' },
   {
     href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
@@ -89,7 +90,20 @@ const DETECT = `(() => {
       </a>
       <nav class="site-nav">
         {nav.map((n) => (
-          <a href={n.href} aria-current={n.current && path === n.current ? 'page' : undefined}>{n.label}</a>
+          <a
+            href={n.href}
+            class={'wide' in n ? 'site-nav__wide' : undefined}
+            aria-current={n.current && path === n.current ? 'page' : undefined}
+          >
+            {n.label.startsWith('Token ') ? (
+              <>
+                <span class="site-nav__prefix">Token </span>
+                {n.label.slice(6)}
+              </>
+            ) : (
+              n.label
+            )}
+          </a>
         ))}
         <button type="button" class="nav-button" data-about-open>{m.site.nav.about}</button>
         <span class="lang-switch" role="group" aria-label="Language · Язык">
