@@ -275,5 +275,8 @@ describe('Tailwind themes as tokens', () => {
     )
     expect(c.byHand).toBe(13)
     expect(c.share).toBeGreaterThan(0)
+    // Tailwind's own `bg-white` is written by hand; `bg-card` is the system's.
+    const tw = await scanCode(new MemorySource({ 'src/a.tsx': '<p className="bg-white bg-card" />\n' }))
+    expect(coverageOf(tw, new VarMatcher(g, varNames(tw)))).toEqual({ fromTokens: 1, byHand: 1, share: 0.5 })
   })
 })

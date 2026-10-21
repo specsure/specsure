@@ -176,7 +176,8 @@ export interface Coverage {
 /** How much of the code's design values come from tokens. */
 export function coverageOf(code: CodeIndex, vars: VarMatcher): Coverage {
   const fromTokens = code.uses.filter((u) => vars.tokenOfUse(u)).length
-  const byHand = code.literals.length
+  // A class of Tailwind's own palette the system has no token for is a color written by hand.
+  const byHand = code.literals.length + code.uses.filter((u) => u.builtin && !vars.tokenOfUse(u)).length
   const total = fromTokens + byHand
   return { fromTokens, byHand, share: total ? fromTokens / total : null }
 }
