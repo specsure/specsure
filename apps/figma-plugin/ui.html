@@ -313,14 +313,16 @@
     color: var(--ink-2);
   }
   .next a,
-  .links a {
+  .links a,
+  .map dt a {
     color: var(--ink);
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
   }
   .next a:hover,
-  .links a:hover {
+  .links a:hover,
+  .map dt a:hover {
     text-decoration: underline;
   }
 
@@ -446,6 +448,12 @@
   }
   .map dd {
     margin: 0;
+  }
+  /* A service to take the tokens to opens in the browser. */
+  .map dt a::after {
+    content: " ↗";
+    color: var(--ink-3);
+    font-weight: 400;
   }
   .snippet {
     display: block;
@@ -638,13 +646,13 @@
     </ol>
     <h3>Where to take it</h3>
     <dl class="map">
-      <dt>Token Fix</dt>
+      <dt><a href="https://specsure.vercel.app/tools/fix" data-open>Token Fix</a></dt>
       <dd>the token meant for a value, and what to replace in your code</dd>
-      <dt>Token Diff</dt>
+      <dt><a href="https://specsure.vercel.app/tools/diff" data-open>Token Diff</a></dt>
       <dd>two exports side by side: what changed, what breaks</dd>
-      <dt>CLI</dt>
+      <dt><a href="https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme" data-open>CLI</a></dt>
       <dd>checks in the terminal<code class="snippet">npx @dsgraph/cli check tokens</code></dd>
-      <dt>CI</dt>
+      <dt><a href="https://github.com/specsure/dsgraph-action" data-open>CI</a></dt>
       <dd>a report on every pull request: <code>specsure/dsgraph-action</code></dd>
     </dl>
     <h3>Figma → DTCG</h3>
@@ -697,7 +705,7 @@
     <h3>This plugin</h3>
     <p class="lead">Reads the open file and never writes to it. It has no network access: the tokens go only where you save them. Open source, MIT.</p>
     <div class="links">
-      <a href="https://specsure.vercel.app" data-open>specsure.vercel.app</a>
+      <a href="https://specsure.vercel.app" data-open>Specsure</a>
       <a href="https://github.com/specsure/specsure/tree/main/apps/figma-plugin" data-open>Source</a>
       <a href="https://github.com/specsure/specsure/issues" data-open>Report an issue</a>
       <span class="muted">v0.1.0</span>
