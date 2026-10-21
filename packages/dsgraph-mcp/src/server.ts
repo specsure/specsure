@@ -27,6 +27,7 @@ import {
   searchTokens,
   similarIds,
   stateOf,
+  suggestName,
 } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { parseRemoteSpec } from '@dsgraph/sources'
@@ -34,6 +35,19 @@ import { NodeFsSource } from '@dsgraph/sources/node'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { parseValue } from './nearest.js'
+
+/** A name for a new token from the system's own scales, as a hint for the design system's team. */
+function newName(
+  graph: DsGraph,
+  parsed: { type: string; value: unknown },
+  near: string,
+  input: Input,
+): string {
+  const s = suggestName(graph, parsed, { near, input })
+  return s
+    ? ` If the system needs a new token for it, its own scale would name it \`${s.name}\` (between \`${s.between.join('` and `')}\`): a suggestion for the design system's team, not a token to write.`
+    : ''
+}
 
 export interface ServerOptions {
   /** The design system the tools read when a call names no source: a folder, a file, `npm:…` or `github:…`. */
@@ -184,7 +198,7 @@ export function createServer(opts: ServerOptions): McpServer {
       const best = first.tokens[0]!
       const advice = first.exact
         ? `Use \`${best.id}\` instead of the literal value${first.tokens.length > 1 ? ', or another token with the same value whose name fits the use' : ''}.`
-        : `No token matches exactly; the closest is \`${best.id}\`. Using a literal value here would bypass the design system.`
+        : `No token matches exactly; the closest is \`${best.id}\`. Using a literal value here would bypass the design system.${newName(graph, parsed, best.id, found.input)}`
       return text(`${found.type} ${found.value}${where}:\n${lines.join('\n')}\n\n${advice}`)
     },
   )

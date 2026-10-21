@@ -1,6 +1,6 @@
 import { parseValue } from '@dsgraph/adapters'
 import type { DsGraph, StyleContext } from '@dsgraph/core'
-import { describeTokens, findToken, formatValue, readToken, stateOf } from '@dsgraph/report'
+import { describeTokens, findToken, formatValue, readToken, stateOf, suggestName } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { graphOf, labelOf, load } from './compare'
 import { cssName } from './css-name'
@@ -43,7 +43,13 @@ export function answer(
   if (property) context.property = property
   if (opts.state) context.states = [stateOf(opts.state)]
   const result = findToken(g, parsed, { context, input: g.defaultInput(opts.context), limit: 8 })
+  const near = result.groups[0]
+  const suggestion =
+    near && !near.exact
+      ? suggestName(g, parsed, { near: near.tokens[0]!.id, input: result.input })
+      : undefined
   return {
+    ...(suggestion ? { suggestion } : {}),
     ...(property ? { property } : {}),
     ...(decl ? { fromQuery: true } : {}),
     result: {

@@ -1,5 +1,6 @@
-import { scanCode } from '@dsgraph/adapters'
+import { parseValue, scanCode } from '@dsgraph/adapters'
 import { type DsGraph, type Finding, VarMatcher, varNames } from '@dsgraph/core'
+import { suggestName } from '@dsgraph/report'
 import { check } from '@dsgraph/rules'
 import { codeSource, MAX_REMOTE_FILES } from './code'
 import { cssName } from './css-name'
@@ -83,6 +84,9 @@ export async function checkProject(g: DsGraph, input: CodeInput, token?: string)
         if (e.deltaE !== undefined) grp.deltaE = e.deltaE
         if (e.distance !== undefined) grp.distance = e.distance
         grp.group = groupOf(e.token)
+        const parsed = parseValue(e.value)
+        const name = parsed && suggestName(g, parsed, { near: e.token, input: input0 })
+        if (name) grp.suggestion = name
       }
       if (isColor(v) && grp.type === 'color' && e.exact) grp.swatch = cssColor(v)
       groups.set(key, grp)

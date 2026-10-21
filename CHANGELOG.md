@@ -24,6 +24,11 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 - The class that replaces an arbitrary Tailwind value uses a theme namespace only for the kind of
   value it holds: a color token `text-default` becomes `text-(--text-default)`, not the font-size
   class `text-default`; and `--bg-accent` becomes `bg-(--bg-accent)`, not `bg-bg-accent`.
+- `suggestName` in `@dsgraph/report`: a name for a token the system does not have yet, from its
+  own scales only — a new step of a color ramp between the two steps it falls between in lightness
+  (and close to the ramp in hue and saturation), or a size step named the way the scale names its
+  steps (`space-5` between `space-4` and `space-6` when steps are ×4). Nothing when there is no such
+  scale. MCP `find_token` adds it as a hint for the design system's team when no token matches.
 - `parseValue` (a value as people type it, as a DTCG type and value) is exported from
   `@dsgraph/adapters`.
 - MCP `get_token` lists tokens with the same value; `describe_tokens` says how many tokens hold

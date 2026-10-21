@@ -33,6 +33,8 @@ export interface TokenCard {
 
 /** A value search: what was asked, read as a value, and the tokens for it; null when it is not a value. */
 export interface ValueAnswer {
+  /** With no exact token: a name for a new one from the system's own scale. */
+  suggestion?: { name: string; between: string[]; scale: string }
   property?: string
   /** The property was written in the search (`background: #fff`), not picked. */
   fromQuery?: boolean
@@ -116,6 +118,8 @@ export interface HandGroup {
   distance?: number
   /** For a value with no exact token: the group of the closest one, where a new token would go. */
   group?: string
+  /** A name for that new token from the system's own scale, with the steps it falls between. */
+  suggestion?: { name: string; between: string[]; scale: string }
   sites: CodeSite[]
 }
 

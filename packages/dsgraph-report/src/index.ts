@@ -35,4 +35,5 @@ export {
   type TokenRow,
   type TokenValue,
 } from './query.js'
+export { type NameSuggestion, suggestName } from './suggest.js'
 export { formatDelta, formatSide, formatSource, formatValue, formatWhen } from './values.js'

@@ -710,53 +710,60 @@ function Browser({
         ) : count === 0 ? (
           <div className="empty">{answer ? l.noneOfType : l.noMatch}</div>
         ) : (
-          <div className="split">
-            <div className="list" role="listbox" aria-label={l.searchAria} tabIndex={0}>
-              {sections.map((s) => (
-                // biome-ignore lint/a11y/useSemanticElements: a group of options inside a listbox, not a form fieldset
-                <div key={s.key} role="group" aria-label={s.title}>
-                  <div className="list__section">
-                    {s.title}
-                    <span className="count">{s.rows.length}</span>
+          <>
+            {answer?.suggestion && (
+              <div className="lookup__block lookup__block--tight">
+                <Proposal suggestion={answer.suggestion} value={answer.result.value} onCopied={flash} />
+              </div>
+            )}
+            <div className="split">
+              <div className="list" role="listbox" aria-label={l.searchAria} tabIndex={0}>
+                {sections.map((s) => (
+                  // biome-ignore lint/a11y/useSemanticElements: a group of options inside a listbox, not a form fieldset
+                  <div key={s.key} role="group" aria-label={s.title}>
+                    <div className="list__section">
+                      {s.title}
+                      <span className="count">{s.rows.length}</span>
+                    </div>
+                    {(all.has(s.key) ? s.rows : s.rows.slice(0, SECTION_LIMIT)).map((x) => (
+                      <TokenRowView
+                        key={x.row.id}
+                        row={x.row}
+                        at={at}
+                        note={x.note}
+                        selected={x.row.id === current?.id}
+                        onSelect={() => onToken(x.row.id)}
+                      />
+                    ))}
+                    {!all.has(s.key) && s.rows.length > SECTION_LIMIT && (
+                      <button
+                        type="button"
+                        className="list__more"
+                        onClick={() => setAll(new Set([...all, s.key]))}
+                      >
+                        {l.showAll(s.rows.length)}
+                      </button>
+                    )}
                   </div>
-                  {(all.has(s.key) ? s.rows : s.rows.slice(0, SECTION_LIMIT)).map((x) => (
-                    <TokenRowView
-                      key={x.row.id}
-                      row={x.row}
-                      at={at}
-                      note={x.note}
-                      selected={x.row.id === current?.id}
-                      onSelect={() => onToken(x.row.id)}
-                    />
-                  ))}
-                  {!all.has(s.key) && s.rows.length > SECTION_LIMIT && (
-                    <button
-                      type="button"
-                      className="list__more"
-                      onClick={() => setAll(new Set([...all, s.key]))}
-                    >
-                      {l.showAll(s.rows.length)}
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
+              <aside className="detail" aria-live="polite">
+                {current && (
+                  <TokenCardView
+                    id={current.id}
+                    row={current}
+                    ask={ask}
+                    graph={loaded.graph}
+                    at={at}
+                    defaults={effective(d.modes, {})}
+                    source={loaded.source}
+                    onPick={(id) => byId.has(id) && onToken(id)}
+                    onCopied={() => flash(l.card.copied)}
+                  />
+                )}
+              </aside>
             </div>
-            <aside className="detail" aria-live="polite">
-              {current && (
-                <TokenCardView
-                  id={current.id}
-                  row={current}
-                  ask={ask}
-                  graph={loaded.graph}
-                  at={at}
-                  defaults={effective(d.modes, {})}
-                  source={loaded.source}
-                  onPick={(id) => byId.has(id) && onToken(id)}
-                  onCopied={() => flash(l.card.copied)}
-                />
-              )}
-            </aside>
-          </div>
+          </>
         )}
 
         <footer className="actionbar">
@@ -1005,10 +1012,18 @@ function ProjectPanel({
                         >
                           {g.token}
                         </button>
-                        {g.group && g.count > 1 ? (
+                        {!g.suggestion && g.group && g.count > 1 ? (
                           <span className="muted"> · {l.belongs(g.group)}</span>
                         ) : null}
                       </p>
+                      {g.suggestion && (
+                        <Proposal
+                          suggestion={g.suggestion}
+                          value={g.value}
+                          places={l.places(g.count, g.files)}
+                          onCopied={onCopied}
+                        />
+                      )}
                       <Sites sites={g.sites} total={g.count} />
                     </details>
                   </li>
@@ -1101,6 +1116,40 @@ function ImproveView({ findings, onPick }: { findings: Finding[]; onPick: (id: s
         })}
       </ul>
     </section>
+  )
+}
+
+/** A name for a new token from the system's own scale, with the proposal to copy for its team. */
+function Proposal({
+  suggestion: sg,
+  value,
+  places,
+  onCopied,
+}: {
+  suggestion: { name: string; between: string[]; scale: string }
+  value: string
+  places?: string
+  onCopied: (status: string) => void
+}) {
+  const l = useT().lookup.code
+  const [a = '', b = ''] = sg.between
+  return (
+    <div className="lookup__proposal">
+      <p>
+        {l.suggest} <code>{sg.name}</code> <span className="muted">{l.suggestBetween(a, b)}</span>
+      </p>
+      <p className="muted small">{l.suggestNote}</p>
+      <button
+        type="button"
+        className="ghost"
+        onClick={async () => {
+          await navigator.clipboard.writeText(l.proposal(sg.name, value, sg.scale, a, b, places))
+          onCopied(l.proposalCopied)
+        }}
+      >
+        {l.copyProposal}
+      </button>
+    </div>
   )
 }
 

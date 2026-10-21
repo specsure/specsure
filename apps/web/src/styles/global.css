@@ -827,6 +827,23 @@ input.accessory {
   gap: var(--space-2);
   font: var(--text-body-strong);
 }
+.lookup__block--tight {
+  padding-block: var(--space-3);
+}
+.lookup__proposal {
+  margin: var(--space-2) 0 var(--space-2) 40px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  box-shadow: 0 0 0 1px var(--edge);
+}
+.lookup__block--tight .lookup__proposal {
+  margin: 0;
+}
+.lookup__proposal p {
+  margin: 0 0 var(--space-1);
+  font: var(--text-body);
+}
 .lookup__project {
   border-radius: var(--radius-md);
   background: var(--raised);
@@ -2034,7 +2051,8 @@ a.launcher__row:focus-visible .launcher__go {
     margin-left: 40px;
   }
   .lookup__group-note,
-  .lookup__sites {
+  .lookup__sites,
+  .lookup__proposal {
     margin-left: 0;
   }
   .lookup__demo-head {

@@ -72,6 +72,9 @@ describe('Token Fix', () => {
       'background bg-accent',
       'border border-accent',
     ])
+    // No exact token: a name for a new one, from the system's own gray ramp.
+    const off = await ask({ id: 5, kind: 'find', text: 'background: #e9eef5', context: {} })
+    expect(off.ok && off.kind === 'find' && off.answer?.suggestion?.name).toBe('gray-150')
     const gray = o.traps.find((x) => x.value === '#f1f5f9')!
     expect(gray.picks.map((p) => `${p.state} ${p.token}`)).toEqual(['hover bg-hover', 'disabled bg-disabled'])
   })
