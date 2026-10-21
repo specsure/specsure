@@ -23,7 +23,8 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   collection is written as a collection of its own under its name, with everything it inherits and
   its overrides; collections whose names overlap go under their names, references too, instead of
   one replacing the other. Figma's back curves are `cubicBezier`; grid styles become groups of
-  their numbers. Timings are in seconds in Figma and written in ms.
+  their numbers. Timings are in seconds in Figma and written in ms; opacities are in percent in
+  Figma (an opacity variable, a color composed of a color and an opacity) and written as fractions.
 - `$extensions.modes` that lists only the modes where a value differs (`{ "mobile": … }`) is read as
   modes too, the token's own value being the `default` context; `$extensions.mode` lists them all.
 - A shadow written as a CSS string (`"0 1px 2px rgba(16,16,14,.06)"`, `"none"`) is read, with a

@@ -168,6 +168,12 @@ const LENGTH_SCOPES = new Set([
   'PARAGRAPH_SPACING',
   'PARAGRAPH_INDENT',
 ])
+/**
+ * Scopes of a number that is an opacity. Figma keeps it in percent (0–100), in such a variable and
+ * in a color composed of a color and an opacity; DTCG and CSS take a fraction.
+ */
+const OPACITY_SCOPES = new Set(['OPACITY', 'COLOR_OPACITY'])
+const isOpacity = (scopes: string[]) => scopes.length > 0 && scopes.every((s) => OPACITY_SCOPES.has(s))
 /** Name words of a length, for numbers Figma offers everywhere (`ALL_SCOPES`). */
 const LENGTH_WORDS =
   /(^|[/._-])(space|spacing|size|sizes|radius|radii|width|height|gap|inset|padding|margin|gutter|offset|stroke|border|breakpoint|dimension|blur|spread|indent)([/._-]|$)/i
@@ -272,7 +278,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       const scopes = new Set(v.scopes)
       t = scopes.has('FONT_WEIGHT')
         ? 'fontWeight'
-        : scopes.has('OPACITY')
+        : [...scopes].some((s) => OPACITY_SCOPES.has(s))
           ? 'number'
           : [...scopes].some((s) => LENGTH_SCOPES.has(s)) ||
               ((!scopes.size || scopes.has('ALL_SCOPES')) && LENGTH_WORDS.test(v.name))
@@ -284,7 +290,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     return t
   }
 
-  const literal = (type: string, value: FigmaValue): unknown => {
+  const literal = (type: string, value: FigmaValue, scopes: string[] = []): unknown => {
     if (type === 'color') return isColor(value) ? color(value) : undefined
     if (type === 'cubicBezier')
       return typeof value === 'object' && 'easing' in value ? curve(value.easing) : undefined
@@ -292,7 +298,9 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     if (type === 'duration')
       return typeof value === 'number' ? { value: round(value * 1000, 3), unit: 'ms' } : undefined
     if (typeof value === 'number')
-      return type === 'dimension' ? { value: round(value), unit: 'px' } : round(value)
+      return type === 'dimension'
+        ? { value: round(value), unit: 'px' }
+        : round(type === 'number' && isOpacity(scopes) ? value / 100 : value)
     if (type === 'fontFamily' && typeof value === 'string') return value
     return undefined
   }
@@ -405,7 +413,9 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     if (typeof value === 'object' && 'composed' in value) {
       const { color: c, opacity: o } = value.composed
       const base = isAlias(c) ? resolved(c.alias) : c
-      const alpha = isAlias(o) ? resolved(o.alias) : o
+      // The opacity is in percent, a variable's too.
+      const percent = isAlias(o) ? resolved(o.alias) : o
+      const alpha = typeof percent === 'number' ? percent / 100 : undefined
       ext['com.figma.composedColor'] = {
         color: isAlias(c) ? nameOf(c.alias) : null,
         opacity: isAlias(o) ? nameOf(o.alias) : o,
@@ -413,7 +423,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       return isColor(base) && typeof alpha === 'number' ? color(base, alpha) : undefined
     }
     if (!isAlias(value)) {
-      const out = literal(type, value)
+      const out = literal(type, value, v.scopes)
       if (out === undefined && type === 'cubicBezier' && typeof value === 'object' && 'easing' in value)
         notes.push({
           name: v.name,
@@ -427,7 +437,8 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
     const home = homePath(value.alias)
     if (home) return refTo(home)
     const lib =
-      raw.external[value.alias] ?? (target ? { name: target.name, value: resolved(target.id) } : undefined)
+      raw.external[value.alias] ??
+      (target ? { name: target.name, value: resolved(target.id), scopes: target.scopes } : undefined)
     if (!lib || lib.value === undefined) {
       notes.push({
         name: v.name,
@@ -436,7 +447,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       return undefined
     }
     ext['com.figma.alias'] = lib.name
-    return isAlias(lib.value) ? undefined : literal(type, lib.value)
+    return isAlias(lib.value) ? undefined : literal(type, lib.value, lib.scopes)
   }
 
   const files: Record<string, unknown> = {}
@@ -695,12 +706,43 @@ function typography(
   }
 }
 
-/** A value as Figma's REST API writes it: an alias is `{ type: 'VARIABLE_ALIAS', id }`. */
+/**
+ * A value as Figma's REST API writes it: an alias is `{ type: 'VARIABLE_ALIAS', id }`; a color
+ * composed of a color and an opacity is `{ color, opacity }` or, as older builds wrote it, a
+ * `COMPOSE_COLOR` expression of the two.
+ */
 function restValue(v: unknown): FigmaValue {
   if (typeof v !== 'object' || v === null) return v as FigmaValue
   const o = v as Record<string, unknown>
   if (o.type === 'VARIABLE_ALIAS' && typeof o.id === 'string') return { alias: o.id }
+  const parts = composedParts(o)
+  if (parts)
+    return {
+      composed: {
+        color: restValue(parts[0]) as FigmaColor | { alias: string },
+        opacity: restValue(parts[1]) as number | { alias: string },
+      },
+    }
   return v as FigmaValue
+}
+
+/** The color and the opacity of a composed color, in either of the shapes Figma has given it. */
+export function composedParts(o: Record<string, unknown>): [unknown, unknown] | undefined {
+  if ('color' in o && 'opacity' in o && !('r' in o)) return [o.color, o.opacity]
+  if (o.type === 'VARIABLE_EXPRESSION' && o.expressionFunction === 'COMPOSE_COLOR') {
+    // Arguments come bare or as `{ type, resolvedType, value }`.
+    const unwrap = (x: unknown): unknown =>
+      x &&
+      typeof x === 'object' &&
+      'value' in x &&
+      !('r' in x) &&
+      (x as { type?: unknown }).type !== 'VARIABLE_ALIAS'
+        ? unwrap((x as { value: unknown }).value)
+        : x
+    const [color, opacity] = ((o.expressionArguments as unknown[]) ?? []).map(unwrap)
+    return color !== undefined && opacity !== undefined ? [color, opacity] : undefined
+  }
+  return undefined
 }
 
 /**

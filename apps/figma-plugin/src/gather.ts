@@ -7,6 +7,7 @@ import type {
   FigmaValue,
   FigmaVariable,
 } from '@dsgraph/adapters/figma'
+import { composedParts } from '@dsgraph/adapters/figma'
 
 /** A Figma value as plain data: an alias keeps the id of the variable it points to. */
 function plain(v: VariableValue): FigmaValue {
@@ -15,9 +16,10 @@ function plain(v: VariableValue): FigmaValue {
   if (typeof v !== 'object' || v === null) return v
   if ('type' in v && v.type === 'VARIABLE_ALIAS') return alias(v as VariableAlias)
   if ('r' in v) return rgba(v)
-  if ('color' in v && 'opacity' in v) {
-    const c = v.color
-    const o = v.opacity
+  // A color and an opacity (in percent), either one a variable; older builds give it as an expression.
+  const parts = composedParts(v as unknown as Record<string, unknown>)
+  if (parts) {
+    const [c, o] = parts as [RGB | RGBA | VariableAlias, number | VariableAlias]
     return {
       composed: {
         color: 'type' in c ? alias(c as VariableAlias) : rgba(c as RGB | RGBA),

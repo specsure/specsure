@@ -61,7 +61,8 @@ const file: FigmaExport = {
       collectionId: 'c1',
       type: 'FLOAT',
       scopes: ['OPACITY'],
-      valuesByMode: { m0: 0.6 },
+      // Percent, as Figma keeps an opacity.
+      valuesByMode: { m0: 60 },
     },
     {
       id: 'v6',
@@ -156,7 +157,7 @@ const file: FigmaExport = {
       type: 'COLOR',
       scopes: [],
       valuesByMode: {
-        l: { composed: { color: { alias: 'v2' }, opacity: 0.5 } },
+        l: { composed: { color: { alias: 'v2' }, opacity: 50 } },
         d: { composed: { color: { alias: 'v2' }, opacity: { alias: 'v5' } } },
       },
     },
@@ -289,6 +290,7 @@ describe('Figma variables and styles as DTCG', () => {
       string,
       Record<string, Record<string, unknown>>
     >
+    expect(light.overlay!.scrim).toMatchObject({ $value: { alpha: 0.5 } })
     expect(dark.overlay!.scrim).toMatchObject({
       $type: 'color',
       $value: { components: [0.06, 0.09, 0.16], alpha: 0.6 },
@@ -677,6 +679,37 @@ describe("Figma's REST API response", () => {
       defaultModeId: '2:0',
       extends: { parent: 'C1', variables: ['V1'], overrides: { V1: { '2:0': { alias: 'V9' } } } },
     })
+  })
+
+  it('reads a composed color in both of the shapes Figma has given it', () => {
+    const color = (value: unknown) => ({
+      id: 'V1',
+      name: 'scrim',
+      variableCollectionId: 'C1',
+      resolvedType: 'COLOR',
+      valuesByMode: { '1:0': value },
+      scopes: [],
+    })
+    const read = (value: unknown) =>
+      figmaTokens(
+        fromFigmaRest({
+          meta: {
+            variableCollections: {
+              C1: { id: 'C1', name: 'T', modes: [{ modeId: '1:0', name: 'V' }], defaultModeId: '1:0' },
+            },
+            variables: { V1: color(value), V2: { ...color(red), id: 'V2', name: 'red' } },
+          },
+        })!,
+      ).files['T.tokens.json'] as Record<string, Record<string, unknown>>
+    const alias = { type: 'VARIABLE_ALIAS', id: 'V2' }
+    expect(read({ color: alias, opacity: 25 }).scrim).toMatchObject({ $value: { alpha: 0.25 } })
+    expect(
+      read({
+        type: 'VARIABLE_EXPRESSION',
+        expressionFunction: 'COMPOSE_COLOR',
+        expressionArguments: [alias, { type: 'FLOAT', resolvedType: 'FLOAT', value: 25 }],
+      }).scrim,
+    ).toMatchObject({ $value: { alpha: 0.25 } })
   })
 
   it('leaves other token files alone', async () => {
