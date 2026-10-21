@@ -60,10 +60,11 @@ const en = {
     lead: 'Open-source tools for design systems. No account and no server: they run in your browser, your CI or your terminal.',
     tools: {
       diff: 'Two versions of design tokens: what changed in each theme, what breaks, which version to ship',
-      fix: 'Hand-written values in your code replaced with tokens, picked by purpose: background or text, hover, component',
+      fix: 'Your design system and your code: which token to use instead of a value, what to replace, which tokens are missing',
       action:
         'A report on every pull request: what a token change breaks in your code, and a failed check when it does',
       mcp: 'Coding agents use your tokens instead of hard-coded values and check the code they write: Tailwind, JSX, CSS',
+      engine: 'The open engine behind it: DTCG 2025.10, snapshots, diff, rules',
       actionTitle: 'GitHub Action',
       mcpTitle: 'MCP server',
     },
@@ -503,9 +504,9 @@ const en = {
   fixPage: {
     title: 'Token Fix · Specsure',
     description:
-      "Replace hand-written values with your design system's tokens: the token is picked by its purpose, for a background or text, for hover, for a component. CSS, JSX and Tailwind; any system from npm, GitHub or your files, read in your browser.",
-    lead: "Replace hand-written values with your design system's tokens. Paste a color, a size or a piece of CSS, JSX or Tailwind, and Token Fix picks the token by its purpose: for a background or text, for hover, for a component. Or check a whole project: what to replace and which tokens the system is missing. Everything is read in your browser and never uploaded.",
-    how: 'The same for a coding agent',
+      'Open a design system and see which token to use instead of a value from a mockup or code, chosen by purpose: for a background or text, for hover, for a component. Add your app to see what to replace with tokens and which tokens the system is missing.',
+    lead: 'Open a design system and see which token to use instead of a value from a mockup or code: for a background or text, for hover, for a component, chosen by purpose and not just by a matching value. Add your app to see which values in it to replace with tokens and which tokens the system is missing. Everything is read in your browser and never uploaded.',
+    how: 'Connect a coding agent',
   },
 
   lookup: {
@@ -833,10 +834,11 @@ const ru: Messages = {
     lead: 'Открытые инструменты для дизайн-систем. Без регистрации и без сервера: всё работает в браузере, в CI или в терминале.',
     tools: {
       diff: 'Две версии дизайн-токенов: что изменилось в каждой теме, что сломается, какую версию выпускать',
-      fix: 'Вписанные вручную значения в коде заменяются токенами, подобранными по назначению: фон или текст, наведение, компонент',
+      fix: 'Дизайн-система и ваш код: какой токен взять вместо значения, что заменить, каких токенов не хватает',
       action:
         'Отчёт в каждом pull request: что изменение токенов сломает в вашем коде, и проваленная проверка, если ломает',
       mcp: 'ИИ-агенты берут ваши токены вместо вписанных значений и проверяют написанный код: Tailwind, JSX, CSS',
+      engine: 'Открытый движок, на котором всё построено: DTCG 2025.10, снимки, сравнение, правила',
       actionTitle: 'GitHub Action',
       mcpTitle: 'MCP-сервер',
     },
@@ -1322,9 +1324,9 @@ const ru: Messages = {
   fixPage: {
     title: 'Token Fix · Specsure',
     description:
-      'Замените вписанные вручную значения на токены дизайн-системы: токен подбирается по назначению — для фона или текста, для наведения, для компонента. CSS, JSX и Tailwind; любая система из npm, GitHub или ваших файлов, всё читается в браузере.',
-    lead: 'Замените вписанные вручную значения на токены вашей дизайн-системы. Вставьте цвет, размер или кусок CSS, JSX, Tailwind — Token Fix подберёт токен по назначению: для фона или текста, для наведения, для компонента. Или проверьте весь проект: что заменить и каких токенов в системе не хватает. Всё читается в браузере и никуда не загружается.',
-    how: 'То же для ИИ-агента',
+      'Откройте дизайн-систему и узнайте, какой токен взять вместо значения из макета или кода, по назначению: для фона или текста, для наведения, для компонента. Добавьте своё приложение, чтобы увидеть, что заменить на токены и каких токенов в системе не хватает.',
+    lead: 'Откройте дизайн-систему и узнайте, какой токен взять вместо значения из макета или кода: для фона или текста, для наведения, для компонента — по назначению, а не только по совпадению значения. Добавьте своё приложение, чтобы увидеть, какие значения в нём заменить на токены и каких токенов в системе не хватает. Всё читается в браузере и никуда не загружается.',
+    how: 'Подключить ИИ-агента',
   },
 
   lookup: {
