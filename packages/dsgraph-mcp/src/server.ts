@@ -91,7 +91,7 @@ const failure = (t: string) => ({ content: [{ type: 'text' as const, text: t }],
 
 /** The MCP server: read-only tools over a design system's tokens, built on dsgraph. */
 export function createServer(opts: ServerOptions): McpServer {
-  const server = new McpServer({ name: 'dsgraph', version: opts.version ?? '0.8.0' })
+  const server = new McpServer({ name: 'dsgraph', version: opts.version ?? '0.8.1' })
   const config = opts.config ?? {}
   const cache = new Map<string, { graph: Promise<DsGraph>; at: number }>()
 

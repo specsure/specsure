@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/rules",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Rule engine and built-in rules for dsgraph: layers, contrast, palettes, deprecations, naming.",
   "license": "MIT",
   "type": "module",
@@ -27,7 +27,7 @@
     "node": ">=20.19"
   },
   "dependencies": {
-    "@dsgraph/core": "0.8.0",
+    "@dsgraph/core": "0.8.1",
     "culori": "4.0.2"
   },
   "devDependencies": {

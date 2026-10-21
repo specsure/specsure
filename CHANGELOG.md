@@ -3,11 +3,12 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.8.1 — 2026-10-22
 
 - `coverageOf` counts classes of Tailwind's own palette the system has no token for as written by
   hand, as `style/hardcoded-color` reports them: `dsgraph check --code` no longer says there are no
   colors in code made of such classes.
+- GitHub Action v1.6.1 is built on it.
 
 ## 0.8.0 — 2026-10-22
 

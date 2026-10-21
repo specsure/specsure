@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/action",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "description": "GitHub Action: compare design tokens in pull requests. Built into one file and published to github.com/specsure/dsgraph-action.",
   "license": "MIT",
@@ -10,12 +10,12 @@
     "sync": "node scripts/sync.mjs"
   },
   "dependencies": {
-    "@dsgraph/adapters": "0.8.0",
-    "@dsgraph/cli": "0.8.0",
-    "@dsgraph/core": "0.8.0",
-    "@dsgraph/report": "0.8.0",
-    "@dsgraph/rules": "0.8.0",
-    "@dsgraph/sources": "0.8.0",
+    "@dsgraph/adapters": "0.8.1",
+    "@dsgraph/cli": "0.8.1",
+    "@dsgraph/core": "0.8.1",
+    "@dsgraph/report": "0.8.1",
+    "@dsgraph/rules": "0.8.1",
+    "@dsgraph/sources": "0.8.1",
     "@specsure/knowledge": "^0.1.0"
   },
   "devDependencies": {
