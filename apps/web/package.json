@@ -1,5 +1,6 @@
 {
   "name": "@specsure/web",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "specsure.vercel.app: Token Diff and other design-system tools. Static, everything runs in the browser.",
