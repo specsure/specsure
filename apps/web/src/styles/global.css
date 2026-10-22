@@ -1660,6 +1660,7 @@ button.graph__node:hover {
 .guide {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  container-type: inline-size;
 }
 .guide-nav {
   position: sticky;
@@ -1938,8 +1939,19 @@ button.graph__node:hover {
   margin-top: 0;
 }
 /* The live result needs the full page width, not the text column. */
+/* The full result takes the width up to the page's right edge, past the text column. */
 .figure--result {
   width: min(var(--page-w), calc(100vw - 2 * var(--space-4)));
+}
+/* In the guide, measured on the guide itself, not the window: 100vw counts a scrollbar that takes
+   room, and beside the sidebar the figure starts past it. */
+.guide .figure--result {
+  width: 100cqw;
+}
+@media (min-width: 960px) {
+  .guide .figure--result {
+    width: calc(100cqw - 200px - var(--space-12));
+  }
 }
 .list--static {
   border-right: 0;
