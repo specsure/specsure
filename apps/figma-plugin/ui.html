@@ -100,10 +100,19 @@
     padding: 0 8px;
     border-bottom: 1px solid var(--line);
     background-color: var(--panel);
+  }
+  /* The dot grid fades in from the left, as the site's does. */
+  header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
     background-size: 6px 6px;
+    mask-image: linear-gradient(90deg, transparent 25%, #000);
+    pointer-events: none;
   }
   .tabs {
+    position: relative;
     flex: 1;
     display: flex;
     gap: 2px;
@@ -293,15 +302,29 @@
     color: var(--ink);
   }
 
-  /* The next step, back to the site: the anchor that this is the same product. */
+  /* The next step, back to the site: a suggestion, not a warning. A plain card, the mark and the
+     arrows the anchor that this is the same product. */
   .next {
     display: grid;
     gap: 2px;
     margin-top: 12px;
     padding: 8px 10px;
     border-radius: var(--radius-md);
-    background: var(--accent-soft);
-    color: var(--ink-2);
+    background: var(--raised);
+    box-shadow: 0 0 0 1px var(--edge);
+    color: var(--ink-3);
+  }
+  .next__label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .next__label svg {
+    color: var(--ink);
+  }
+  .next .arrow {
+    color: var(--accent);
   }
   .next a,
   .links a,
@@ -612,9 +635,15 @@
         </label>
       </fieldset>
       <div class="next">
-        <span>Next, on Specsure:</span>
-        <a href="https://specsure.vercel.app/tools/fix" data-open>Check your code in Token Fix →</a>
-        <a href="https://specsure.vercel.app/tools/diff" data-open>Compare two exports in Token Diff →</a>
+        <span class="next__label">
+          <svg width="12" height="12" viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor" />
+            <rect x="10" y="16.5" width="20" height="10.5" rx="5.25" fill="var(--accent-fill)" />
+          </svg>
+          Next, on Specsure
+        </span>
+        <a href="https://specsure.vercel.app/tools/fix" data-open>Check your code in Token Fix <span class="arrow" aria-hidden="true">→</span></a>
+        <a href="https://specsure.vercel.app/tools/diff" data-open>Compare two exports in Token Diff <span class="arrow" aria-hidden="true">→</span></a>
       </div>
       <details id="notes" hidden><summary></summary><ul></ul></details>
     </div>
