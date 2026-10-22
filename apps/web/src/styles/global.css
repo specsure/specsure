@@ -34,6 +34,10 @@ body {
 a {
   color: var(--ink);
   text-decoration: none;
+  /* The line runs under the whole word: with skipping, it breaks at descenders, and under
+     "Исходный код" the д's are left without it. */
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
 }
 
 ::selection {
