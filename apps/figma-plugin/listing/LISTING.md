@@ -55,3 +55,34 @@ design tokens, dtcg, tokens, variables, export, design system, json, styles, typ
 ## Support
 
 github.com/specsure/specsure/issues
+
+# Playground file
+
+The Community file the plugin's page links to as its playground. Cover: the `Thumbnail` frame on the file's Try it page.
+
+## Name
+
+Specsure Token Export — Playground
+
+## Description
+
+A small design system to try Specsure Token Export on. Duplicate the file, run the plugin and see how its variables and styles become DTCG 2025.10 design tokens.
+
+What is inside
+• Primitives: colors, spacing, radii, font sizes, a font family and weights. They have no scopes, so the plugin types each one from the variables that refer to it.
+• Theme, Light and Dark: semantic colors that refer to primitives, and a scrim made of a color and an opacity.
+• Density, Desktop and Mobile: padding, gaps, a corner radius and font sizes, each a reference to a primitive.
+• Motion: durations, easings with a back curve and a custom Bézier, a spring and a boolean flag.
+• Nine styles: three text styles bound to variables, a shadow and a blur, a color and a gradient, two layout grids.
+• A sample card built on these variables, shown in Light · Desktop and Dark · Mobile.
+
+Try it
+1. Duplicate the file and open Plugins → Specsure Token Export → Read file.
+2. See what it found: four collections with their modes, nine styles, and notes on what DTCG has no type for (the spring, the flag, the blur).
+3. Download the .zip or the one file and drop it into Token Diff or Token Fix on specsure.vercel.app.
+
+Change a value or a mode, export again, and drop both exports into Token Diff to see what the change breaks.
+
+## Tags
+
+design tokens, dtcg, variables, modes, design system, playground
