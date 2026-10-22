@@ -41,7 +41,8 @@
   body.only [data-asset]:not(.is-only), body.only .icons:not(:has(.is-only)) { display: none; }
   .cover__text { position: absolute; left: 160px; top: 50%; transform: translateY(-50%); width: 900px; }
   .wordmark { display: flex; align-items: center; gap: 20px; font: 600 44px / 1 var(--font-ui); letter-spacing: -0.01em; }
-  .cover h1 { margin: 64px 0 24px; font: 600 112px / 1.02 var(--font-ui); letter-spacing: -0.035em; }
+  /* The site's tracking for large titles (--tracking-title-l): any tighter, and r and t touch at this size. */
+  .cover h1 { margin: 64px 0 24px; font: 600 112px / 1.02 var(--font-ui); letter-spacing: -0.02em; }
   .cover p { margin: 0; color: var(--ink-2); font: 400 36px / 1.35 var(--font-ui); max-width: 820px; }
   .chips { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 48px; }
   .chip {
