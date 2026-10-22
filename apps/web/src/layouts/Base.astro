@@ -133,7 +133,7 @@ const DETECT = `(() => {
     <main>
       <slot />
     </main>
-    <dialog class="about" id="about" aria-label={m.site.about.label}>
+    <dialog class="about" id="about" aria-label={m.site.about.label} tabindex="-1">
       <header class="about__head">
         <svg class="mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
           <rect x="2" y="5" width="20" height="10.5" rx="5.25" fill="currentColor"></rect>
@@ -170,7 +170,11 @@ const DETECT = `(() => {
     <script>
       const about = document.getElementById('about') as HTMLDialogElement | null
       for (const b of document.querySelectorAll('[data-about-open]'))
-        b.addEventListener('click', () => about?.showModal())
+        b.addEventListener('click', () => {
+          about?.showModal()
+          // The window itself takes the focus, not its first button: a ring on ✕ looks like a selection.
+          about?.focus()
+        })
       about?.addEventListener('click', (e) => {
         if (e.target === about) about.close()
       })

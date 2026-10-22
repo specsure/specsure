@@ -71,6 +71,10 @@ select {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* A dialog takes the focus when it opens so that its first button does not; it is not a control. */
+dialog:focus {
+  outline: none;
+}
 
 .muted {
   color: var(--ink-3);

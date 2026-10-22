@@ -17,6 +17,8 @@ export function CardDialog({ data, fileName, onClose }: Props) {
 
   useEffect(() => {
     dialog.current?.showModal()
+    // The window itself takes the focus, not its first button.
+    dialog.current?.focus()
     if (canvas.current) drawCard(canvas.current, data, 2)
   }, [data])
 
@@ -39,7 +41,7 @@ export function CardDialog({ data, fileName, onClose }: Props) {
   }
 
   return (
-    <dialog ref={dialog} className="card-dialog" onClose={onClose} onCancel={onClose}>
+    <dialog ref={dialog} className="card-dialog" tabIndex={-1} onClose={onClose} onCancel={onClose}>
       <header>
         <h2>{t.card.title}</h2>
         <button
