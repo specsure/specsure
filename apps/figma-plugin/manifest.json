@@ -1,6 +1,6 @@
 {
   "name": "Specsure Token Export",
-  "id": "specsure-export-tokens",
+  "id": "1695092493524469402",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "ui.html",
