@@ -186,7 +186,10 @@ const WEIGHTS: Array<[RegExp, number]> = [
   [/bold/i, 700],
   [/black|heavy/i, 900],
   [/medium/i, 500],
+  [/regular|normal|book|roman|plain/i, 400],
 ]
+/** A weight from a font style's name: `Semi Bold` 600, `Regular` 400. */
+const weightOf = (style: string): number | undefined => WEIGHTS.find(([re]) => re.test(style))?.[1]
 
 /**
  * Figma's named curves: CSS's own, and the back curves as Figma draws them. Springs and `HOLD`
@@ -284,8 +287,18 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
               ((!scopes.size || scopes.has('ALL_SCOPES')) && LENGTH_WORDS.test(v.name))
             ? 'dimension'
             : 'number'
-    } else if (v.type === 'STRING')
-      t = v.scopes.includes('FONT_FAMILY') || /font|family|typeface/i.test(v.name) ? 'fontFamily' : null
+    } else if (v.type === 'STRING') {
+      // A font style by its name (`Semi Bold`), as a text style's weight is bound to: its weight.
+      const literals = Object.values(v.valuesByMode).filter((x) => !isAlias(x))
+      const styleLike =
+        v.scopes.includes('FONT_STYLE') || v.scopes.includes('FONT_WEIGHT') || /weight/i.test(v.name)
+      t =
+        styleLike && literals.every((x) => typeof x === 'string' && weightOf(x) !== undefined)
+          ? 'fontWeight'
+          : v.scopes.includes('FONT_FAMILY') || /font|family|typeface/i.test(v.name)
+            ? 'fontFamily'
+            : null
+    }
     types.set(v.id, t)
     return t
   }
@@ -302,6 +315,7 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
         ? { value: round(value), unit: 'px' }
         : round(type === 'number' && isOpacity(scopes) ? value / 100 : value)
     if (type === 'fontFamily' && typeof value === 'string') return value
+    if (type === 'fontWeight' && typeof value === 'string') return weightOf(value)
     return undefined
   }
 
@@ -687,7 +701,7 @@ function typography(
   ref: (id: string | undefined, type: string) => string | undefined,
 ): Doc {
   const size = s.fontSize
-  const weight = WEIGHTS.find(([re]) => re.test(s.fontStyle))?.[1] ?? 400
+  const weight = weightOf(s.fontStyle) ?? 400
   const lineHeight =
     s.lineHeight.unit === 'PIXELS' && s.lineHeight.value
       ? round(s.lineHeight.value / size)
@@ -700,7 +714,8 @@ function typography(
   return {
     fontFamily: ref(b.fontFamily, 'fontFamily') ?? s.fontFamily,
     fontSize: ref(b.fontSize, 'dimension') ?? { value: round(size), unit: 'px' },
-    fontWeight: ref(b.fontWeight, 'fontWeight') ?? weight,
+    // The weight is bound as the font style, a name: a variable of them is a fontWeight.
+    fontWeight: ref(b.fontWeight, 'fontWeight') ?? ref(b.fontStyle, 'fontWeight') ?? weight,
     letterSpacing: ref(b.letterSpacing, 'dimension') ?? { value: round(tracking), unit: 'px' },
     lineHeight,
   }

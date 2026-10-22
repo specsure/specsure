@@ -506,6 +506,70 @@ describe('Figma extended collections', () => {
   })
 })
 
+describe('Figma font styles in variables', () => {
+  it('writes a string variable of font style names as a fontWeight, a text style bound to it as a reference', () => {
+    const out = figmaTokens(
+      bare({
+        collections: [
+          {
+            id: 'f',
+            name: 'Font',
+            modes: [
+              { id: 'a', name: 'Brand' },
+              { id: 'b', name: 'Plain' },
+            ],
+            defaultModeId: 'a',
+          },
+        ],
+        variables: [
+          {
+            id: 'w',
+            name: 'Weight/Bold',
+            collectionId: 'f',
+            type: 'STRING',
+            scopes: [],
+            valuesByMode: { a: 'SemiBold', b: 'Regular' },
+          },
+          {
+            id: 'x',
+            name: 'Weight/Note',
+            collectionId: 'f',
+            type: 'STRING',
+            scopes: [],
+            valuesByMode: { a: 'Italic', b: 'Italic' },
+          },
+        ],
+        styles: {
+          paint: [],
+          text: [
+            {
+              id: 't',
+              name: 'Title',
+              fontFamily: 'Roboto',
+              fontStyle: 'SemiBold',
+              fontSize: 22,
+              lineHeight: { unit: 'PIXELS', value: 28 },
+              letterSpacing: { unit: 'PIXELS', value: 0 },
+              bound: { fontStyle: 'w' },
+            },
+          ],
+          effect: [],
+        },
+      }),
+    )
+    expect(out.files['Font/Brand.tokens.json']).toMatchObject({
+      Weight: { Bold: { $type: 'fontWeight', $value: 600 } },
+    })
+    expect(out.files['Font/Plain.tokens.json']).toMatchObject({ Weight: { Bold: { $value: 400 } } })
+    expect(out.notes).toEqual([
+      { name: 'Weight/Note', message: 'string variables have no DTCG type; left out' },
+    ])
+    expect(out.files['styles.tokens.json']).toMatchObject({
+      styles: { Title: { $value: { fontWeight: '{Weight.Bold}', lineHeight: 1.2727 } } },
+    })
+  })
+})
+
 describe('Figma grid styles', () => {
   it('writes a grid style as a group of its numbers', () => {
     const out = figmaTokens(
