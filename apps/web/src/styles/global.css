@@ -2003,17 +2003,6 @@ button.graph__node:hover {
   color: var(--ink);
   font: var(--text-body-strong);
 }
-.tag--soon {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-.about__soon {
-  display: flex;
-  gap: var(--space-2);
-  align-items: baseline;
-  margin: 0;
-  color: var(--ink-2);
-}
 
 /* Home */
 
