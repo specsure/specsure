@@ -81,3 +81,48 @@ const css = `:root {
 `
 
 export const LOOKUP_EXAMPLE: DroppedFile[] = [{ path: 'tokens.css', text: css }]
+
+/**
+ * A small app on the example, for the guide's code figure: a button in Tailwind with the accent
+ * written by hand, a card in CSS with one size off the scale and a misspelt variable, and an alert
+ * with a style object.
+ */
+export const LOOKUP_APP: DroppedFile[] = [
+  {
+    path: 'components/Button.tsx',
+    text: `export function Button({ children }) {
+  return (
+    <button className="rounded-[8px] bg-[#2563eb] px-[16px] py-[8px] text-white hover:bg-[#1d4ed8]">
+      {children}
+    </button>
+  )
+}
+`,
+  },
+  {
+    path: 'components/card.css',
+    text: `.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+}
+.card__title {
+  color: var(--text-defualt);
+}
+.card__meta {
+  color: #64748b;
+}
+.card__link {
+  color: var(--text-accent);
+}
+`,
+  },
+  {
+    path: 'components/Alert.tsx',
+    text: `export function Alert({ children }) {
+  return <div style={{ color: '#dc2626', background: '#fef2f2', padding: 12 }}>{children}</div>
+}
+`,
+  },
+]

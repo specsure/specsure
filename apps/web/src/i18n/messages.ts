@@ -29,6 +29,19 @@ const en = {
       cli: 'CLI',
       about: 'About',
     },
+    guide: {
+      aria: 'Guide',
+      pages: {
+        start: 'Overview',
+        diff: 'Token Diff',
+        fix: 'Token Fix',
+        figma: 'Figma plugin',
+        mcp: 'MCP server',
+      },
+      onPage: 'On this page',
+      prev: 'Previous',
+      next: 'Next',
+    },
     footer: 'Specsure, MIT license',
     source: 'Source',
     about: {
@@ -492,7 +505,7 @@ const en = {
     },
   },
 
-  figure: { running: 'Running dsgraph…', compare: 'Compare', theme: 'theme' },
+  figure: { running: 'Running dsgraph…', compare: 'Compare', theme: 'theme', again: 'Start again' },
 
   diffNext: {
     title: 'Next: fix the code for this version',
@@ -507,6 +520,7 @@ const en = {
       'Which token of your design system to use in place of a color or a size from a mockup. The same color often belongs to a text token, a background token and a border token; Token Fix picks the one made for that spot.',
     lead: 'Tells you which token of your design system to use in place of a color or a size from a mockup. The same color often belongs to a text token, a background token and a border token; Token Fix picks the one made for that spot. Add your app, and it finds the values written by hand in its code and what to replace them with. Everything is read in your browser and never uploaded.',
     how: 'Connect a coding agent',
+    guide: 'How it works',
   },
 
   lookup: {
@@ -817,6 +831,19 @@ const ru: Messages = {
       mcp: 'MCP',
       cli: 'CLI',
       about: 'О проекте',
+    },
+    guide: {
+      aria: 'Гайд',
+      pages: {
+        start: 'Обзор',
+        diff: 'Token Diff',
+        fix: 'Token Fix',
+        figma: 'Плагин для Figma',
+        mcp: 'MCP-сервер',
+      },
+      onPage: 'На этой странице',
+      prev: 'Назад',
+      next: 'Дальше',
     },
     footer: 'Specsure, лицензия MIT',
     source: 'Исходный код',
@@ -1327,7 +1354,7 @@ const ru: Messages = {
     },
   },
 
-  figure: { running: 'dsgraph считает…', compare: 'Сравнить', theme: 'theme' },
+  figure: { running: 'dsgraph считает…', compare: 'Сравнить', theme: 'theme', again: 'Начать сначала' },
 
   diffNext: {
     title: 'Дальше: поправить код под эту версию',
@@ -1342,6 +1369,7 @@ const ru: Messages = {
       'Какой токен вашей дизайн-системы поставить вместо цвета или размера из макета. Один и тот же цвет часто есть у токена для текста, для фона и для рамки — Token Fix выбирает тот, что сделан именно для этого места.',
     lead: 'Подскажет, какой токен вашей дизайн-системы поставить вместо цвета или размера из макета. Один и тот же цвет часто есть у токена для текста, для фона и для рамки — Token Fix выбирает тот, что сделан именно для этого места. Добавьте своё приложение, и он найдёт в коде значения, вписанные вручную, и предложит, на что их заменить. Всё читается в браузере и никуда не загружается.',
     how: 'Подключить ИИ-агента',
+    guide: 'Как это работает',
   },
 
   lookup: {

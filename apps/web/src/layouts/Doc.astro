@@ -1,20 +1,122 @@
 ---
-import type { Lang } from '../i18n'
+import type { MarkdownHeading } from 'astro'
+import { type Lang, localePath } from '../i18n'
+import { messages } from '../i18n/messages'
+import { GUIDE } from '../lib/guide'
 import Base from './Base.astro'
 
 interface Props {
   frontmatter: { title: string; description: string; path: string; lang?: Lang }
+  headings?: MarkdownHeading[]
 }
-const { frontmatter } = Astro.props
+const { frontmatter, headings = [] } = Astro.props
+const lang = frontmatter.lang ?? 'en'
+const g = messages[lang].site.guide
+const here = GUIDE.findIndex((p) => p.path === frontmatter.path)
+const sections = headings.filter((h) => h.depth === 2)
+const prev = here > 0 ? GUIDE[here - 1] : undefined
+const next = here >= 0 && here < GUIDE.length - 1 ? GUIDE[here + 1] : undefined
 ---
 
 <Base
   title={`${frontmatter.title} · Specsure`}
   description={frontmatter.description}
   path={frontmatter.path}
-  lang={frontmatter.lang ?? 'en'}
+  lang={lang}
 >
-  <article class="prose">
-    <slot />
-  </article>
+  <div class="guide">
+    <nav class="guide-nav" aria-label={g.aria}>
+      <details class="guide-nav__menu" id="guide-menu">
+        <summary class="guide-nav__summary">
+          <span class="muted">{g.aria}</span>
+          <span class="guide-nav__current">{here >= 0 ? g.pages[GUIDE[here]!.key] : frontmatter.title}</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </summary>
+        <ol class="guide-nav__pages">
+          {GUIDE.map((p, i) => (
+            <li>
+              <a href={localePath(lang, p.path)} aria-current={i === here ? 'page' : undefined}>{g.pages[p.key]}</a>
+              {i === here && sections.length > 1 && (
+                <ol class="guide-nav__toc" aria-label={g.onPage}>
+                  {sections.map((h) => (
+                    <li>
+                      <a href={`#${h.slug}`} data-toc={h.slug}>{h.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </li>
+          ))}
+        </ol>
+      </details>
+    </nav>
+    <script is:inline>
+      // Wide screens show the menu as a sidebar, always open; on a phone it folds under one line.
+      ;(() => {
+        const menu = document.getElementById('guide-menu')
+        const wide = matchMedia('(min-width: 960px)')
+        const sync = () => {
+          if (menu) menu.open = wide.matches
+        }
+        sync()
+        wide.addEventListener('change', sync)
+      })()
+    </script>
+    <article class="prose">
+      <slot />
+      {(prev || next) && (
+        <nav class="guide-pager" aria-label={g.aria}>
+          {prev ? (
+            <a class="guide-pager__link" href={localePath(lang, prev.path)} rel="prev">
+              <span class="muted">{g.prev}</span>
+              <span>← {g.pages[prev.key]}</span>
+            </a>
+          ) : (
+            <span></span>
+          )}
+          {next && (
+            <a class="guide-pager__link guide-pager__link--next" href={localePath(lang, next.path)} rel="next">
+              <span class="muted">{g.next}</span>
+              <span>{g.pages[next.key]} →</span>
+            </a>
+          )}
+        </nav>
+      )}
+    </article>
+  </div>
+  <script>
+    // The section being read is marked in the sidebar: the last heading above the top third of the screen.
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')]
+    const heads = links
+      .map((a) => document.getElementById(a.dataset.toc ?? ''))
+      .filter((h): h is HTMLElement => !!h)
+    let frame = 0
+    const mark = () => {
+      frame = 0
+      const line = innerHeight / 3
+      let on = -1
+      heads.forEach((h, i) => {
+        if (h.getBoundingClientRect().top < line) on = i
+      })
+      // At the very bottom the last section counts, however short it is.
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) on = heads.length - 1
+      links.forEach((a, i) => {
+        if (i === on) a.setAttribute('aria-current', 'location')
+        else a.removeAttribute('aria-current')
+      })
+    }
+    if (heads.length) {
+      addEventListener('scroll', () => (frame ||= requestAnimationFrame(mark)), { passive: true })
+      addEventListener('resize', () => (frame ||= requestAnimationFrame(mark)))
+      mark()
+    }
+    // On a phone, picking a section folds the menu back.
+    const menu = document.getElementById('guide-menu') as HTMLDetailsElement | null
+    for (const a of links)
+      a.addEventListener('click', () => {
+        if (menu && !matchMedia('(min-width: 960px)').matches) menu.open = false
+      })
+  </script>
 </Base>

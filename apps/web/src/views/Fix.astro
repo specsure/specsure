@@ -16,6 +16,8 @@ const p = messages[lang].fixPage
     <h1>Token Fix</h1>
     <p>
       {p.lead}{' '}
+      <a class="inline-link" href={localePath(lang, '/tools/fix/guide')}>{p.guide}</a>
+      {' · '}
       <a class="inline-link" href={localePath(lang, '/tools/mcp')}>{p.how}</a>
     </p>
   </header>

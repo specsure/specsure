@@ -1,0 +1,44 @@
+---
+layout: ../../layouts/Doc.astro
+title: Guide
+description: What each Specsure tool is for and how they fit together, from Figma variables to the code that uses the tokens. Token Diff, Token Fix, the Figma plugin, the MCP server and CI.
+path: /guide
+---
+
+# Guide
+
+Specsure is a set of open tools for design tokens and the code that uses them. They read the same tokens, whatever wrote them, and run where you work: in the browser, in Figma, in CI and next to your coding agent.
+
+## Which tool for what
+
+| You want to | Use |
+|---|---|
+| See what a token release changes and breaks, and which version it needs | [Token Diff](/tools/diff/guide) |
+| Find the token for a color or a size, and put the values written by hand in your code on tokens | [Token Fix](/tools/fix/guide) |
+| Get a Figma file's variables and styles out as DTCG tokens | [Figma plugin](/tools/figma) |
+| Have a coding agent use your tokens instead of hard-coded values | [MCP server](/tools/mcp) |
+| Check every pull request that changes tokens or code | [GitHub Action](/tools/diff/guide#in-ci) |
+
+## How they fit together
+
+1. **Export from Figma.** The plugin writes the file's variables and styles as DTCG 2025.10: a .zip with a file per collection and mode and a resolver, or one file.
+2. **Fix the code in Token Fix.** Open the export or your token package, find the token for each value, and add your app to see what in it is written by hand and what to write instead.
+3. **Compare before a release in Token Diff.** The previous version against the new one, a package, a repository or two exports: what breaks, in which theme, and the semver bump.
+4. **Keep it checked.** The GitHub Action posts the same report on every pull request, and the MCP server gives coding agents the tokens, so new code starts on them.
+
+Each step works on its own: Token Diff and Token Fix read token packages and repositories that never went through Figma.
+
+## What they read
+
+- **DTCG 2025.10:** token files, resolver documents with sets and modifiers, modes in `$extensions.mode`.
+- **Older token JSON** with `value` and `type`, token sets and theme files.
+- **CSS custom properties**, with themes in `:root`, `[data-theme]`, `.dark` or `prefers-color-scheme`.
+- **From anywhere:** dropped files, a folder or a .zip, an npm package, a GitHub repository.
+
+## Privacy
+
+Everything runs on your side: in your browser tab, in Figma, on your CI runner or your computer. There is no account. Your files are never uploaded; packages and repositories are fetched by your browser straight from jsDelivr and GitHub.
+
+## Open source
+
+The tools and the engine behind them, dsgraph, are open source under MIT: [github.com/specsure/specsure](https://github.com/specsure/specsure). The same engine runs as a [CLI](https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme) in your terminal.

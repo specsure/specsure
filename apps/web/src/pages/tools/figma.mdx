@@ -1,0 +1,119 @@
+---
+layout: ../../layouts/Doc.astro
+title: Figma plugin
+description: Specsure Token Export writes a Figma file's variables and styles as DTCG 2025.10 design tokens, with modes, references and a resolver. It reads only and works offline.
+path: /tools/figma
+---
+
+import PluginFigure from '../../components/PluginFigure'
+
+# Figma plugin
+
+**Specsure Token Export** writes a Figma file's variables and styles as design tokens in DTCG 2025.10, the W3C format, so that Token Diff, Token Fix, the dsgraph CLI and CI read them as they are. It reads the file and never changes it, and it has no network access. [Get it in Figma Community](https://www.figma.com/community/plugin/1695092493524469402)
+
+The figure is the plugin itself, as Figma shows it, on a small example file: four collections, two of them with modes, and styles of every kind. Press **Read file**, then download what it writes.
+
+<PluginFigure client:only="react" caption="The plugin on the example file. The download is what the plugin writes for it." />
+
+## How to use it
+
+1. **Open the file** with your variables and styles, and run **Plugins → Specsure Token Export**.
+2. **Read file** (<kbd>↵</kbd>). The plugin lists the collections with their modes, the styles by kind, and notes on what it left out.
+3. **Choose how to save:**
+   - **.zip:** a file per collection and mode, with a resolver; the layout a repository and most tools read.
+   - **One file:** every mode inside its token, to drop into Token Fix or Token Diff as it is. **Copy** puts it on the clipboard.
+4. **Use it.** Drop the .zip or the one file into [Token Fix](/tools/fix/guide) or [Token Diff](/tools/diff/guide), or unpack the .zip into your repository.
+
+## What you get
+
+The .zip holds one folder:
+
+```text
+tokens/
+  Primitives.tokens.json        a collection with one mode
+  Theme/Light.tokens.json       a collection with modes: a file per mode
+  Theme/Dark.tokens.json
+  styles.tokens.json            color, text, effect and grid styles
+  tokens.resolver.json          ties the collections and modes together
+```
+
+The resolver is the DTCG way to say which files make a theme. Each collection with modes is a modifier, its default mode the default:
+
+```json
+"modifiers": {
+  "Theme": {
+    "contexts": {
+      "Light": [{ "$ref": "Theme/Light.tokens.json" }],
+      "Dark": [{ "$ref": "Theme/Dark.tokens.json" }]
+    },
+    "default": "Light"
+  }
+}
+```
+
+The one file has the same tokens with each mode's value in `$extensions.mode`, for tools that read a single file.
+
+## From Figma to DTCG
+
+| Figma | DTCG |
+|---|---|
+| Color | `color`, with the hex kept |
+| Number | `dimension` in px for lengths, `fontWeight` for weights, `number` otherwise |
+| String | `fontFamily` for font families, `fontWeight` for font style names; other strings are left out |
+| Easing | `cubicBezier`, Figma's back curves included |
+| Timing | `duration` in ms |
+| Mode | a context of the collection's modifier in the resolver |
+| Text style | `typography`, bound variables as references |
+| Effect style | `shadow` |
+| Color style | `color` or `gradient` |
+| Grid style | a group of its numbers: `count`, `gutter`, `offset` and `size` per grid |
+
+A variable's name is its path: `color/text/default` becomes `color.text.default`, and a reference stays a reference, `{color.gray.900}`, across collections. Descriptions, scopes, code syntax and variable ids go into `$extensions`, under `com.figma`.
+
+## Types it gets right
+
+Figma keeps less type information than DTCG asks for. The plugin reads it from where it is:
+
+- **Numbers from scopes.** A number offered for gaps, radii, sizes, strokes or font sizes is a length in px. A number with no scopes takes its type from the variables that refer to it, so a primitive used for font sizes is a dimension too.
+- **Opacities in fractions.** Figma keeps an opacity in percent; DTCG wants a fraction: 40 becomes 0.4.
+- **Font weights from names.** A string variable of font style names, the kind a text style's weight is bound to, becomes a weight: `Semi Bold` is 600. The text style refers to it.
+- **Line height as a multiple.** DTCG's typography takes the line height as a multiple of the font size: 24px on 16px is 1.5.
+- **Names that keep references working.** DTCG does not allow a dot in a name: `opacity/0.5` becomes `opacity.0-5`, so a reference to it never breaks.
+
+For the example's Body style, bound to a font family and a font size that changes with density:
+
+```json
+"Body": {
+  "$type": "typography",
+  "$value": {
+    "fontFamily": "{font.family.sans}",
+    "fontSize": "{font.size.body}",
+    "fontWeight": 400,
+    "letterSpacing": { "value": 0, "unit": "px" },
+    "lineHeight": 1.5
+  }
+}
+```
+
+## Collections, libraries and composed colors
+
+- **Extended collections** are written as collections of their own, with everything they inherit, their overrides applied and their parent's modes.
+- **The same names in two collections:** each collection's tokens go under its name, references to them too, so that neither replaces the other when the files are read together.
+- **A library variable** is written as its value, with the library variable's name in `com.figma.alias`.
+- **A color composed of a color and an opacity** is written as the color with its alpha, and the two variables in `com.figma.composedColor`.
+
+## What is left out
+
+Whatever has no DTCG type is left out and listed after reading, with the reason: booleans and plain strings, springs, which have no cubic Bézier, blur effects, and styles of several paints.
+
+## Privacy
+
+The plugin reads the open file and never writes to it. Its manifest gives it no network access, so Figma lets it send nothing anywhere: the tokens go only where you save them.
+
+## Then
+
+- **Fix your code.** In [Token Fix](/tools/fix/guide), find the token for each value and what in your code is written by hand.
+- **Compare releases.** Export before and after a change and drop both into [Token Diff](/tools/diff/guide): what breaks, in which mode, and the version to release.
+- **Keep it in the repository.** Unpack the .zip into the repository and the [GitHub Action](/tools/diff/guide#in-ci) compares every pull request with its base branch.
+
+Source: [apps/figma-plugin](https://github.com/specsure/specsure/tree/main/apps/figma-plugin). The conversion is `figmaTokens` in [@dsgraph/adapters](https://github.com/specsure/specsure/tree/main/packages/dsgraph-adapters), tested without Figma; dsgraph uses the same code for a response of Figma's REST API.

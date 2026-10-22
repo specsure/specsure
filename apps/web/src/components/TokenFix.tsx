@@ -22,7 +22,7 @@ import type {
   ValueAnswer,
 } from '../lib/lookup-types'
 import { readLookupUrl, writeLookupUrl } from '../lib/lookup-url'
-import type { CodeInput, SideInput, TokenGraph } from '../lib/types'
+import type { CodeInput, DroppedFile, SideInput, TokenGraph } from '../lib/types'
 import { MAX_FRAGMENT, packFiles, unpackFiles } from '../lib/url'
 import { CodeField } from './CodeField'
 import { GraphView } from './GraphView'
@@ -83,6 +83,91 @@ export default function TokenFix({ lang = 'en' }: { lang?: Lang }) {
     <LangProvider lang={lang}>
       <App />
     </LangProvider>
+  )
+}
+
+/**
+ * Token Fix on its example, for the guide: the same window as on the page, live, with a search or a
+ * tab chosen in advance and, for the code tab, a small app built on the example. Nothing goes into
+ * the address.
+ */
+export function TokenFixFigure({
+  lang = 'en',
+  query,
+  view,
+  code,
+  caption,
+}: {
+  lang?: Lang
+  query?: string
+  view?: 'overview' | 'all' | 'code'
+  code?: DroppedFile[]
+  caption?: string
+}) {
+  return (
+    <LangProvider lang={lang}>
+      <figure className="figure figure--fix">
+        <FixFigure initial={query ?? ''} view={view} code={code} />
+        {caption && <figcaption>{caption}</figcaption>}
+      </figure>
+    </LangProvider>
+  )
+}
+
+function FixFigure({
+  initial,
+  view,
+  code,
+}: {
+  initial: string
+  view: 'overview' | 'all' | 'code' | undefined
+  code: DroppedFile[] | undefined
+}) {
+  const t = useT()
+  const ask = useLookup()
+  const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [findings, setFindings] = useState<Finding[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [context, setContext] = useState<Record<string, string>>({})
+  const [query, setQuery] = useState(initial)
+  const [token, setToken] = useState<string | undefined>()
+  useEffect(() => {
+    let live = true
+    const source: SideInput = { kind: 'files', files: LOOKUP_EXAMPLE }
+    ask({ kind: 'open', source, include: '' }).then(async (r) => {
+      if (!live) return
+      if (!r.ok) return setError(r.error)
+      if (r.kind !== 'open') return
+      setLoaded({ source, include: '', summary: r.summary, index: r.index, graph: r.graph, ms: r.ms })
+      const h = await ask({ kind: 'health' })
+      if (live && h.ok && h.kind === 'health') setFindings(h.findings)
+    })
+    return () => {
+      live = false
+    }
+  }, [ask])
+  const handed = useMemo<CodeInput | undefined>(
+    () => (code ? { kind: 'files', files: code } : undefined),
+    [code],
+  )
+  if (!loaded) return <div className="figure__loading">{error ?? t.figure.running}</div>
+  return (
+    <Browser
+      loaded={loaded}
+      findings={findings}
+      ask={ask}
+      context={context}
+      onContext={setContext}
+      query={query}
+      onQuery={setQuery}
+      token={token}
+      onToken={setToken}
+      share={undefined}
+      handedCode={handed}
+      onChecked={() => {}}
+      initialView={view}
+      shortcuts={false}
+    />
   )
 }
 
@@ -352,6 +437,10 @@ interface BrowserProps {
   handedCode?: CodeInput | undefined
   /** The code the Code tab has just checked. */
   onChecked: (c: CodeInput) => void
+  /** The tab to start on; by default the overview, or the code or the list when they were handed over. */
+  initialView?: 'overview' | 'all' | 'code'
+  /** `/` and ⌘K jump to this search. Off in the guide's figures, where several share a page. */
+  shortcuts?: boolean
 }
 
 /** One shown row: a token, and for a value search, how close it is. */
@@ -373,6 +462,8 @@ function Browser({
   share,
   handedCode,
   onChecked,
+  initialView,
+  shortcuts = true,
 }: BrowserProps) {
   const t = useT()
   const l = t.lookup
@@ -387,7 +478,7 @@ function Browser({
   const [overview, setOverview] = useState<Overview | null>(null)
   /** Every token as a list; otherwise an empty search shows the overview. A shared token link opens the list. */
   const [view, setView] = useState<'overview' | 'all' | 'code'>(
-    handedCode ? 'code' : token ? 'all' : 'overview',
+    initialView ?? (handedCode ? 'code' : token ? 'all' : 'overview'),
   )
   const catalog = view === 'all'
   const setCatalog = (on: boolean) => setView(on ? 'all' : 'overview')
@@ -519,6 +610,7 @@ function Browser({
 
   // / and ⌘K jump to the search.
   useEffect(() => {
+    if (!shortcuts) return
     const onKey = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)
       if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!typing && e.key === '/')) {
@@ -529,7 +621,7 @@ function Browser({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [shortcuts])
 
   const flash = (s: string) => {
     setStatus(s)
@@ -1031,7 +1123,8 @@ function ProjectPanel({
               <p className="muted">{l.replaceLead}</p>
               <ul className="lookup__groups">
                 {p.replace.map((g) => (
-                  <li key={`${g.value}${g.token}`}>
+                  // The same value and token can come twice, written two ways: rounded-md and var(--radius-md).
+                  <li key={`${g.value}${g.token}${g.replacement}`}>
                     <details>
                       <summary className="row">
                         {g.swatch ? (

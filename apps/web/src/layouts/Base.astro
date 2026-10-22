@@ -4,6 +4,7 @@ import core from '../../../../packages/dsgraph-core/package.json'
 import Backdrop from '../components/Backdrop.astro'
 import { type Lang, localePath } from '../i18n'
 import { messages } from '../i18n/messages'
+import { GUIDE } from '../lib/guide'
 import '../styles/global.css'
 
 interface Props {
@@ -21,7 +22,12 @@ const href = (p: string) => localePath(lang, p)
 const nav = [
   { href: href('/tools/diff'), label: m.site.nav.diff, current: ['/tools/diff'] },
   { href: href('/tools/fix'), label: m.site.nav.fix, current: ['/tools/fix'] },
-  { href: href('/tools/diff/guide'), label: m.site.nav.guide, current: ['/tools/diff/guide'], wide: true },
+  {
+    href: href('/guide'),
+    label: m.site.nav.guide,
+    current: GUIDE.map((p) => p.path).filter((p) => p !== '/tools/mcp'),
+    wide: true,
+  },
   { href: href('/tools/mcp'), label: m.site.nav.mcp, current: ['/tools/mcp'] },
   {
     href: 'https://github.com/specsure/specsure/tree/main/packages/dsgraph-cli#readme',
@@ -152,7 +158,7 @@ const DETECT = `(() => {
         </ul>
         <p class="about__soon"><span class="tag tag--soon">{m.site.about.soon}</span> {m.site.about.soonText}</p>
         <p class="about__links">
-          <a href={href('/tools/diff/guide')}>{m.site.about.guide}</a>
+          <a href={href('/guide')}>{m.site.about.guide}</a>
           <a href="https://github.com/specsure/specsure">{m.site.about.github}</a>
         </p>
         <div class="about__foot">

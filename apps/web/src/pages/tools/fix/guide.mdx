@@ -1,0 +1,112 @@
+---
+layout: ../../../layouts/Doc.astro
+title: Token Fix guide
+description: How Token Fix finds the token meant for a color or a size, for text, a background or a border, and what it shows about your design system and your code.
+path: /tools/fix/guide
+---
+
+import FixFigure from '../../../components/FixFigure'
+import { LOOKUP_APP } from '../../../lib/lookup-example'
+
+# Token Fix guide
+
+Token Fix tells you which token of a design system to use in place of a color or a size, and finds the values in your code that were written by hand instead of a token. [Open Token Fix](/tools/fix)
+
+## Why you need it
+
+A mockup gives a value, not a token. Turning one into the other is where design systems leak:
+
+- **One color, several tokens.** The same blue is the accent text, the accent background and the accent border. Any of them looks right today; the wrong one breaks the day a theme changes one of them.
+- **Values between the steps.** A 20px padding where the scale has 16 and 24 is outside the system, and nobody notices.
+- **Values written by hand don't follow.** A hex code in a component stays the same in the dark theme and in the next release.
+- **A misspelt variable fails silently.** `var(--text-defualt)` gives nothing, and the browser says nothing.
+
+Token Fix reads the system the way its code uses it: every token with its value in every theme, what it is for and where it takes its value from.
+
+Every figure on this page is live: the real Token Fix, in your browser, on a small example design system of three layers (a palette, semantic tokens and component tokens) with a light and a dark theme.
+
+## How to use it
+
+1. **Open the tokens.** Choose where they are:
+   - **npm:** a package name and a version.
+   - **GitHub:** `owner/repo/folder` and a branch, tag or commit; a private repository needs a token with read access, kept in the tab.
+   - **Files:** drop token files, a folder or a .zip, the export of the [Figma plugin](/tools/figma) as it is.
+
+   If a package ships many files, name the ones you mean under **Files**, for example `dist/tokens.css`. Then press **Open** (<kbd>⌘</kbd> <kbd>↵</kbd>), or **Try an example**.
+2. **Search** by name, by value, or paste code.
+3. **Add your code** on the **Your code** tab, to see what in it is written by hand.
+
+It reads the same formats as [Token Diff](/tools/diff/guide): DTCG 2025.10 with resolvers and modes, older token JSON, CSS custom properties with themes.
+
+## Overview
+
+With nothing in the search, Token Fix describes the system:
+
+- **Where it is easy to take the wrong token:** values that several tokens hold for different uses, and which token is for what.
+- **What to use for what:** the tokens made for text, backgrounds, borders and shadows, the ones most of the system is built on first, and the steps of spacing and radius.
+- **How the system is layered:** palette, semantic, components and standalone values, and the references that cross layers the wrong way: a component that takes a value straight from the palette won't follow a theme.
+- **What to fix in the system:** what the checks found in the tokens themselves.
+
+<FixFigure client:only="react" caption="The overview of the example system. Click a token to open its card." />
+
+## Find the token for a value
+
+Type a value: `#2563eb`, `12px`, `200ms`. Then say what it is for, text, background, border or shadow, and the state, if any: hover, focus, pressed, disabled, selected. You can also write it the way code does: `background: #2563eb`.
+
+Exact matches come first, the token made for that use on top. Without an exact match you get the closest values: colors by how different they look (ΔE, where 1 is about the smallest difference people notice), sizes by the difference in pixels.
+
+<FixFigure client:only="react" query="background: #2563eb" caption="Five tokens hold #2563eb; for a background, the background token comes first." />
+
+A size between two steps of the system's scale gets a proposal for the design system team: the name a new token would have and where it would go. **Copy the proposal** gives it as text for an issue.
+
+<FixFigure client:only="react" query="padding: 20px" caption="20px is between two spacing steps: the closest tokens, and what a new one would be." />
+
+## Paste code
+
+Paste CSS, JSX with Tailwind classes or style objects, Vue or Svelte into the search. You get the same code back with each value written by hand replaced by its token, chosen for the property it is in, and the replacements Token Fix is not sure of marked for you to decide. **Copy code** takes the result.
+
+<FixFigure client:only="react" query={`.card {\n  background: #ffffff;\n  color: #64748b;\n  border: 1px solid #e2e8f0;\n  padding: 16px;\n}`} caption="A rule written by hand, on tokens." />
+
+## Your code
+
+On the **Your code** tab, drop the folder of an app built on the system, or give its GitHub repository. CSS, SCSS and Sass, JSX and TSX with Tailwind classes, style objects and CSS-in-JS, Vue, Svelte and Astro are read in the tab and never uploaded. You get:
+
+- **How much of the code is on tokens**, for colors and for sizes.
+- **Replace with tokens:** each value written by hand that has a token, with the token chosen for the property, state and component where it is written, and every place, file and line.
+- **Tokens the system is missing:** values with no exact token. Used in many places, they are candidates for new tokens; used once, take the closest.
+- **Variables to fix:** names that are not tokens, with the one probably meant, and deprecated tokens with their replacement.
+- **The code's own variables:** variables the code defines for itself, as a prototype does, with the system's token for each. **Copy a translation layer** gives CSS that defines them again through the system's tokens.
+
+**Copy a task for your agent** puts all of it into a task a coding agent can carry out.
+
+<FixFigure client:only="react" view="code" code={LOOKUP_APP} caption="A small app on the example: a button in Tailwind, a card in CSS, an alert with a style object." />
+
+## A token's card
+
+Click a token to open its card: its value in every theme, where it takes the value from and which tokens use it, drawn as a graph, its layer, its file, and how to write it in CSS or as a `{reference}`. A deprecated token says what to use instead. **Compare with another version** opens it in Token Diff.
+
+## Sharing
+
+**Copy link** shares what is on screen: the tokens, the theme, the search and the open token. For npm and GitHub the link is the address; your own files go into the part after `#`, which browsers never send to a server. Code pasted into the search stays out of the link.
+
+## Keyboard
+
+| Keys | Action |
+|---|---|
+| <kbd>⌘</kbd> <kbd>↵</kbd> | Open the tokens |
+| <kbd>/</kbd> or <kbd>⌘</kbd> <kbd>K</kbd> | Search |
+| <kbd>↑</kbd> <kbd>↓</kbd> | Move through tokens |
+
+On Windows and Linux, use <kbd>Ctrl</kbd> instead of <kbd>⌘</kbd>.
+
+## From Token Diff
+
+After a comparison, **Open in Token Fix** takes the new version, and your code if you added it, so you can fix the code for the release right away.
+
+## For coding agents
+
+The [MCP server](/tools/mcp) gives coding agents the same answers: `find_token` for a value, `check_styles` for the code they write.
+
+## Privacy
+
+Everything runs in your browser tab. Dropped files and your code are never uploaded. Packages come from jsDelivr and repositories from GitHub, fetched by your browser. There is no account and nothing is stored.
