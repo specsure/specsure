@@ -80,6 +80,62 @@ describe('nearestTokens', () => {
   })
 })
 
+describe('nearestTokens for a length', () => {
+  const px = (value: number) => ({ $value: { value, unit: 'px' } })
+  const tree = {
+    space: { $type: 'dimension', 2: px(8), 4: px(16), 6: px(24) },
+    radius: { $type: 'dimension', sm: px(4), md: px(8) },
+    font: { size: { $type: 'dimension', body: px(16) } },
+    size: { $type: 'dimension', icon: px(20) },
+    // From Figma: the scopes say what the number is for, whatever the name.
+    corner: {
+      $type: 'dimension',
+      control: { ...px(12), $extensions: { 'com.figma.scopes': ['CORNER_RADIUS'] } },
+    },
+    unnamed: { $type: 'dimension', 3: px(12) },
+  }
+  const ids = async (property: string, value: number) => {
+    const graph = DsGraph.from(
+      await buildSnapshot(systemFromDocuments([{ file: 't.tokens.json', tree }]), {
+        diagnostics: new DiagnosticBag(),
+      }),
+    )
+    return nearestTokens(
+      graph,
+      { type: 'dimension', value: { value, unit: 'px' } },
+      graph.defaultInput(),
+      20,
+      property,
+    )
+      .map((m) => m.token.id)
+      .sort()
+  }
+
+  it('gives a padding spacing tokens, box sizes and unnamed ones, never a radius or a font size', async () => {
+    expect(await ids('padding-inline', 20)).toEqual([
+      'size.icon',
+      'space.2',
+      'space.4',
+      'space.6',
+      'unnamed.3',
+    ])
+  })
+
+  it('gives a corner radius the radius tokens, by name or by Figma scope', async () => {
+    expect(await ids('border-top-left-radius', 8)).toEqual([
+      'corner.control',
+      'radius.md',
+      'radius.sm',
+      'unnamed.3',
+    ])
+  })
+
+  it('gives a font size the font sizes; a property with no known use, every length', async () => {
+    expect(await ids('font-size', 16)).toEqual(['font.size.body', 'unnamed.3'])
+    expect((await ids('transform', 16)).length).toBe(9)
+  })
+})
+
 describe('knowledge packs', () => {
   const pack: Knowledge = {
     schema: 'dsgraph/knowledge@1',

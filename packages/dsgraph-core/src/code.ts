@@ -385,8 +385,81 @@ function roleScore(id: string, role: Role | undefined, v: CompiledVocabulary): n
   return (Object.keys(roles) as Role[]).some((r) => r !== role && roles[r].test(name)) ? -1 : 0
 }
 
+/** What a length is for: spacing, a corner radius, a box size, a font size, a line height, letter spacing, a stroke. */
+export type SizeUse = 'space' | 'radius' | 'size' | 'font' | 'line' | 'tracking' | 'stroke'
+
+const SIDES = '(-(top|right|bottom|left|block|inline)(-(start|end))?)?'
+
+/** The use of a length a CSS property takes: `padding` is spacing, `border-radius` a radius. */
+export function sizeUseOfProperty(property: string): SizeUse | undefined {
+  const p = property.toLowerCase()
+  if (new RegExp(`^(padding|margin|scroll-padding|scroll-margin)${SIDES}$`).test(p)) return 'space'
+  if (/^((row|column|grid)-)?gap$|^grid-(row|column)-gap$|^inset(-(block|inline)(-(start|end))?)?$/.test(p))
+    return 'space'
+  if (/^(top|right|bottom|left|text-indent)$/.test(p)) return 'space'
+  if (/^border(-(top|bottom|start|end)-(left|right|start|end))?-radius$/.test(p)) return 'radius'
+  if (/^((min|max)-)?(width|height|block-size|inline-size)$|^flex-basis$/.test(p)) return 'size'
+  if (p === 'font-size') return 'font'
+  if (p === 'line-height') return 'line'
+  if (/^(letter|word)-spacing$/.test(p)) return 'tracking'
+  if (new RegExp(`^(border${SIDES}|outline|column-rule)-width$|^stroke-width$|^outline-offset$`).test(p))
+    return 'stroke'
+  return undefined
+}
+
 /**
- * Tokens nearest to a value in one context. Deprecated ones go last. Among exact matches, the name
+ * Words in a token's name that say what a length is for, in the order they are tried: `font.size`
+ * before `size`, `border.width` before `width`.
+ */
+const SIZE_WORDS: Array<[SizeUse, RegExp]> = (
+  [
+    ['line', ['line.height', 'lineheight', 'leading']],
+    ['tracking', ['letter.spacing', 'letterspacing', 'word.spacing', 'tracking']],
+    ['font', ['font', 'fontsize', 'text.size', 'type.size', 'typescale', 'type.scale']],
+    ['stroke', ['border.width', 'outline.width', 'stroke.width', 'stroke', 'outline.offset']],
+    ['radius', ['radius', 'radii', 'rounded', 'rounding', 'corner', 'corners']],
+    ['space', ['space', 'spacing', 'spacer', 'gap', 'padding', 'margin', 'inset', 'gutter', 'stack']],
+    ['size', ['size', 'sizes', 'sizing', 'width', 'height']],
+  ] as Array<[SizeUse, string[]]>
+).map(([use, words]) => [
+  use,
+  new RegExp(`(^|\\.)(${words.map((w) => w.replace(/\./g, '\\.')).join('|')})(\\.|$)`),
+])
+
+/** Figma's scopes for a number, as the plugin and Figma's own export keep them in `$extensions`. */
+const FIGMA_SCOPES: Record<string, SizeUse> = {
+  GAP: 'space',
+  CORNER_RADIUS: 'radius',
+  WIDTH_HEIGHT: 'size',
+  FONT_SIZE: 'font',
+  LINE_HEIGHT: 'line',
+  LETTER_SPACING: 'tracking',
+  STROKE_FLOAT: 'stroke',
+}
+
+/**
+ * The uses a length token is made for: from Figma's scopes when the token has them, else from its
+ * name. Undefined when neither says, and such a token fits any use.
+ */
+function sizeUsesOf(token: Token): Set<SizeUse> | undefined {
+  const scopes = token.extensions?.['com.figma.scopes']
+  if (Array.isArray(scopes) && scopes.length && !scopes.includes('ALL_SCOPES')) {
+    const uses = new Set(scopes.map((s) => FIGMA_SCOPES[String(s)]).filter((u): u is SizeUse => !!u))
+    if (uses.size) return uses
+  }
+  const name = normalizeName(token.id)
+  for (const [use, re] of SIZE_WORDS) if (re.test(name)) return new Set([use])
+  return undefined
+}
+
+/** Spacing and box sizes often share one scale; every other use is its own. */
+const fitsUse = (uses: Set<SizeUse>, use: SizeUse) =>
+  uses.has(use) || (use === 'space' && uses.has('size')) || (use === 'size' && uses.has('space'))
+
+/**
+ * Tokens nearest to a value in one context. Deprecated ones go last. A length is matched only
+ * against tokens made for the property's use, or that say nothing about it: a padding gets spacing
+ * tokens, never a radius or a font size. Among exact matches, the name
  * decides, in this order:
  * - a token made for another role goes last (`borderColor.accent` for `color`);
  * - the code's state: `control.bgColor.hover` in a `:hover` rule, and in a rule without one, not
@@ -415,9 +488,14 @@ export function nearestTokens(
   const states = ctx.states ?? []
   const components = ctx.components ?? []
   const types = COMPATIBLE[parsed.type] ?? [parsed.type]
+  const use = parsed.type === 'dimension' && ctx.property ? sizeUseOfProperty(ctx.property) : undefined
   const out: NearestToken[] = []
   const depth = new Map<NearestToken, number>()
   for (const token of graph.tokens({ type: types })) {
+    if (use) {
+      const uses = sizeUsesOf(token)
+      if (uses && !fitsUse(uses, use)) continue
+    }
     const value = graph.value(token.id, input)
     if (value === undefined || value === null) continue
     const d = valueDistance(token.type === parsed.type ? parsed.type : token.type!, parsed.value, value)

@@ -3,6 +3,15 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
+## Unreleased
+
+- A length is matched by what it is for: `nearestTokens` (and with it `findToken`, the code report
+  and the MCP server's `find_token`) gives a `padding` spacing tokens, never a radius or a font
+  size. The use of a property comes from `sizeUseOfProperty` (spacing, radius, size, font size,
+  line height, letter spacing, stroke); a token's, from Figma's scopes in `$extensions` when it has
+  them, else from its name (`radius.md`, `space.inset`, `font.size.body`). Tokens that say nothing
+  about their use still fit any property, and spacing and box sizes stand in for each other.
+
 ## 0.9.0 — 2026-10-22
 
 - The code's own variables count: a prototype built on a library of its own, or an app with
