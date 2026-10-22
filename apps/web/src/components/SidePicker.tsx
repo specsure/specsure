@@ -309,7 +309,7 @@ function FilesField({ files, onChange }: { files: DroppedFile[]; onChange: (v: S
         ref={fileInput}
         type="file"
         multiple
-        accept=".json,.jsonc,.tokens,.css"
+        accept=".json,.jsonc,.tokens,.css,.zip"
         hidden
         onChange={async (e) => set(await filesFromInput(e.target.files))}
       />

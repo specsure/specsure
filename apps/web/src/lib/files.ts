@@ -1,5 +1,6 @@
 import { NOT_TOKENS } from '@dsgraph/core'
 import type { DroppedFile } from './types'
+import { zipEntries } from './zip'
 
 /** What to read from a drop: token files for a side, or a project's code. */
 interface Profile {
@@ -27,6 +28,21 @@ const CODE: Profile = {
   maxFiles: 5_000,
 }
 
+const ZIP = /\.zip$/i
+/** A .zip read whole: an export of tokens is a few MB, a zipped repository can be more. */
+const MAX_ZIP = 100_000_000
+
+/** The files in a .zip, as if its folder had been dropped: the same filters and limits. */
+async function addZip(file: File, out: DroppedFile[], p: Profile) {
+  if (file.size > MAX_ZIP) return
+  const decoder = new TextDecoder()
+  for (const e of zipEntries(new Uint8Array(await file.arrayBuffer()))) {
+    if (out.length >= p.maxFiles) return
+    if (p.file.test(e.path) && !skippedPath(e.path, p) && e.size <= p.maxBytes)
+      out.push({ path: e.path, text: decoder.decode(await e.bytes()) })
+  }
+}
+
 /** Build output, kept only when nothing else has tokens (a published package, or `dist` itself). */
 const BUILD = /(^|\/)dist\//
 
@@ -40,8 +56,9 @@ async function readEntry(entry: FileSystemEntry, out: DroppedFile[], p: Profile)
   if (out.length >= p.maxFiles) return
   if (entry.isFile) {
     const path = entry.fullPath.replace(/^\//, '')
-    if (!p.file.test(path)) return
+    if (!p.file.test(path) && !ZIP.test(path)) return
     const file = await new Promise<File>((res, rej) => (entry as FileSystemFileEntry).file(res, rej))
+    if (ZIP.test(path)) return addZip(file, out, p)
     if (file.size <= p.maxBytes) out.push({ path, text: await file.text() })
     return
   }
@@ -68,12 +85,13 @@ async function addFiles(files: File[], out: DroppedFile[], p: Profile) {
   for (const f of files) {
     if (out.length >= p.maxFiles) return
     const path = f.webkitRelativePath || f.name
-    if (p.file.test(path) && !skippedPath(path, p) && f.size <= p.maxBytes)
+    if (ZIP.test(path)) await addZip(f, out, p)
+    else if (p.file.test(path) && !skippedPath(path, p) && f.size <= p.maxBytes)
       out.push({ path, text: await f.text() })
   }
 }
 
-/** Files and folders from a drop; folders are walked, only JSON, .tokens and CSS files are kept. */
+/** Files, folders and .zip archives from a drop; folders and archives are walked, only JSON, .tokens and CSS files are kept. */
 export async function filesFromDrop(dt: DataTransfer): Promise<DroppedFile[]> {
   return dropCommonRoot(withoutBuild(await fromDrop(dt, TOKENS)))
 }
