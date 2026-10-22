@@ -4,7 +4,6 @@ export const GUIDE = [
   { path: '/tools/diff/guide', key: 'diff' },
   { path: '/tools/fix/guide', key: 'fix' },
   { path: '/tools/figma', key: 'figma' },
-  { path: '/tools/mcp', key: 'mcp' },
 ] as const
 
 export type GuidePage = (typeof GUIDE)[number]['key']

@@ -10,6 +10,7 @@ interface Props {
   headings?: MarkdownHeading[]
 }
 const { frontmatter, headings = [] } = Astro.props
+// A page outside the guide (the MCP server's) is a plain article, with no sidebar.
 const lang = frontmatter.lang ?? 'en'
 const g = messages[lang].site.guide
 const here = GUIDE.findIndex((p) => p.path === frontmatter.path)
@@ -24,12 +25,14 @@ const next = here >= 0 && here < GUIDE.length - 1 ? GUIDE[here + 1] : undefined
   path={frontmatter.path}
   lang={lang}
 >
-  <div class="guide">
+  <div class={here >= 0 ? 'guide' : undefined}>
+    {here >= 0 && (
+    <>
     <nav class="guide-nav" aria-label={g.aria}>
       <details class="guide-nav__menu" id="guide-menu">
         <summary class="guide-nav__summary">
           <span class="muted">{g.aria}</span>
-          <span class="guide-nav__current">{here >= 0 ? g.pages[GUIDE[here]!.key] : frontmatter.title}</span>
+          <span class="guide-nav__current">{g.pages[GUIDE[here]!.key]}</span>
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
             <path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
           </svg>
@@ -64,6 +67,8 @@ const next = here >= 0 && here < GUIDE.length - 1 ? GUIDE[here + 1] : undefined
         wide.addEventListener('change', sync)
       })()
     </script>
+    </>
+    )}
     <article class="prose">
       <slot />
       {(prev || next) && (

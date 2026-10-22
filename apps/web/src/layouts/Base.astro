@@ -25,7 +25,7 @@ const nav = [
   {
     href: href('/guide'),
     label: m.site.nav.guide,
-    current: GUIDE.map((p) => p.path).filter((p) => p !== '/tools/mcp'),
+    current: GUIDE.map((p) => p.path),
     wide: true,
   },
   { href: href('/tools/mcp'), label: m.site.nav.mcp, current: ['/tools/mcp'] },
