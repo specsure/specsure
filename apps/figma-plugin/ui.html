@@ -1,3 +1,4 @@
+<!doctype html>
 <meta charset="utf-8" />
 <style>
   /* Specsure's tokens (apps/web/src/styles/tokens.css): light by default, dark when Figma is dark. */
@@ -54,9 +55,13 @@
   * {
     box-sizing: border-box;
   }
+  /* The window itself never scrolls or bounces: a wheel over the header or the bottom bar would
+     pull the page past its edge (macOS overscroll). Only the content area scrolls. */
   html,
   body {
     height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
   body {
     margin: 0;
@@ -141,7 +146,9 @@
 
   main {
     flex: 1;
+    min-height: 0;
     overflow: auto;
+    overscroll-behavior: contain;
     padding: 12px;
   }
   h2 {
