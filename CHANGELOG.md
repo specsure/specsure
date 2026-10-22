@@ -3,7 +3,7 @@
 dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
 ([specsure/dsgraph-action](https://github.com/specsure/dsgraph-action)) has its own, in its tags.
 
-## Unreleased
+## 0.9.0 — 2026-10-22
 
 - The code's own variables count: a prototype built on a library of its own, or an app with
   variables of its own (`--sp-accent: #2563eb`, then `color: var(--sp-accent)`), is checked like
@@ -40,6 +40,7 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   `dtcg/legacy-syntax` warning, instead of failing as `dtcg/invalid-shadow`.
 - A color's alpha counts when a token is chosen for it: a black at 2% no longer matches the opaque
   black token (a point of alpha weighs as one of ΔE).
+- GitHub Action v1.7.0 is built on it: it reads Figma variables saved from the REST API.
 
 ## 0.8.1 — 2026-10-22
 

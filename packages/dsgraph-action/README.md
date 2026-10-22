@@ -2,7 +2,7 @@
 
 Compares the design tokens of a pull request with its base branch and reports what changed, what breaks and which version the release needs. The report goes into a pull request comment (updated on every push) and the job summary; the job can fail on breaking changes.
 
-It reads DTCG 2025.10 files (with resolver documents and themes), token JSON with `value` and `type`, and CSS custom properties with themes. It is the [dsgraph](https://github.com/specsure/specsure) CLI in one file; the same comparison runs in the browser at [Token Diff](https://specsure.vercel.app/tools/diff).
+It reads DTCG 2025.10 files (with resolver documents and themes), token JSON with `value` and `type`, CSS custom properties with themes, and Figma variables saved from the REST API. It is the [dsgraph](https://github.com/specsure/specsure) CLI in one file; the same comparison runs in the browser at [Token Diff](https://specsure.vercel.app/tools/diff).
 
 **See it on a pull request:** [specsure/action-playground#1](https://github.com/specsure/action-playground/pull/1) removes a token and renames another, so the report is in the comment and the check fails on `fail-on: major`, as it should.
 
@@ -81,7 +81,7 @@ jobs:
 
 | Input | Default | |
 |---|---|---|
-| `path` | `.` | Token folder or file: DTCG, a `*.resolver.json`, token JSON or CSS |
+| `path` | `.` | Token folder or file: DTCG, a `*.resolver.json`, token JSON, CSS or Figma variables (REST API `.json`) |
 | `base` | the base commit | Any dsgraph source: `npm:pkg@range`, `github:owner/repo/path@ref` |
 | `config` | `dsgraph.config.json` if present | Renames, layers, rules, thresholds |
 | `fail-on` | — | Fail when the change is at least `major`, `minor` or `patch` |

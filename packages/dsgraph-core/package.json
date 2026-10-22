@@ -1,6 +1,6 @@
 {
   "name": "@dsgraph/core",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Design-system graph core: DTCG 2025.10 + Resolver parsing, canonical values, snapshots, diff and semver. Isomorphic (browser + Node).",
   "license": "MIT",
   "type": "module",
@@ -27,7 +27,7 @@
     "semver"
   ],
   "dependencies": {
-    "@dsgraph/schema": "0.8.1",
+    "@dsgraph/schema": "0.9.0",
     "culori": "4.0.2",
     "json5": "2.2.3"
   },

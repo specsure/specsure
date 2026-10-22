@@ -14,6 +14,6 @@
     "rolldown": "1.2.13"
   },
   "dependencies": {
-    "@dsgraph/adapters": "0.8.1"
+    "@dsgraph/adapters": "0.9.0"
   }
 }
