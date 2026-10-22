@@ -10,6 +10,18 @@ interface ModeToken {
 
 const THEME_WORDS = new Set(['light', 'dark'])
 
+/**
+ * The Figma collection a token says it was exported from: `com.figma.collection`, or a
+ * `figma.collection.name` some exporters write. Empty when it says none.
+ */
+function collectionOf(token: Record<string, unknown>): string {
+  const ext = token.$extensions as Record<string, unknown> | undefined
+  const own = ext?.['com.figma.collection']
+  if (typeof own === 'string') return own
+  const figma = ext?.figma as { collection?: { name?: unknown } } | undefined
+  return typeof figma?.collection?.name === 'string' ? figma.collection.name : ''
+}
+
 /** The context a token's own `$value` stands for when `modes` lists only the overrides. */
 const BASE_MODE = 'default'
 
@@ -86,11 +98,11 @@ export function expandModes(system: TokenSystem, diag: DiagnosticBag): TokenSyst
       signatures.set(modes.join('\u0000'), modes)
     }
   const larger = [...signatures.values()].sort((a, b) => b.length - a.length)
-  const groups: Array<{ modes: string[]; roots: Set<string> }> = []
+  const groups: Array<{ modes: string[]; roots: Set<string>; collections: Set<string> }> = []
   const groupOf = (modes: string[]) => {
     let g = groups.find((x) => modes.every((m) => x.modes.includes(m)))
     if (!g) {
-      g = { modes, roots: new Set() }
+      g = { modes, roots: new Set(), collections: new Set() }
       groups.push(g)
     }
     return g
@@ -102,17 +114,22 @@ export function expandModes(system: TokenSystem, diag: DiagnosticBag): TokenSyst
       const g = groupOf(Object.keys(t.modes))
       // The top-level group names the modifier (a Figma collection); a top-level token does not.
       g.roots.add(t.path.length > 1 ? t.path[0]! : '')
+      g.collections.add(collectionOf(t.token))
       tokenGroup.set(t, g)
     }
 
   const out: TokenSystem = { ...system, sets, modifiers: new Map(), order: [...system.order] }
   const names: string[] = []
   for (const g of groups) {
-    let name = g.modes.some((m) => THEME_WORDS.has(m.toLowerCase()))
-      ? 'theme'
-      : g.roots.size === 1 && [...g.roots][0]
-        ? [...g.roots][0]!
-        : 'mode'
+    // The collection its tokens say they come from names it first, as the exporter wrote it.
+    const collection = g.collections.size === 1 ? [...g.collections][0] : ''
+    let name = collection
+      ? collection
+      : g.modes.some((m) => THEME_WORDS.has(m.toLowerCase()))
+        ? 'theme'
+        : g.roots.size === 1 && [...g.roots][0]
+          ? [...g.roots][0]!
+          : 'mode'
     for (let i = 2; names.includes(name); i++) name = `${name.replace(/-\d+$/, '')}-${i}`
     names.push(name)
     const contexts = new Map<string, TokenDocument[]>()

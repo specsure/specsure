@@ -323,7 +323,8 @@ describe('Figma variables and styles as DTCG', () => {
 
     const one = DsGraph.from(await scan(new MemorySource({ 'acme.tokens.json': JSON.stringify(out.single) })))
     const theme = one.modifiers[0]!
-    expect(theme.contexts).toEqual(['Light', 'Dark'])
+    // Named after the collection the tokens say they come from.
+    expect(theme).toMatchObject({ name: 'Theme', contexts: ['Light', 'Dark'] })
     expect(one.value('bg.default', { [theme.name]: 'Dark' })).toMatchObject({
       components: [0.06, 0.09, 0.16],
     })
@@ -536,7 +537,7 @@ describe('Figma font styles in variables', () => {
             collectionId: 'f',
             type: 'STRING',
             scopes: [],
-            valuesByMode: { a: 'Italic', b: 'Italic' },
+            valuesByMode: { a: 'Condensed', b: 'Condensed' },
           },
         ],
         styles: {
@@ -566,6 +567,68 @@ describe('Figma font styles in variables', () => {
     ])
     expect(out.files['styles.tokens.json']).toMatchObject({
       styles: { Title: { $value: { fontWeight: '{Weight.Bold}', lineHeight: 1.2727 } } },
+    })
+  })
+})
+
+describe('Figma types from scopes', () => {
+  it('gives a value without scopes the type the variables referring to it have for sure', () => {
+    const out = figmaTokens(
+      bare({
+        collections: [
+          { id: 'p', name: 'Primitives', modes: [{ id: 'p0', name: 'Value' }], defaultModeId: 'p0' },
+          { id: 't', name: 'Type', modes: [{ id: 't0', name: 'Value' }], defaultModeId: 't0' },
+        ],
+        variables: [
+          {
+            id: 's',
+            name: 'Scale 10',
+            collectionId: 'p',
+            type: 'FLOAT',
+            scopes: [],
+            valuesByMode: { p0: 72 },
+          },
+          { id: 'n', name: 'Ratio', collectionId: 'p', type: 'FLOAT', scopes: [], valuesByMode: { p0: 1.5 } },
+          {
+            id: 'z',
+            name: 'Hero/Size',
+            collectionId: 't',
+            type: 'FLOAT',
+            scopes: ['FONT_SIZE'],
+            valuesByMode: { t0: { alias: 's' } },
+          },
+        ],
+        styles: {
+          paint: [],
+          text: [
+            {
+              id: 'h',
+              name: 'Hero',
+              fontFamily: 'Inter',
+              fontStyle: 'Bold',
+              fontSize: 72,
+              lineHeight: { unit: 'PERCENT', value: 120 },
+              letterSpacing: { unit: 'PERCENT', value: -3 },
+              bound: { fontSize: 'z' },
+            },
+          ],
+          effect: [],
+        },
+      }),
+    )
+    expect(out.files['Primitives.tokens.json']).toMatchObject({
+      'Scale 10': { $type: 'dimension', $value: { value: 72, unit: 'px' } },
+      Ratio: { $type: 'number', $value: 1.5 },
+    })
+    expect(out.files['Type.tokens.json']).toMatchObject({
+      Hero: { Size: { $type: 'dimension', $value: '{Scale 10}' } },
+    })
+    expect(out.files['styles.tokens.json']).toMatchObject({
+      styles: {
+        Hero: {
+          $value: { fontSize: '{Hero.Size}', lineHeight: 1.2, letterSpacing: { value: -2.16, unit: 'px' } },
+        },
+      },
     })
   })
 })

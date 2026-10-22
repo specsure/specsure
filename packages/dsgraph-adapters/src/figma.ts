@@ -187,6 +187,8 @@ const WEIGHTS: Array<[RegExp, number]> = [
   [/black|heavy/i, 900],
   [/medium/i, 500],
   [/regular|normal|book|roman|plain/i, 400],
+  // A style that is only a slant is of the regular weight.
+  [/^\s*(italic|oblique)\s*$/i, 400],
 ]
 /** A weight from a font style's name: `Semi Bold` 600, `Regular` 400. */
 const weightOf = (style: string): number | undefined => WEIGHTS.find(([re]) => re.test(style))?.[1]
@@ -266,38 +268,79 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
   const byId = new Map(raw.variables.map((v) => [v.id, v]))
   const collections = new Map(raw.collections.map((c) => [c.id, c]))
 
-  // A variable's DTCG type: from Figma's type and scopes; a reference takes its target's type.
+  // A variable's DTCG type. Its own scopes say it for sure (`FONT_SIZE`: a dimension); a name or a
+  // number offered everywhere only suggests it. A reference without scopes of its own takes its
+  // target's type; a value without them, the type the variables referring to it say for sure
+  // (a `Scale 10` that font sizes refer to is a dimension).
+  const own = (v: FigmaVariable): { t: string | null; sure: boolean } => {
+    const scopes = new Set(v.scopes)
+    const has = (set: Set<string>) => [...scopes].some((x) => set.has(x))
+    if (v.type === 'COLOR') return { t: 'color', sure: true }
+    if (v.type === 'EASING') return { t: 'cubicBezier', sure: true }
+    if (v.type === 'TIMING') return { t: 'duration', sure: true }
+    if (v.type === 'FLOAT') {
+      if (scopes.has('FONT_WEIGHT')) return { t: 'fontWeight', sure: true }
+      if (has(OPACITY_SCOPES)) return { t: 'number', sure: true }
+      if (has(LENGTH_SCOPES)) return { t: 'dimension', sure: true }
+      return { t: LENGTH_WORDS.test(v.name) ? 'dimension' : 'number', sure: false }
+    }
+    if (v.type === 'STRING') {
+      // A font style by its name (`Semi Bold`), as a text style's weight is bound to: its weight.
+      const literals = Object.values(v.valuesByMode).filter((x) => !isAlias(x))
+      const weights = literals.every((x) => typeof x === 'string' && weightOf(x) !== undefined)
+      if ((scopes.has('FONT_STYLE') || scopes.has('FONT_WEIGHT')) && weights)
+        return { t: 'fontWeight', sure: true }
+      if (scopes.has('FONT_FAMILY')) return { t: 'fontFamily', sure: true }
+      if (/weight/i.test(v.name) && literals.length && weights) return { t: 'fontWeight', sure: false }
+      return { t: /font|family|typeface/i.test(v.name) ? 'fontFamily' : null, sure: false }
+    }
+    return { t: null, sure: false }
+  }
+  const referrers = new Map<string, FigmaVariable[]>()
+  for (const v of raw.variables)
+    for (const x of Object.values(v.valuesByMode))
+      if (isAlias(x)) referrers.set(x.alias, [...(referrers.get(x.alias) ?? []), v])
+  /** The types the variables referring to `id` say for sure, through references that don't. */
+  const said = (id: string, seen: Set<string>): string[] =>
+    (referrers.get(id) ?? []).flatMap((r) => {
+      if (seen.has(r.id)) return []
+      seen.add(r.id)
+      const o = own(r)
+      return o.sure ? (o.t ? [o.t] : []) : said(r.id, seen)
+    })
   const types = new Map<string, string | null>()
   const typeOf = (v: FigmaVariable, seen = new Set<string>()): string | null => {
     if (types.has(v.id)) return types.get(v.id)!
-    let t: string | null = null
-    const target = Object.values(v.valuesByMode).find(isAlias)
-    const local = target && byId.get(target.alias)
-    if (local && !seen.has(local.id)) t = typeOf(local, new Set([...seen, v.id]))
-    else if (v.type === 'COLOR') t = 'color'
-    else if (v.type === 'EASING') t = 'cubicBezier'
-    else if (v.type === 'TIMING') t = 'duration'
-    else if (v.type === 'FLOAT') {
-      const scopes = new Set(v.scopes)
-      t = scopes.has('FONT_WEIGHT')
-        ? 'fontWeight'
-        : [...scopes].some((s) => OPACITY_SCOPES.has(s))
-          ? 'number'
-          : [...scopes].some((s) => LENGTH_SCOPES.has(s)) ||
-              ((!scopes.size || scopes.has('ALL_SCOPES')) && LENGTH_WORDS.test(v.name))
-            ? 'dimension'
-            : 'number'
-    } else if (v.type === 'STRING') {
-      // A font style by its name (`Semi Bold`), as a text style's weight is bound to: its weight.
-      const literals = Object.values(v.valuesByMode).filter((x) => !isAlias(x))
-      const styleLike =
-        v.scopes.includes('FONT_STYLE') || v.scopes.includes('FONT_WEIGHT') || /weight/i.test(v.name)
-      t =
-        styleLike && literals.every((x) => typeof x === 'string' && weightOf(x) !== undefined)
-          ? 'fontWeight'
-          : v.scopes.includes('FONT_FAMILY') || /font|family|typeface/i.test(v.name)
-            ? 'fontFamily'
-            : null
+    const o = own(v)
+    let t = o.t
+    if (!o.sure) {
+      const target = Object.values(v.valuesByMode).find(isAlias)
+      const local = target && byId.get(target.alias)
+      if (local && !seen.has(local.id)) t = typeOf(local, new Set([...seen, v.id]))
+      else {
+        const votes = said(v.id, new Set([v.id]))
+        // The type most of them say, among those this kind of value can be.
+        const fits = votes.filter((x) =>
+          v.type === 'FLOAT'
+            ? ['dimension', 'number', 'fontWeight'].includes(x)
+            : x === 'fontFamily' || x === 'fontWeight',
+        )
+        const fitting =
+          v.type === 'STRING'
+            ? fits.filter(
+                (x) =>
+                  x === 'fontFamily' ||
+                  Object.values(v.valuesByMode).every(
+                    (y) => typeof y === 'string' && weightOf(y) !== undefined,
+                  ),
+              )
+            : fits
+        if (fitting.length) {
+          const count = new Map<string, number>()
+          for (const x of fitting) count.set(x, (count.get(x) ?? 0) + 1)
+          t = [...count].sort((a, b) => b[1] - a[1])[0]![0]
+        }
+      }
     }
     types.set(v.id, t)
     return t
@@ -517,7 +560,8 @@ export function figmaTokens(raw: FigmaExport): FigmaTokens {
       const token: Doc = { $type: type, $value: base }
       if (v.description) token.$description = v.description
       // Every mode, as dsgraph and other tools read modes written per token.
-      token.$extensions = modes.length > 1 ? { ...ext, mode: perMode } : ext
+      // The collection names its modes where they are read from one file.
+      token.$extensions = modes.length > 1 ? { ...ext, mode: perMode, 'com.figma.collection': col.name } : ext
       if (!setAt(single, path, token))
         notes.push({ name: v.name, message: 'another collection has a token or group with this name' })
     }

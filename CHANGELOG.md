@@ -27,6 +27,13 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   Figma (an opacity variable, a color composed of a color and an opacity) and written as fractions.
   A string variable of font style names (`Semi Bold`), which a text style's weight is bound to, is
   a `fontWeight` (600), and the style's `fontWeight` refers to it.
+  A variable's own scopes decide its type (`FONT_SIZE`: a `dimension`); a value without scopes
+  takes the type the variables referring to it have for sure, so a `Scale 10` that font sizes refer
+  to is a `dimension` and a text style's size refers to it.
+- Modes read from tokens (`$extensions.mode`) are named after the Figma collection the tokens
+  say they come from (`com.figma.collection`, or `figma.collection.name`), when they all say the
+  same one: `Color` and `Responsive` instead of `mode` and `mode-2`. The Figma export's one file
+  writes it.
 - `$extensions.modes` that lists only the modes where a value differs (`{ "mobile": … }`) is read as
   modes too, the token's own value being the `default` context; `$extensions.mode` lists them all.
 - A shadow written as a CSS string (`"0 1px 2px rgba(16,16,14,.06)"`, `"none"`) is read, with a
