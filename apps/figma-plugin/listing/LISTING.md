@@ -4,11 +4,13 @@ The text for the plugin's page in Figma Community. Icon: `icon.png` (128×128). 
 
 ## Name
 
-Export tokens (DTCG)
+Specsure Token Export
+
+Figma shows the name and the icon in the plugin's title bar, so the plugin itself carries no logo: its tabs run across the top.
 
 ## Tagline
 
-Variables and styles as DTCG 2025.10 design tokens, with modes, references and a resolver. Offline.
+DTCG 2025.10 tokens with modes, references and a resolver. Reads only, works offline.
 
 ## Description
 

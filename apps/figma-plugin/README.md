@@ -1,4 +1,4 @@
-# Export tokens (DTCG) — Figma plugin
+# Specsure Token Export — Figma plugin
 
 A Figma file's variables and styles as [DTCG 2025.10](https://tr.designtokens.org/format/) tokens, for Token Diff, Token Fix, `dsgraph` and CI. It reads the file and never changes it; nothing leaves your computer except the files you save.
 

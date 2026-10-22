@@ -1,5 +1,5 @@
 {
-  "name": "Export tokens (DTCG)",
+  "name": "Specsure Token Export",
   "id": "specsure-export-tokens",
   "api": "1.0.0",
   "main": "dist/code.js",
