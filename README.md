@@ -21,7 +21,7 @@ Open-source tooling that keeps implementation within the bounds of the design sp
 - **Reports** — text, Markdown (for PR comments) and JSON; repeated findings are collapsed into one line per kind.
 - **CLI** — `dsgraph scan | check | diff` over folders, files, npm packages, GitHub repositories and saved snapshots.
 - **Sources** — in-memory, Node file system, any npm package through jsDelivr, any GitHub repository at a ref.
-- **Token Diff** — the same engine on the web ([`apps/web`](apps/web)): drop files or pick an npm package, filter by theme, copy Markdown, export a card for a post.
+- **Token Diff** — the same engine on the web ([`apps/web`](apps/web)): drop files or pick an npm package, filter by theme, copy Markdown, export an image to share.
 
 ## Packages
 

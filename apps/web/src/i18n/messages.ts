@@ -51,7 +51,7 @@ const en = {
         'Compares two versions of design tokens: DTCG, token JSON and CSS custom properties',
         'Shows what breaks, theme by theme, and suggests the semver bump',
         'Reads npm packages, GitHub repositories or your own files',
-        'Exports Markdown for changelogs and pull requests, and a card for posts',
+        'Exports Markdown for changelogs and pull requests, and an image to share',
         'Runs entirely in your browser: no sign-up, nothing is uploaded',
         'Figma plugin: variables and styles as DTCG tokens, with modes and a resolver',
         'Open source under MIT; the engine is published as dsgraph',
@@ -330,7 +330,7 @@ const en = {
     copyMarkdown: 'Copy Markdown',
     markdownNote: '',
     actions: 'Actions',
-    card: 'Card for a post',
+    card: 'Share result',
     copyLink: 'Copy link',
     downloadMarkdown: 'Download Markdown',
     downloadJson: 'Download changeset JSON',
@@ -481,7 +481,7 @@ const en = {
   },
 
   card: {
-    title: 'Card for a post',
+    title: 'Share result',
     close: 'Close',
     copy: 'Copy image',
     download: 'Download PNG',

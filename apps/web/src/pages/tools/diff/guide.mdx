@@ -30,7 +30,7 @@ Every figure on this page is live: dsgraph runs in your browser on a small examp
 |---|---|
 | Maintain a design system | Check a release before publishing: what breaks, which version, what to write in the changelog |
 | Use someone else’s design system | See what an upgrade changes before you take it |
-| Write about design systems | Turn a release into a readable summary and a card for a post |
+| Write about design systems | Turn a release into a readable summary and an image to share |
 
 ## How to use it
 
@@ -54,7 +54,7 @@ Token Diff understands DTCG 2025.10 JSON (including resolver documents with sets
 - **The blast radius:** for each changed token, the tokens that changed through references because of it, drawn as a graph.
 - **Checks on the new version:** broken references, alias cycles, legacy syntax, naming collisions, grouped so that 300 identical warnings take one line.
 - **Your code, if you add it:** the places each change breaks or alters, how much of the code is on tokens, and what to write instead of values written by hand.
-- **Exports:** Markdown for a changelog or a pull request, the full changeset as JSON, and a 1200×630 card for a post.
+- **Exports:** Markdown for a changelog or a pull request, the full changeset as JSON, and a 1200×630 image to share.
 
 <LiveFigure client:only="react" name="result" caption="The full result for the example. Click a change or use the arrow keys to see its details; filter by theme, kind of change or type." />
 
@@ -97,11 +97,11 @@ The verdict above the list is the highest impact of all changes. In the example 
 
 - **Copy Markdown** (<kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>C</kbd>) gives a changelog section grouped by impact. It is the same text the dsgraph CLI writes, so it fits a pull request comment as is.
 - **Copy link** shares the comparison. For npm and GitHub the link is just the address. Your own files go into the part of the link after `#`, which browsers never send to a server; large files cannot be shared this way, so share the Markdown or JSON instead.
-- **Card for a post** makes a PNG with the verdict, the counts and the changed colors.
+- **Share result** makes a PNG with the verdict, the counts and the changed colors.
 
 <LiveFigure client:only="react" name="markdown" caption="Copy Markdown for the example, as it goes into a changelog or a pull request." />
 
-<LiveFigure client:only="react" name="card" caption="The card for a post, 1200×630. Changed colors are shown before (top) and after (bottom)." />
+<LiveFigure client:only="react" name="card" caption="The image Share result makes, 1200×630. Changed colors are shown before (top) and after (bottom)." />
 
 ## Keyboard
 
