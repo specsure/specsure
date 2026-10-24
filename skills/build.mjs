@@ -1,5 +1,6 @@
-// Copies each pack's shared CLI reference into its skills and packs one ZIP per pack for
-// marketplaces that take an upload (Agensi): README.md, shared/ and skills/<name>/ at the top.
+// Copies each pack's shared CLI reference into its skills, then packs ZIPs for marketplaces that
+// take an upload (Agensi): one per pack (README.md, shared/ and skills/<name>/ at the top) and one
+// per skill (its SKILL.md and references/ at the top).
 // node skills/build.mjs
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
@@ -13,10 +14,14 @@ for (const pack of readdirSync(root, { withFileTypes: true })) {
   if (!pack.isDirectory() || pack.name === 'dist') continue
   const dir = join(root, pack.name)
   const shared = join(dir, 'shared')
-  for (const skill of readdirSync(join(dir, 'skills'))) {
+  for (const entry of readdirSync(join(dir, 'skills'), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const skill = entry.name
     const refs = join(dir, 'skills', skill, 'references')
     mkdirSync(refs, { recursive: true })
     for (const f of readdirSync(shared)) copyFileSync(join(shared, f), join(refs, f))
+    execFileSync('zip', ['-qr', join(dist, `${skill}.zip`), '.', '-x', '*.DS_Store'], { cwd: join(dir, 'skills', skill) })
+    console.log(`packed ${skill}`)
   }
   execFileSync('zip', ['-qr', join(dist, `${pack.name}.zip`), 'README.md', 'shared', 'skills', '-x', '*.DS_Store'], { cwd: dir })
   console.log(`packed ${pack.name}`)

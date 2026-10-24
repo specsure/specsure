@@ -37,6 +37,8 @@ Then get the findings to act on:
 npx -y @dsgraph/cli@0.9 check <tokens> --code <dir> --format json --expand --out findings.json
 ```
 
+The output also has findings about the tokens themselves (`dtcg/*`, `palette/*`, `naming/*`, `context/*`, `token/unused`). They are for the design system team, not for this code: leave them out of the edits and mention them only if the user owns the tokens.
+
 The rules that concern the code:
 
 | Rule | Means |

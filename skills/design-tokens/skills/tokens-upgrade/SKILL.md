@@ -53,13 +53,17 @@ Update the package with the project's own package manager (`npm install <pkg>@<v
 
 ## 5. Check again
 
-After the bump, run the check against the installed version:
+After the fixes and the bump, run the comparison again with both versions named, so it does not depend on what is installed:
 
 ```bash
-npx -y @dsgraph/cli@0.9 check npm:<package>@<version> --code <dir> --format json --expand
+npx -y @dsgraph/cli@0.9 diff npm:<package>@<old version> npm:<package>@<new version> --code <dir> --format markdown
 ```
 
-Look for `usage/unknown-token` (a variable that is not a token in this version: a leftover old name or a typo) and `usage/deprecated` (a token that still exists but is on its way out, with its replacement). Fix them as in step 3 and run again until no `usage/unknown-token` remains. `usage/unknown-token` needs the system's variable prefix (see the reference); if the package has one (`--ds-`, `--md-`) and dsgraph does not report it, set it in `dsgraph.config.json`. Without a prefix, also search the code for every old name from step 2 yourself.
+No "breaks" rows may remain under **In your code**. If one does, fix it as in step 3 and run again. A row left on purpose (a removed token the user is still deciding about) stays in the report, marked as waiting.
+
+Also search the code for every old name from step 2 in its other forms (a Tailwind class, a JS import, a string built at runtime): dsgraph finds the uses it can read, and a dynamic class can hide one.
+
+Do not use `check` against the package for this step. Without the system's variable prefix it does not flag a variable that no longer exists, and it also prints findings about the package's own token files, which are not this project's to fix.
 
 Run the project's own build and tests if it has them.
 
