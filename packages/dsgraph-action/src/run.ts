@@ -167,6 +167,7 @@ export async function run(rt: Runtime): Promise<number> {
     let body = formatChangeset(cs, {
       format: 'markdown',
       types,
+      defaults: { base: base.defaultInput(), head: head.defaultInput() },
       ...(impact ? { impact } : {}),
       // Upgrading a dependency: what happens to this repository, not the whole release.
       focusOnCode: !!pkg,

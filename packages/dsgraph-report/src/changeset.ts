@@ -19,6 +19,11 @@ export interface ChangesetFormatOptions {
    * For people upgrading a token package, not releasing one.
    */
   focusOnCode?: boolean
+  /**
+   * The default context of each modifier (`DsGraph.defaultInput()`), for the version a removed
+   * token was in (`base`) and an added one is in (`head`): its value is listed first.
+   */
+  defaults?: { base?: Record<string, string>; head?: Record<string, string> }
 }
 
 const TITLE: Record<Level, string> = {
@@ -150,6 +155,36 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
     return `${code(formatValue(typeOf(c), (side as { value: unknown }).value))}${alias ? ` (from ${code(alias)})` : ''}`
   }
   const name = (c: Change) => `${code(c.target)}${formatWhen(c.when)}`
+  /**
+   * An added or removed token's values: one when every theme agrees, else each with its theme,
+   * the default first and the rest as the resolver lists them (`#ffffff in light · #17171c in dark`).
+   */
+  const valuesOf = (c: Change, side: unknown, defaults: Record<string, string> | undefined) => {
+    type Entry = { when?: Record<string, string>; raw?: unknown; value: unknown }
+    const entries = (side as { values?: Entry[] } | undefined)?.values ?? []
+    const shown = entries.map((e) => ({ when: e.when ?? {}, text: val(c, e) }))
+    if (new Set(shown.map((s) => s.text)).size <= 1) return shown[0]?.text ?? ''
+    const matches = (when: Record<string, string>, input: Record<string, string>) =>
+      Object.entries(when).every(([k, v]) => input[k] === v)
+    const rank = (when: Record<string, string>) => {
+      if (defaults && matches(when, defaults)) return -1
+      const i = cs.contexts.compared.findIndex((input) => matches(when, input))
+      return i < 0 ? cs.contexts.compared.length : i
+    }
+    const keys = new Set(shown.flatMap((s) => Object.keys(s.when)))
+    // One modifier: the context's name is enough; several: each named.
+    const label = (when: Record<string, string>) =>
+      keys.size === 1
+        ? Object.values(when).join('')
+        : Object.entries(when)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ')
+    return shown
+      .map((s, i) => ({ ...s, i, rank: rank(s.when) }))
+      .sort((a, b) => a.rank - b.rank || a.i - b.i)
+      .map((s) => `${s.text}${Object.keys(s.when).length ? ` in ${label(s.when)}` : ''}`)
+      .join(' · ')
+  }
 
   const propagatedBy = new Map<string, Change[]>()
   for (const c of cs.changes)
@@ -280,9 +315,9 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
       const also = alsoOf(c)
       switch (c.kind) {
         case 'token.removed': {
-          const was = (c.before as { values?: Array<{ value: unknown }> } | undefined)?.values?.[0]
+          const was = valuesOf(c, c.before, opts.defaults?.base)
           lines.push(
-            `${bullet}${md ? '**Removed**' : 'Removed'} ${name(c)}${was ? `, it was ${val(c, was)}` : ''}.${c.possibleRenames?.length ? ` Maybe renamed to ${c.possibleRenames.map(code).join(' or ')}.` : ''}`,
+            `${bullet}${md ? '**Removed**' : 'Removed'} ${name(c)}${was ? `, it was ${was}` : ''}.${c.possibleRenames?.length ? ` Maybe renamed to ${c.possibleRenames.map(code).join(' or ')}.` : ''}`,
           )
           break
         }
@@ -322,8 +357,8 @@ export function formatChangeset(cs: Changeset, opts: ChangesetFormatOptions = {}
 
   section('added', (items) => {
     for (const c of items) {
-      const first = (c.after as { values?: Array<{ value: unknown }> } | undefined)?.values?.[0]
-      lines.push(`${bullet}${name(c)}${first ? ` ${val(c, first)}` : ''}`)
+      const values = valuesOf(c, c.after, opts.defaults?.head)
+      lines.push(`${bullet}${name(c)}${values ? ` ${values}` : ''}`)
     }
   })
 

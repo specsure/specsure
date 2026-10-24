@@ -355,7 +355,14 @@ export function createServer(opts: ServerOptions): McpServer {
       const impact = index
         ? impactOf(cs, b, h, index, config.code?.prefix ? { prefix: config.code.prefix } : {})
         : undefined
-      return text(formatChangeset(cs, { format: 'markdown', types, ...(impact ? { impact } : {}) }))
+      return text(
+        formatChangeset(cs, {
+          format: 'markdown',
+          types,
+          defaults: { base: b.defaultInput(), head: h.defaultInput() },
+          ...(impact ? { impact } : {}),
+        }),
+      )
     },
   )
 

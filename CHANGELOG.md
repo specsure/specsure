@@ -11,6 +11,11 @@ dsgraph packages (`@dsgraph/*`) share one version. The GitHub Action
   line height, letter spacing, stroke); a token's, from Figma's scopes in `$extensions` when it has
   them, else from its name (`radius.md`, `space.inset`, `font.size.body`). Tokens that say nothing
   about their use still fit any property, and spacing and box sizes stand in for each other.
+- `dsgraph diff`: a new or removed token whose value differs by theme shows each value with its
+  theme, the default context first (`#ffffff` in light · `#17171c` in dark); before, "New" and
+  "Removed" showed only the alphabetically first theme. A token whose themes agree keeps one value.
+  `formatChangeset` takes the default contexts as `defaults: { base, head }`
+  (`DsGraph.defaultInput()`); the CLI, the action and the MCP server pass them.
 
 ## 0.9.0 — 2026-10-22
 

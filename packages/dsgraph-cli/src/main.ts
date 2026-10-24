@@ -246,6 +246,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
         formatChangeset(cs, {
           format,
           types,
+          defaults: { base: base.defaultInput(), head: head.defaultInput() },
           ...(impact ? { impact } : {}),
           // Upgrading: what happens to this project, not the whole release.
           focusOnCode: command === 'upgrade-check',

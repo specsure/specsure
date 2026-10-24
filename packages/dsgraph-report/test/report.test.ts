@@ -1,4 +1,11 @@
-import { buildSnapshot, DiagnosticBag, DsGraph, diff, systemFromDocuments } from '@dsgraph/core'
+import {
+  buildSnapshot,
+  DiagnosticBag,
+  DsGraph,
+  diff,
+  systemFromDocuments,
+  systemFromResolver,
+} from '@dsgraph/core'
 import { describe, expect, it } from 'vitest'
 import {
   colorDirection,
@@ -69,6 +76,79 @@ describe('changeset', () => {
     )
     expect(md).not.toMatch(/\| `action\.bg`/)
     expect(formatChangeset(cs)).toContain('1 removed · 1 changed (+2 through references)')
+  })
+
+  it('lists each theme of an added or removed token, the default first', async () => {
+    // Two themes, light the default; the head adds a surface that differs by theme.
+    const themed = async (surface: boolean) => {
+      const files: Record<string, unknown> = {
+        'base.json': {
+          color: {
+            $type: 'color',
+            gray: { 0: { $value: srgb(1, 1, 1) }, 900: { $value: srgb(0.09, 0.09, 0.11) } },
+          },
+        },
+        'light.json': surface
+          ? {
+              color: {
+                surface: { $type: 'color', $value: '{color.gray.0}' },
+                ink: { $type: 'color', $value: '{color.gray.900}' },
+              },
+            }
+          : {},
+        'dark.json': surface
+          ? {
+              color: {
+                surface: { $type: 'color', $value: '{color.gray.900}' },
+                ink: { $type: 'color', $value: '{color.gray.900}' },
+              },
+            }
+          : {},
+      }
+      const resolver = {
+        version: '2025.10',
+        sets: { base: { sources: [{ $ref: 'base.json' }] } },
+        modifiers: {
+          theme: {
+            contexts: { light: [{ $ref: 'light.json' }], dark: [{ $ref: 'dark.json' }] },
+            default: 'light',
+          },
+        },
+        resolutionOrder: [{ $ref: '#/sets/base' }, { $ref: '#/modifiers/theme' }],
+      }
+      const diagnostics = new DiagnosticBag()
+      const system = await systemFromResolver(
+        resolver,
+        'tokens.resolver.json',
+        async (p) => files[p],
+        diagnostics,
+      )
+      return DsGraph.from(
+        await buildSnapshot(system, { diagnostics, source: { kind: 'files', path: 'tokens' } }),
+      )
+    }
+    const [without, withSurface] = await Promise.all([themed(false), themed(true)])
+    const types = new Map(withSurface.tokens().map((t) => [t.id, t.type]))
+    const defaults = { base: without.defaultInput(), head: withSurface.defaultInput() }
+
+    const added = formatChangeset(await diff(without, withSurface), { format: 'markdown', types, defaults })
+    expect(added).toContain(
+      '- `color.surface` `#ffffff` (from `color.gray.0`) in light · `#17171c` (from `color.gray.900`) in dark',
+    )
+    const removed = formatChangeset(await diff(withSurface, without), {
+      format: 'markdown',
+      types,
+      defaults: { base: defaults.head, head: defaults.base },
+    })
+    expect(removed).toContain(
+      '- **Removed** `color.surface`, it was `#ffffff` (from `color.gray.0`) in light · `#17171c` (from `color.gray.900`) in dark.',
+    )
+    // Without the defaults: the themes as the resolver lists them, light still first.
+    expect(formatChangeset(await diff(without, withSurface), { types })).toContain(
+      '  color.surface #ffffff ← {color.gray.0} in light · #17171c ← {color.gray.900} in dark',
+    )
+    // A token every theme gives the same value: once, without a theme.
+    expect(added).toMatch(/^- `color\.ink` `#17171c` \(from `color\.gray\.900`\)$/m)
   })
 
   it('says when there are no changes', async () => {
