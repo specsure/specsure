@@ -1,0 +1,12 @@
+{
+  "name": "specsure",
+  "owner": { "name": "Adam Reznik" },
+  "metadata": { "description": "Agent skills for design tokens, built on the open-source dsgraph engine." },
+  "plugins": [
+    {
+      "name": "design-tokens",
+      "source": "./skills/design-tokens",
+      "description": "Review a token release, upgrade a token package safely, and put hard-coded values back on tokens, with dsgraph doing the checks."
+    }
+  ]
+}

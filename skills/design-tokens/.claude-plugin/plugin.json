@@ -1,0 +1,10 @@
+{
+  "name": "design-tokens",
+  "version": "1.0.0",
+  "description": "Review a token release, upgrade a token package safely, and put hard-coded values back on tokens, with dsgraph doing the checks.",
+  "author": { "name": "Adam Reznik" },
+  "homepage": "https://specsure.vercel.app/guide",
+  "repository": "https://github.com/specsure/specsure",
+  "license": "MIT",
+  "keywords": ["design-tokens", "design-systems", "dtcg", "css", "tailwind"]
+}
