@@ -20,9 +20,15 @@ for (const pack of readdirSync(root, { withFileTypes: true })) {
     const refs = join(dir, 'skills', skill, 'references')
     mkdirSync(refs, { recursive: true })
     for (const f of readdirSync(shared)) copyFileSync(join(shared, f), join(refs, f))
-    execFileSync('zip', ['-qr', join(dist, `${skill}.zip`), '.', '-x', '*.DS_Store'], { cwd: join(dir, 'skills', skill) })
+    execFileSync('zip', ['-qr', join(dist, `${skill}.zip`), '.', '-x', '*.DS_Store'], {
+      cwd: join(dir, 'skills', skill),
+    })
     console.log(`packed ${skill}`)
   }
-  execFileSync('zip', ['-qr', join(dist, `${pack.name}.zip`), 'README.md', 'shared', 'skills', '-x', '*.DS_Store'], { cwd: dir })
+  execFileSync(
+    'zip',
+    ['-qr', join(dist, `${pack.name}.zip`), 'README.md', 'shared', 'skills', '-x', '*.DS_Store'],
+    { cwd: dir },
+  )
   console.log(`packed ${pack.name}`)
 }
